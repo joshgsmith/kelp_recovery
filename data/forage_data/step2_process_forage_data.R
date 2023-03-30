@@ -81,9 +81,9 @@ dive_build1 <- dives %>% janitor::clean_names() %>%
          long_obs_deg = ifelse(long_obs_deg == 121,-121,long_obs_deg),
          #fix kelp type
          kelptype = ifelse(kelptype == "xx","x",kelptype),
-         kelptype = tolower(kelptype),
-         success = tolower(success),
-         sb_area = toupper(sb_area)
+         kelptype = factor(tolower(kelptype)),
+         success = factor(tolower(success)),
+         sb_area = factor(toupper(sb_area))
          
   ) 
 
@@ -109,4 +109,104 @@ unique(dive_build1$dt)
 unique(dive_build1$st)
 unique(dive_build1$success)
 unique(dive_build1$sb_area)
+
+
+
+################################################################################
+#process index
+
+index_build1 <- index %>% janitor::clean_names() %>%
+                mutate(visib = factor(tolower(visib)),
+                       sex = factor(sex),
+                       ageclass = factor(ageclass),
+                       status = factor(status),
+                       pupsz = factor(pupsz),
+                       consort = factor(consort),
+                       obsbeg = factor(obsbeg),
+                       obsend = factor(obsend),
+                       daynight = factor(daynight),
+                       area = factor(area),
+                       sky = factor(sky),
+                       winddir = factor(winddir),
+                       seaopen = factor(seaopen),
+                       seafix = factor(seafix),
+                       swell = factor(swell)
+                       )
+
+str(index_build1)
+
+colnames(index_build1)
+
+unique(index_build1$sex)  
+unique(index_build1$ageclass)  
+unique(index_build1$status)  
+unique(index_build1$pupsz)  
+unique(index_build1$ageweeks)  
+unique(index_build1$agequal)  
+unique(index_build1$consort)  
+unique(index_build1$gen_locat)  
+unique(index_build1$atos)  
+unique(index_build1$area)  
+unique(index_build1$fixtype) 
+unique(index_build1$sky)  
+unique(index_build1$rain)  
+unique(index_build1$windspeed)  
+unique(index_build1$winddir)  
+unique(index_build1$temperature)  
+unique(index_build1$seaopen)  
+unique(index_build1$seafix)  
+unique(index_build1$swell)  
+unique(index_build1$visib)  
+
+
+
+################################################################################
+#merge data
+
+forage_join <- for_dat_build1 %>%
+              #filter(steal == "No")%>% 
+                #select variables of interest
+              dplyr::select(foragdiv_id, foragdata_id, preynum, prey, number,
+                            size, qualifier)%>%
+              mutate_if(is.character, str_trim)
+
+dive_join <- dive_build1 %>%
+             dplyr::select(foragdiv_id, bout, subbout, lat, long, canopy,
+                           kelptype, divenum, dt, success) %>%
+              mutate_if(is.character, str_trim) %>%
+              #filter successful dives only
+              filter(success == "y")
+
+index_join <- index_build1 %>%
+              dplyr::select(bout, date, otterno, sex, ageclass, status)%>%
+             mutate_if(is.character, str_trim)
+
+
+#merge forage data and bout info
+data_build1 <- left_join(dive_join, forage_join, by="foragdiv_id")
+anti_build <- anti_join(dive_join, forage_join, by="foragdiv_id")
+
+
+#merge with index
+data_build2 <- left_join(data_build1, index_join, by="bout")
+anti_build2 <- anti_join(data_build1, index_join, by="bout")
+
+
+################################################################################
+#process data build
+
+data_build3 <- data_build2 %>%
+                mutate(year = as.numeric(format(date,'%Y')),
+                       month = as.numeric(format(date,'%m')),
+                                          day = as.numeric(format(date,'%d')))%>%
+                dplyr::select(year, month, day, foragdiv_id, foragdata_id, bout, subbout,
+                              lat, long, otterno, everything()
+                              ) %>%
+                filter(year >= 2016)
+
+
+write.csv(data_build3, file.path(datout, "foraging_data_2016_2023.csv"), row.names=FALSE)
+
+
+
 
