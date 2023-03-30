@@ -14,6 +14,10 @@ dataout <- "/Volumes/seaotterdb$/kelp_recovery/data/foraging_data/processed"
 #get metadata 
 meta_raw <- read_xlsx(file.path(datin, "ForageKey_lookup_table.xlsx"))
 
+#get foraging data
+for_dat <- read_xlsx(file.path(datin, "Forage_data_2016tocurrent.xlsx"))
+dives <- read_xlsx(file.path(datin, "Forage_dives_2016tocurrent.xlsx"))
+index <- read_xlsx(file.path(datin, "Forage_indexi_2016tocurrent.xlsx"))
 
 ################################################################################
 #step 1 - tidy data
@@ -26,6 +30,7 @@ meta_build1 <- meta_raw %>%
                                           str_to_sentence(category_code), category_code),
                        category_long = str_to_sentence(category_long),
                        description = str_to_sentence(description))
+
 
 ################################################################################
 #write clean metadata to .csv
