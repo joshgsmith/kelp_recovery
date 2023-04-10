@@ -126,6 +126,7 @@ ggplot() +
   labs(x="", y="") +
   # Crop
   coord_sf(xlim = c(-121.96, -121.92), ylim = c(36.515, 36.569), crs=4326) +
+  labs(fill = "Biomass \n(kg)")+
   # Theme
   theme_bw() + theme(panel.background = element_rect(fill="#D4FCFF"),
                      panel.grid.major=element_blank())
