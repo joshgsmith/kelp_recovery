@@ -74,7 +74,7 @@ SP <- as(focal_sp, "SpatialPoints")
 P <- as(SP, "ppp")
 
 E <- envelope(P, Kest,nsim = 500)
-plot(E, main = "Global envelopes")
+plot(E, main = "MCMC Global envelopes \nfocal patch (>3 successful dives)")
 
 
 

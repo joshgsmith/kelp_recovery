@@ -10,7 +10,7 @@ basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
 figdir <- here::here("analyses","figures")
 
 #read landsat dat
-landsat_dat <- st_read(file.path(basedir, "kelp_landsat/processed/monterey_peninsula/landsat_mpen_1984_2022_points.shp"))
+landsat_dat <- st_read(file.path(basedir, "kelp_landsat/processed/monterey_peninsula/landsat_mpen_1984_2022_points_withNAs.shp"))
 
 #read state
 ca_counties <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7vc7n.shp")) 
@@ -72,9 +72,12 @@ forage_build3 <- forage_build2 %>%
 
 plot_dat <- landsat_dat %>% filter ( year == "2019",
                                           latitude >= 36.510140 &
-                                          latitude <= 36.670574) %>%
-  filter(!(biomass == "0" | is.na(biomass)))
-
+                                          latitude <= 36.670574) # %>%
+  #mutate(biomass = ifelse(biomass == 0,NA,biomass))
+  #filter(!(biomass == "0" | is.na(biomass)))
+na_dat <- landsat_dat %>% filter (latitude >= 36.510140 &
+                                     latitude <= 36.670574, 
+                                   biomass == 0)
 
 ##Entire MPEN coords
 
@@ -145,36 +148,78 @@ cb
 #Rasterize
 
 #transform landsat data to Teale Albers
-t_dat <- st_transform(plot_dat, crs=3310) # %>% filter(year == 2019)
+t_dat <- st_transform(plot_dat, crs=3310) %>% 
+        mutate(biomass = ifelse(biomass==0,NA,biomass))%>%
+        filter(year == 2019)
+
+kelp_historic <- st_transform(na_dat, crs=3310) # %>% mutate(biomass = ifelse(biomass==0,1,NA))
 
 #create grid
 r <- terra::rast(t_dat, res=30)  # Builds a blank raster of given dimensions and resolution  
 vr <- rasterize(t_dat, r,"biomass", resolution = 30) 
 
+kelp_na <- rasterize(kelp_historic, r,"biomass", resolution = 30) 
 
 #examine output
 
 #MPEN
-ggplot() +
+test <- ggplot() +
+  tidyterra::geom_spatraster(data=kelp_na, na.rm=T) +
+  #plot observed kelp
   tidyterra::geom_spatraster(data=vr, na.rm=T) +
-  tidyterra::scale_fill_whitebox_c(
-    palette = "viridi",
-   labels = scales::label_number(#suffix = "Density",
-    )
-  )+
-#  # Plot land
+  #tidyterra::scale_fill_cross_blended_c(
+  #  palette = "cold_humid"
+    #na.value="gray80",
+  #)+
+  #scale_fill_gradientn(
+   # colors = rev(terrain.colors(10)),
+   # values = scales::rescale(0:9),
+    #guide = "colorbar",
+    #na.value = NA
+  #) +
+  scale_fill_gradient2(
+    low = "gray90",
+    mid = "gray90",
+    high = "forestgreen",
+    na.value = NA,
+    midpoint=1,
+    limits = c(0,5000), breaks = seq(0,5000, by=1000)
+  ) +
   geom_sf(data=ca_counties, fill="tan",  lwd=0.3) +
-  geom_sf(data= forage_build3 %>% filter(year==2019 & quarter == 2) %>% st_transform(crs=3310), 
+  geom_sf(data= forage_build3 %>% filter(year==2019 & quarter == 2) %>%
+          st_transform(crs=3310), 
           aes(color=focal_patch, shape=focal_patch), size=3)+
   scale_color_manual(values=c("blue","red"))+
   # Plot kelp
   labs(x="", y="") +
-  # Crop
+  # Crop-
   coord_sf(xlim = c(-121.93, -121.89), ylim = c(36.60, 36.64), crs=4326) +
   labs(fill = "Biomass \n(kg)")+
   # Theme
-  theme_bw() + theme(panel.background = element_rect(fill="#D4FCFF"),
+  theme_bw() + theme(panel.background = element_rect(fill="lightblue"),
                      panel.grid.major=element_blank())
+
+
+#tmaptools::palette_explorer()
+
+forage_plot_dat= forage_build3 %>% filter(year==2019 & quarter == 2)
+
+(tm_map <-tm_shape(kelp_na) + tm_raster(palette = "Blues", title="Max kelp cover \n(historic)", labels = "")+ 
+    tm_shape(vr)  + tm_raster( breaks=c(1,1000,2000,4000,5000), title = "Kelp biomass (Kg)") +
+    tm_shape(forage_plot_dat) + tm_symbols(scale=.1, col = "black") 
+  
+  )
+
+
+##generate interactive plot. Click on cell to view value
+tmap_leaflet(tm_map)
+
+
+
+
+
+             
+
 
 
 
