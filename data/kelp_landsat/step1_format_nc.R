@@ -77,7 +77,7 @@ kelp_landsat_sf <- kelp_processed %>%
 
 kelp_landsat_export <- kelp_landsat_sf %>%
                       #drop NAs and 0s to shorten file size (include if historic cover is of interest)
-                      filter(!(is.na(biomass) | biomass == "0")) %>%
+                      #filter(!(is.na(biomass) | biomass == "0")) %>%
                       #filter Monterey Peninsula
                       filter(
                         #Malpaso creek = southernmost point
@@ -87,7 +87,7 @@ kelp_landsat_export <- kelp_landsat_sf %>%
                         
 nrow(kelp_landsat_export)
 
-st_write(kelp_landsat_export, file.path(datout, "monterey_peninsula/landsat_mpen_1984_2022_points.shp"))
+st_write(kelp_landsat_export, file.path(datout, "monterey_peninsula/landsat_mpen_1984_2022_points_withNAs.shp"))
 
 
 ################################################################################
@@ -99,11 +99,11 @@ foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclas
 
 #Plot Monterey 
 
-plot_dat <- kelp_landsat_sf %>% filter (quarter == "2" &
+plot_dat <- kelp_landsat_export %>% filter (quarter == "2" &
                            year == "2019" &
                              latitude >= 36.510140 &
-                             latitude <= 36.670574) %>%
-                  filter(!(biomass == "0" | is.na(biomass)))
+                             latitude <= 36.670574) # %>%
+                 # filter(!(biomass == "0" | is.na(biomass)))
                     
 
 mpen <- ggplot() +
