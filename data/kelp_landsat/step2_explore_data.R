@@ -27,14 +27,14 @@ forage_build1 <- forage_dat %>%
                           ifelse(month == 4 | month == 5 | month == 6,2,
                                  ifelse(month == 7 | month == 8 | month == 9,3,4)))) %>%
   #filter urchin prey only
-  filter(prey == "pur") 
+  filter(prey == "pur" | prey == "mus") 
 
 focal_patch <-  forage_dat %>%
   mutate(quarter = ifelse(month == 1:3,1,
                           ifelse(month == 4:6,2,
                                  ifelse(month==7:9,3,4)))) %>%
   #filter urchin prey only
-  filter(prey == "pur") %>%
+  filter(prey == "pur" | prey == "mus") %>%
   #define focal patch
   group_by(bout) %>%
   dplyr::summarize(n_dives = n()) %>%
@@ -202,14 +202,30 @@ test <- ggplot() +
 
 #tmaptools::palette_explorer()
 
-forage_plot_dat= forage_build3 %>% filter(year==2019 & quarter == 2)
+forage_plot_dat= forage_build3 # %>% filter(year==2019 & quarter == 2)
+
+
 
 (tm_map <-tm_shape(kelp_na) + tm_raster(palette = "Blues", title="Max kelp cover \n(historic)", labels = "")+ 
     tm_shape(vr)  + tm_raster( breaks=c(1,1000,2000,4000,5000), title = "Kelp biomass (Kg)") +
+    tm_facets(by = c("focal_patch_yes", "focal_patch_no"), ncol = 2) +
     tm_shape(forage_plot_dat) + tm_symbols(scale=.1, col = "black") 
   
   )
 
+
+# Convert year and quarter columns to Date format
+forage_plot_dat$date <- as.Date(paste(forage_build3$year, forage_build3$quarter*3 - 2, "01", sep="-"))
+
+timeline <- addTimeline(forage_plot_dat$date)
+
+
+# Create timeline object
+
+timeline <- tm_map + addTimeline(power_geo)
+
+
+tm_map + addTimeline()
 
 ##generate interactive plot. Click on cell to view value
 tmap_leaflet(tm_map)
@@ -217,18 +233,18 @@ tmap_leaflet(tm_map)
 
 
 
-
-             
-
-
+###############################################################################
+##############
 
 
 
+power_geo <- geojsonio::geojson_json(forage_plot_dat,lat="lat",lon="long")
 
 
 
-
-
+leaflet() %>%
+  addTiles() %>%
+  addTimeline(data=power_geo)
 
 
 
