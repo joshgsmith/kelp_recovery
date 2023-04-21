@@ -53,20 +53,53 @@ ca_counties_mpen <- st_intersection(ca_counties, st_as_sfc(bbox))
 buffer <- st_buffer(st_make_valid(ca_counties_mpen), dist = 300)
 
 # get the difference between the buffer and ca_counties_mpen
-diff <- st_difference(buffer, ca_counties_mpen)
+diff <- st_difference(buffer, ca_counties_mpen) %>%
+        #tranform
+          st_transform(crs=3310)
 
 # create 400 random points inside diff
 set.seed(123)
-pts <- st_sample(diff, size = 400)
+pts <- st_sample(diff, size = 400) %>% st_as_sf()
+
+# Create a raster template with 100 x 100 meter cells
+r <- raster(extent(diff), resolution = c(300, 300), crs=3310)
+
+# Rasterize the points into the cells
+pts_raster <- rasterize(pts, r)
+plot(pts_raster)
+
+# Extract the point counts for each cell
+counts <- raster::extract(pts_raster, as(r, "SpatialPolygons"), fun = sum, na.rm = TRUE)
 
 
+# Update the cell values in pts_raster
+counts_na <- ifelse(counts == 0, NA, counts)
+pts_raster <- setValues(pts_raster, counts_na) 
 
-# Plot the objects using ggplot2
-ggplot() +
-  geom_sf(data = diff) +
-  geom_sf(data = pts) +
-  coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645)) +
+pts_spat <- rast(pts_raster, na.value=NA)
+
+g <- ggplot() +
+  tidyterra::geom_spatraster(data=pts_spat, na.rm=TRUE) +
+  tidyterra::scale_fill_whitebox_c(
+   palette = "bl_yl_rd",
+  na.value = NA
+  ) +
+  geom_sf(data = ca_counties)+
+  #geom_sf(data = diff) +
+  geom_sf(data = pts, size=0.1) +
+  coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs=4326) +
   theme_bw()
+
+
+################################################################################
+#step 3 - build envr inset map
+
+
+
+
+
+
+
 
 
 
