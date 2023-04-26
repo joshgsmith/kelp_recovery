@@ -39,7 +39,7 @@ ggplot() +
 
 
 ################################################################################
-#step 2 - simulate otter aggregations at one time point
+#step 2 - simulate random otter aggregations pre-2016
 
 library(sf)
 
@@ -78,7 +78,7 @@ pts_raster <- setValues(pts_raster, counts_na)
 
 pts_spat <- rast(pts_raster, na.value=NA)
 
-g <- ggplot() +
+g1 <- ggplot() +
   tidyterra::geom_spatraster(data=pts_spat, na.rm=TRUE) +
   tidyterra::scale_fill_whitebox_c(
    palette = "bl_yl_rd",
@@ -92,7 +92,53 @@ g <- ggplot() +
 
 
 ################################################################################
-#step 3 - build envr inset map
+#step 3 - simulate non-random otter aggregations post-2016
+
+library(sf)
+
+
+# create 400 random points inside diff
+set.seed(123)
+pts_nonrand <- st_sample(diff, size = 500) %>% st_as_sf() %>%
+                st_transform(crs=4326) %>%
+                #make nonrandom
+                filter(st_coordinates(.)[, 1] > -121.94) %>%
+                filter(st_coordinates(.)[, 1] < -121.89) %>%
+                #transform back
+                st_transform(crs=3310) 
+                    
+plot(pts_nonrand)
+
+# Create a raster template with 100 x 100 meter cells
+r <- raster(extent(diff), resolution = c(300, 300), crs=3310)
+
+# Rasterize the points into the cells
+pts_nonrand_raster <- rasterize(pts_nonrand, r)
+plot(pts_nonrand_raster)
+
+# Extract the point counts for each cell
+counts <- raster::extract(pts_nonrand_raster, as(r, "SpatialPolygons"), fun = sum, na.rm = TRUE)
+
+
+# Update the cell values in pts_raster
+counts_na <- ifelse(counts == 0, NA, counts)
+pts_raster <- setValues(pts_nonrand_raster, counts_na) 
+
+pts_spat <- rast(pts_nonrand_raster, na.value=NA)
+
+(g2 <- ggplot() +
+  tidyterra::geom_spatraster(data=pts_spat, na.rm=TRUE) +
+  tidyterra::scale_fill_whitebox_c(
+    palette = "bl_yl_rd",
+    na.value = NA
+  ) +
+  geom_sf(data = ca_counties)+
+  #geom_sf(data = diff) +
+  geom_sf(data = pts_nonrand, size=0.1) +
+  coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs=4326) +
+  theme_bw()
+)
+
 
 
 
