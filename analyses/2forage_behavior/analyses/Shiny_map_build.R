@@ -7,7 +7,7 @@ rm(list=ls())
 
 ######
 #required packages
-librarian::shelf(tidyverse, sf, raster, shiny)
+librarian::shelf(tidyverse, sf, raster, shiny, tmap)
 
 #set directories 
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
@@ -24,8 +24,48 @@ forage_dat <- read.csv(file.path(basedir, "foraging_data/processed/foraging_data
 #for geom_spatraster see https://dieghernan.github.io/tidyterra/articles/palettes.html
 
 
+
 ################################################################################
-#Step 1 - process landsat dat
+#Step 1 - build stacked raster
+
+rast_raw <- landsat_dat
+
+# transform landsat data to Teale Albers
+rast_build1 <- st_transform(rast_raw, crs = 3310) %>% 
+  mutate(biomass = ifelse(biomass == 0, NA, biomass)) # %>% filter (year == 2016 | year == 2017 | year == 2018)
+
+#define blank raster
+r <- terra::rast(rast_build1, res=30)
+
+# Get unique quarters and years
+quarters <- unique(rast_build1$quarter)
+years <- unique(rast_build1$year)
+
+# Loop through each quarter and year
+raster_list <- list()
+for (y in years) {
+  for (q in quarters) {
+    # Subset rast_build1 for current quarter and year
+    subset <- rast_build1 %>% filter(year == y, quarter == q)
+    # Rasterize subset
+    rasterized <- rasterize(subset, r, field = "biomass", fun = mean)
+    # Add year and quarter as part of the SpatRaster object name
+    name <- paste0("year_", y, "_quarter_", q)
+    names(rasterized) <- name
+    # Add raster to list
+    raster_list <- append(raster_list, rasterized)
+  }
+}
+
+# Stack rasters in list
+stacked_raster <- stack(raster_list)
+
+#check names
+names(stacked_raster)
+
+
+################################################################################
+#Step 2 - define max kelp extent
 
 #select MPEN as focal region 
 plot_dat <- landsat_dat %>% filter ( year == "2019",
@@ -51,21 +91,21 @@ vr <- rasterize(t_dat, r,"biomass", resolution = 30)
 kelp_na <- rasterize(kelp_historic, r,"biomass", resolution = 30) 
 
 ################################################################################
-#Step 2 -- process foraging data
+#Step 3 -- process foraging data
 
 forage_build1 <- forage_dat %>%
   mutate(quarter = ifelse(month == 1 | month == 2 | month == 3, 1,
                           ifelse(month == 4 | month == 5 | month == 6,2,
-                                 ifelse(month == 7 | month == 8 | month == 9,3,4)))) %>%
+                                 ifelse(month == 7 | month == 8 | month == 9,3,4)))) # %>%
   #filter urchin prey only
-  filter(prey == "pur" | prey == "mus") 
+ # filter(prey == "pur" | prey == "mus") 
 
 focal_patch <-  forage_dat %>%
   mutate(quarter = ifelse(month == 1:3,1,
                           ifelse(month == 4:6,2,
                                  ifelse(month==7:9,3,4)))) %>%
   #filter urchin prey only
-  filter(prey == "pur" | prey == "mus") %>%
+ # filter(prey == "pur" | prey == "mus") %>%
   #define focal patch
   group_by(bout) %>%
   dplyr::summarize(n_dives = n()) %>%
@@ -75,7 +115,6 @@ focal_patch <-  forage_dat %>%
 #join
 
 forage_build2 <- left_join(forage_build1, focal_patch, by="bout")
-
 
 
 #aggregate data by bout
@@ -91,34 +130,35 @@ forage_build3 <- forage_build2 %>%
   st_as_sf(.,coords = c("long","lat"), crs=4326)
 
 
-
 forage_plot_dat <- forage_build3
 
 ################################################################################
-#Build Shiny
+#Build shiny
 
 ui <- fluidPage(
+  tags$head(
+    tags$style(
+      HTML(".leaflet-container { height: 800px !important; }"),
+      HTML("HTML, body {background-color: transparent;}")
+    )
+  ),
   fluidRow(
     column(width = 4,
-           sliderInput("year_toggle", "Filter by year:", min = min(forage_plot_dat$year), max = max(forage_plot_dat$year), value = c(min(forage_plot_dat$year), max(forage_plot_dat$year)), step = 1, sep = "", width = "90%"),
+           sliderInput("year_toggle", "Filter by year:", min = min(forage_plot_dat$year), max = max(forage_plot_dat$year), value = min(forage_plot_dat$year), step = 1, sep = "", width = "90%"),
+           sliderInput("quarter_toggle", "Filter by quarter:", min = 1, max = 4, value = 1, step = 1, sep = "", width = "90%"),
            selectInput("prey_toggle", "Filter by prey:", c("All", unique(forage_plot_dat$prey)), multiple = TRUE, selected = "All"),
            selectInput("focal_patch_toggle", "Filter by focal patch:", c("Yes", "No", "N/A"), selected = "N/A")
     ),
     column(width = 8,
-           height = 16,
-           #style = "height: 1600px;",
-           tmapOutput("map")
+           tmap::tmapOutput("map")
     )
   )
 )
 
 
 
+
 server <- function(input, output, session) {
-  # Set initial value for select input
-  observe({
-    updateSelectInput(session, "focal_patch_toggle", selected = "N/A")
-  })
   
   filtered_data <- reactive({
     if (input$focal_patch_toggle == "Yes") {
@@ -130,31 +170,42 @@ server <- function(input, output, session) {
     }
   })
   
-  filtered_data_year <- reactive({
-    filter(filtered_data(), between(year, input$year_toggle[1], input$year_toggle[2]))
+  filtered_data_year_quarter <- reactive({
+    filter(filtered_data(), year == input$year_toggle, quarter == input$quarter_toggle)
   })
   
   filtered_data_prey <- reactive({
     if ("All" %in% input$prey_toggle) {
-      filtered_data_year()
+      filtered_data_year_quarter()
     } else {
-      filter(filtered_data_year(), prey %in% input$prey_toggle)
+      filter(filtered_data_year_quarter(), prey %in% input$prey_toggle)
     }
   })
   
-  tm_map_reactive <- eventReactive(list(input$focal_patch_toggle, input$year_toggle, input$prey_toggle), {
-    tm_map <- tm_shape(kelp_na) + 
-      tm_raster(palette = "Blues", title = "Kelp footprint \n(all time max)", labels = "") +
-      tm_shape(vr) + 
-      tm_raster(breaks = c(1, 1000, 2000, 4000, 5000), title = "Kelp biomass (Kg)")
+  tm_map_reactive <- eventReactive(list(input$focal_patch_toggle, input$year_toggle, input$quarter_toggle, input$prey_toggle), {
     
-    if (!is.null(filtered_data_prey())) {
-      tm_map <- tm_map + tm_shape(filtered_data_prey()) +
+    # Check if the selected year and quarter combination is available in stacked_raster
+    stacked_raster_layer_name <- paste0("year_", input$year_toggle, "_quarter_", input$quarter_toggle)
+    if (!stacked_raster_layer_name %in% names(stacked_raster)) {
+      tm_map <- tm_shape(kelp_na) + 
+        tm_raster(palette = "Blues", title = "Kelp footprint \n(all time max)", labels = "")
+    } else if (nrow(filtered_data_prey()) > 0) {
+      tm_map <- tm_shape(kelp_na) +
+        tm_raster(palette = "Blues", title = "Kelp footprint \n(all time max)", labels = "") +
+        tm_shape(stacked_raster[[stacked_raster_layer_name]]) + 
+        tm_raster(breaks = c(0, 1000, 2000, 4000, 5000), title = "Kelp biomass (Kg)") +
+        tm_shape(filtered_data_prey()) +
         tm_symbols(scale = 0.1, col = "black")
+    } else {
+      tm_map <- tm_shape(kelp_na) +
+        tm_raster(palette = "Blues", title = "Kelp footprint \n(all time max)", labels = "") +
+        tm_shape(stacked_raster[[stacked_raster_layer_name]]) + 
+        tm_raster(breaks = c(0, 1000, 2000, 4000, 5000), title = "Kelp biomass (Kg)")
     }
     
     tm_map
   })
+  
   
   output$map <- renderTmap({
     tm_map_reactive()
@@ -162,3 +213,5 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
+
