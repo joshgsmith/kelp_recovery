@@ -25,12 +25,12 @@ kelp_taxon <- read.csv(file.path(basedir, "data/subtidal_monitoring/raw/MLPA_kel
 
 site_table <- read.csv(file.path(basedir, "data/subtidal_monitoring/raw/MLPA_kelpforest_site_table.4.csv")) %>%
   janitor::clean_names() %>%
-  dplyr::select(site, ca_mpa_name_short, mpa_class=site_designation, mpa_designation=site_status, 
+  dplyr::select(site, latitude, longitude, ca_mpa_name_short, mpa_class=site_designation, mpa_designation=site_status, 
                 baseline_region)%>%
   distinct() #remove duplicates
 
 ################################################################################
-#set directories and load data
+#process kelp forest fish data
 
 #select vars and clean
 kelp_fish_build1 <- kelp_fish_counts_raw %>%
@@ -51,27 +51,32 @@ kelp_fish_build4 <- left_join(kelp_fish_build3, site_table, by="site")
 
 kelp_fish_build5 <- kelp_fish_build4 %>%
   ungroup() %>%
-  dplyr::select(year, baseline_region, affiliated_mpa=ca_mpa_name_short,mpa_class, mpa_designation, zone, level, transect, species,
+  dplyr::select(year, baseline_region, site,latitude, longitude, affiliated_mpa=ca_mpa_name_short,mpa_class, mpa_designation, zone, level, transect, species,
                 total_count) %>%
   mutate(mpa_designation = ifelse(mpa_designation=="reference","ref",mpa_class)) %>%
   #make sure species are not duplicates by summarizing at the transect level (total counts)
-  group_by(year, baseline_region, affiliated_mpa, mpa_class, mpa_designation, zone, level, transect, species) %>%
+  group_by(year, baseline_region, latitude, longitude, site, affiliated_mpa, mpa_class, mpa_designation, zone, level, transect, species) %>%
   dplyr::summarise(counts = sum(total_count))
   
 
-#reshape to wide format
+#reshape to wide format 
 kelp_fish_build6 <- kelp_fish_build5 %>%
   pivot_wider(names_from=species, values_from=counts, values_fill = 0) %>%
   janitor::clean_names()%>%
   #drop_na(region4)%>%
   mutate(MHW = ifelse(year>=2014 & year<=2016, "during",ifelse(year<2014, "before","after")))%>%
-  dplyr::select(-c(no_organisms_present_in_this_sample))
+  dplyr::select(-c(no_organisms_present_in_this_sample)) %>%
+  #filter central coast only
+  filter(baseline_region == "CENTRAL") %>%
+  #filter years >= 2007
+  filter(year >= 2007)
 
+unique(kelp_fish_build6$site)
 
 #drop species and combine to higher taxa
 #### see reference taxonomy table https://docs.google.com/spreadsheets/d/1vxy0XVOrlNhXD-i9tWL_F9G5h8S3S4OV/edit#gid=2031917236
 
-kelp_fish_combined <- as.data.frame(kelp_fish_counts1) %>%
+kelp_fish_build7 <- as.data.frame(kelp_fish_build6) %>%
   
   #merge species
   dplyr::mutate(citharichthys_merge = rowSums(select(.,'citharichthys','citharichthys_sordidus','citharichthys_stigmaeus')
@@ -112,142 +117,59 @@ kelp_fish_combined <- as.data.frame(kelp_fish_counts1) %>%
 
 
 #Export
-#path_aurora <- "/home/shares/ca-mpa/data/sync-data/processed_data/ecological_community_data" 
-#write.csv(kelp_fish_counts,file.path(path_aurora, "kelp_fish_counts.csv"), row.names = FALSE)
+#write.csv(kelp_fish_build7,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_fish_counts_CC.csv"), row.names = FALSE)
 
 
-kelp_fish_mpa_year_step1 <- kelp_fish_combined %>% 
-  pivot_longer(cols=11:121, names_to="species",values_to="counts")%>%
-  group_by(year, region3, region4, affiliated_mpa, mpa_defacto_class, mpa_defacto_designation, MHW, species)%>%
-  dplyr::summarize(total_counts = sum(counts))%>%
-  ungroup()%>%
-  pivot_wider(names_from = "species", values_from = "total_counts") %>%
-  mutate(group = "kelp")
-
-kelp_fish_mpa_year <- left_join(kelp_fish_mpa_year_step1, envr_dat, by=c("year","group",
-                                                                         "region3","region4",
-                                                                         "mpa_defacto_class",
-                                                                         "mpa_defacto_designation",
-                                                                         "affiliated_mpa"="mpa_name"))%>%
-  dplyr::select(1:7,119:142,8:118) %>%
-  dplyr::select(!c("mpa_class","mpa_designation")) %>%
-  mutate(group="kelp_fish") %>%
-  dplyr::select(group, everything()) %>%
-  filter(region3 == 'central') %>%
-  select(where(~ any(. != 0)))%>%
-  mutate_all(~ifelse(is.nan(.), NA, .))
-
-
-#Export year                     
-#path_aurora <- "/home/shares/ca-mpa/data/sync-data/monitoring/processed_data/community_climate_derived_data" 
-#write.csv(kelp_fish_mpa_year,file.path(path_aurora, "kelp_fish_mpa_year.csv"), row.names = FALSE)
-```
-
-
-
-
-#Process kelp swath data
-```{r}
-data_path <- "/home/shares/ca-mpa/data/sync-data/monitoring/monitoring_kelp"
-input_file <- "MLPA_kelpforest_swath.4.csv" 
-kelp_swath_counts <- read.csv(file.path(data_path, input_file)) %>%
-  janitor::clean_names()
-
+################################################################################
+#process kelp swath
 
 #select vars and clean
-kelp_swath_counts <- kelp_swath_counts %>%
+kelp_swath_build1 <- kelp_swath_raw %>%
   dplyr::select(year, site, zone, transect, classcode, count)%>%
   group_by(year, site, zone, transect, classcode)%>%
   dplyr::summarize(total_count = sum(count)) #counts in raw data are grouped by size class. Take summary across all sizes
 
 #join species names by class code 
-input_file <- "MLPA_kelpforest_taxon_table.4.csv"  
-kelp_taxon <- read.csv(file.path(data_path, input_file)) %>%
-  janitor::clean_names() %>%
-  dplyr::select(classcode, species_definition) %>%
-  distinct() #remove duplicates
+kelp_swath_build2 <- left_join(kelp_swath_build1, kelp_taxon, by="classcode")
 
-kelp_swath_counts<-  left_join(kelp_swath_counts, kelp_taxon, by="classcode")
-
-kelp_swath_counts <- kelp_swath_counts %>%
+kelp_swath_build3 <- kelp_swath_build2 %>%
   dplyr::select(year, site, zone, transect, species=species_definition, total_count)
 
 
 #add affiliated_mpa
 
-input_file <- "MLPA_kelpforest_site_table.4.csv" 
-kelp_sites <- read.csv(file.path(data_path, input_file)) %>%
-  janitor::clean_names() %>%
-  dplyr::select(site, ca_mpa_name_short, mpa_class=site_designation, mpa_designation=site_status)%>%
-  distinct() #remove duplicates
+kelp_swath_build4 <- left_join(kelp_swath_build3, site_table, by="site")
 
-kelp_swath_counts <- left_join(kelp_swath_counts, kelp_sites, by="site")
-
-kelp_swath_counts <- kelp_swath_counts %>%
+kelp_swath_build5 <- kelp_swath_build4 %>%
   ungroup() %>%
-  dplyr::select(year, affiliated_mpa=ca_mpa_name_short,mpa_class, mpa_designation, zone, transect, species, total_count) %>%
-  mutate(mpa_designation = ifelse(mpa_designation=="reference","ref",mpa_class))
-
-#add 4 regions
-data_path <- "/home/shares/ca-mpa/data/sync-data/mpa_traits"
-input_file <- "mpa-attributes.xlsx" 
-four_region <- readxl::read_excel(file.path(data_path, input_file), sheet=1, skip = 0, na="NA")
-
-regions <- four_region %>%
-  dplyr::select(name, region3=bioregion, region4 = four_region_north_ci)
-
-kelp_swath_counts$affiliated_mpa <- tolower(kelp_swath_counts$affiliated_mpa)
-
-kelp_swath_counts <- left_join(kelp_swath_counts, regions, by=c("affiliated_mpa"="name"))
+  dplyr::select(year, baseline_region, site,latitude, longitude, affiliated_mpa=ca_mpa_name_short,mpa_class, mpa_designation, zone, transect, species,
+                total_count) %>%
+  mutate(mpa_designation = ifelse(mpa_designation=="reference","ref",mpa_class)) %>%
+  #make sure species are not duplicates by summarizing at the transect level (total counts)
+  group_by(year, baseline_region, latitude, longitude, site, affiliated_mpa, mpa_class, mpa_designation, zone,  transect, species) %>%
+  dplyr::summarise(counts = sum(total_count))
 
 
 
-#add defacto SMRs
-data_path <- "/home/shares/ca-mpa/data/sync-data/mpa_traits"
-input_file <- "mpa-attributes.xlsx" 
-defacto_smr <- readxl::read_excel(file.path(data_path, input_file), sheet=5, skip = 0, na="NA")%>%
-  filter(group=="kelp") %>%
-  dplyr::select(affiliated_mpa, mpa_class)
-
-
-kelp_swath_counts <- left_join(kelp_swath_counts, defacto_smr, by="affiliated_mpa")
-
-
-#clean up
-kelp_swath_counts <- kelp_swath_counts %>%
-  mutate(mpa_defacto_designation = ifelse(mpa_designation=="ref","ref",mpa_class.y))%>%
-  dplyr::select(year, region3, region4, affiliated_mpa, mpa_defacto_class = mpa_class.y, mpa_defacto_designation, zone, transect, species, total_count)
-
-kelp_swath_counts$mpa_defacto_class <- tolower(kelp_swath_counts$mpa_defacto_class)
-kelp_swath_counts$mpa_defacto_designation <- tolower(kelp_swath_counts$mpa_defacto_designation)
-
-kelp_swath_counts <- kelp_swath_counts %>%
-  group_by(year, region3, region4, affiliated_mpa, mpa_defacto_class, mpa_defacto_designation, zone, transect, species) %>%
-  dplyr::summarize(counts = sum(total_count)) #make sure species are not duplicates by summarizing at the transect level (total counts)
-
-
-#Run this code to aggregate at MPA-year level
-#kelp_swath_mpa_year <- kelp_swath_counts %>%
-#                    group_by(year, region3, region4, affiliated_mpa, mpa_defacto_class, mpa_defacto_designation, species) %>%
-#                    dplyr::summarize(counts = sum(counts)) 
-
-
-#reshape to wide format
-kelp_swath_counts1 <- kelp_swath_counts %>%
+#reshape to wide format 
+kelp_swath_build6 <- kelp_swath_build5 %>%
   pivot_wider(names_from=species, values_from=counts, values_fill = 0) %>%
   janitor::clean_names()%>%
-  drop_na(region4) %>%
+  #drop_na(region4)%>%
   mutate(MHW = ifelse(year>=2014 & year<=2016, "during",ifelse(year<2014, "before","after")))%>%
-  dplyr::select(year, region3, region4, affiliated_mpa, mpa_defacto_class, MHW, everything())
-dplyr::select(-c(no_organisms_present_in_this_sample))
+  dplyr::select(-c(no_organisms_present_in_this_sample)) %>%
+  #filter central coast only
+  filter(baseline_region == "CENTRAL") %>%
+  #filter years >= 2007
+  filter(year >= 2007)
 
+unique(kelp_swath_build6$site)
 
 
 #drop species and combine to higher taxa
 #### see reference taxonomy table https://docs.google.com/spreadsheets/d/1vxy0XVOrlNhXD-i9tWL_F9G5h8S3S4OV/edit#gid=2031917236
 
-kelp_swath_counts2 <- as.data.frame(kelp_swath_counts1) %>%
-  
+kelp_swath_build7 <- as.data.frame(kelp_swath_build6) %>%
   #merge species
   dplyr::mutate(urticina_merge = rowSums(select(.,'urticina', 
                                                 'urticina_coriacea', 'urticina_crassicornis', 'urticina_piscivora')
@@ -273,76 +195,36 @@ kelp_swath_counts2 <- as.data.frame(kelp_swath_counts1) %>%
 
 
 #drop species that were never observed on the central coast
-kelp_swath_zero_drop <- kelp_swath_counts2 %>% filter(region3=='central') %>%
+kelp_swath_zero_drop <- kelp_swath_build7 %>% filter(baseline_region=='CENTRAL') %>%
   select(!(where(~ any(. != 0))))
 
-kelp_swath_counts3 <- kelp_swath_counts2 %>% filter(region3=='central') %>%
+kelp_swath_build8 <- kelp_swath_build7 %>% filter(baseline_region=='CENTRAL') %>%
   select(where(~ any(. != 0)))
 
 #Export
-#path_aurora <- "/home/shares/ca-mpa/data/sync-data/processed_data/ecological_community_data" 
-#write.csv(kelp_swath_mpa_year, file.path(path_aurora, "kelp_swath_mpa_year_counts.csv"), row.names = FALSE)
-
-kelp_swath_mpa_year_step1 <- kelp_swath_counts3 %>%
-  pivot_longer(cols=10:72, names_to="species",values_to="counts")%>%
-  group_by(year, region3, region4, affiliated_mpa, mpa_defacto_class, mpa_defacto_designation, MHW, species)%>%
-  dplyr::summarize(total_counts = sum(counts))%>%
-  ungroup()%>%
-  pivot_wider(names_from = "species", values_from = "total_counts")%>%
-  mutate(group="kelp")
+#write.csv(kelp_swath_build8,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv"), row.names = FALSE)
 
 
-kelp_swath_mpa_year <- left_join(kelp_swath_mpa_year_step1, envr_dat, 
-                                 by=c("year","group",
-                                      "region3","region4",
-                                      "mpa_defacto_class",
-                                      "mpa_defacto_designation",
-                                      "affiliated_mpa"="mpa_name"))%>%
-  dplyr::select(1:7,71:94,8:70) %>%
-  dplyr::select(!c("mpa_class","mpa_designation")) %>%
-  mutate(group = "kelp_swath")%>%
-  dplyr::select(group, everything()) %>%
-  filter(region3 == 'central') %>%
-  select(where(~ any(. != 0))) %>%
-  mutate_all(~ifelse(is.nan(.), NA, .))
+################################################################################
+#process kelp upc
 
-
-#Export year level
-#path_aurora <- "/home/shares/ca-mpa/data/sync-data/monitoring/processed_data/community_climate_derived_data" 
-#write.csv(kelp_swath_mpa_year, file.path(path_aurora, "kelp_swath_mpa_year.csv"), row.names = FALSE)
-
-```
-
-
-#process kelp forest upc data
-```{r}
-data_path <- "/home/shares/ca-mpa/data/sync-data/monitoring/monitoring_kelp"
-input_file <- "MLPA_kelpforest_upc.4.csv" 
-kelp_upc_counts <- read.csv(file.path(data_path, input_file)) %>%
-  janitor::clean_names()%>%
+kelp_upc_build1 <- kelp_upc_raw%>%
   filter(category=="COVER")
 
-
 #select vars and clean
-kelp_upc_counts1 <- kelp_upc_counts %>%
+kelp_upc_build2 <- kelp_upc_build1 %>%
   dplyr::select(year, site, zone, transect, classcode, count, pct_cov)%>%
   group_by(year, site, zone, transect, classcode)
 
-
 #join species names by class code 
-input_file <- "MLPA_kelpforest_taxon_table.4.csv"  
-kelp_taxon <- read.csv(file.path(data_path, input_file)) %>%
-  janitor::clean_names() %>%
-  dplyr::select(classcode, species_definition) %>%
-  distinct() #remove duplicates
+kelp_upc_build3 <- left_join(kelp_upc_build2, kelp_taxon, by="classcode")
 
-kelp_upc_counts2<-  left_join(kelp_upc_counts1, kelp_taxon, by="classcode")
 
-kelp_upc_counts3 <- kelp_upc_counts2 %>%
+kelp_upc_build4 <- kelp_upc_build3 %>%
   dplyr::select(year, site, zone, transect, classcode, species=species_definition, count, pct_cov)
 
 #drop data 
-kelp_upc_counts4 <- kelp_upc_counts3 %>%
+kelp_upc_build5 <- kelp_upc_build4 %>%
   filter(!(species=="Haliotis"|
              species=="Laminaria"|
              species=="laminariales"|
@@ -366,112 +248,55 @@ kelp_upc_counts4 <- kelp_upc_counts3 %>%
 
 
 #recalculate percent cov
-kelp_upc_counts5 <- kelp_upc_counts4 %>%
+kelp_upc_build6 <- kelp_upc_build5 %>%
   group_by(year, site, zone, transect, classcode, species)%>%
   dplyr::summarize(sum_count = sum(count)) 
 
 #check to make sure UPC counts add up to ~30 per transect               
-check_counts <- kelp_upc_counts4 %>%
+check_counts <- kelp_upc_build5 %>%
   group_by(year, site, zone, transect)%>%
   dplyr::summarize(transect_total = sum(count))
 
 #join percent cov with transect total
-kelp_upc_counts6 <- left_join(kelp_upc_counts5, check_counts, by=c("year","site","zone","transect"))%>%
+kelp_upc_build7 <- left_join(kelp_upc_build6, check_counts, by=c("year","site","zone","transect"))%>%
   mutate(pct_cov = (sum_count / transect_total)*100)%>%
   mutate_at(vars(pct_cov), round, 1)
 
 
 
+
 #add affiliated_mpa
 
-input_file <- "MLPA_kelpforest_site_table.4.csv" 
-kelp_sites <- read.csv(file.path(data_path, input_file)) %>%
-  janitor::clean_names() %>%
-  dplyr::select(site, ca_mpa_name_short, mpa_class=site_designation, mpa_designation=site_status)%>%
-  distinct() #remove duplicates
+kelp_upc_build8 <- left_join(kelp_upc_build7, site_table, by="site")
 
-kelp_upc_counts <- left_join(kelp_upc_counts6, kelp_sites, by="site")
-
-kelp_upc_counts <- kelp_upc_counts %>%
+kelp_upc_build9 <- kelp_upc_build8 %>%
   ungroup() %>%
-  dplyr::select(year, affiliated_mpa=ca_mpa_name_short,mpa_class, mpa_designation, zone, transect, classcode, species, pct_cov) %>%
-  mutate(mpa_designation = ifelse(mpa_designation=="reference","ref",mpa_class))
-
-
-
-#add 4 regions
-data_path <- "/home/shares/ca-mpa/data/sync-data/mpa_traits"
-input_file <- "mpa-attributes.xlsx" 
-four_region <- readxl::read_excel(file.path(data_path, input_file), sheet=1, skip = 0, na="NA")
-
-regions <- four_region %>%
-  dplyr::select(name, region3=bioregion, region4 = four_region_north_ci)
-
-kelp_upc_counts$affiliated_mpa <- tolower(kelp_upc_counts$affiliated_mpa)
-
-kelp_upc_counts <- left_join(kelp_upc_counts, regions, by=c("affiliated_mpa"="name"))
-
-
-#add defacto SMRs
-data_path <- "/home/shares/ca-mpa/data/sync-data/mpa_traits"
-input_file <- "mpa-attributes.xlsx" 
-defacto_smr <- readxl::read_excel(file.path(data_path, input_file), sheet=5, skip = 0, na="NA")%>%
-  filter(group=="kelp") %>%
-  dplyr::select(affiliated_mpa, mpa_class)
-
-
-kelp_upc_counts <- left_join(kelp_upc_counts, defacto_smr, by="affiliated_mpa")
-
-#final check for any odd cen coast species
-
-kelp_spp_check <- kelp_upc_counts %>% filter(region3=='central')
-unique(kelp_spp_check$species)
-
-#clean up
-kelp_upc_counts <- kelp_upc_counts %>%
-  mutate(mpa_defacto_designation = ifelse(mpa_designation=="ref","ref",mpa_class.y))%>%
-  dplyr::select(year, region3, region4, affiliated_mpa, mpa_defacto_class = mpa_class.y, mpa_defacto_designation, zone, transect, 
-                classcode, species, pct_cov)
-
-kelp_upc_counts$mpa_defacto_class <- tolower(kelp_upc_counts$mpa_defacto_class)
-kelp_upc_counts$mpa_defacto_designation <- tolower(kelp_upc_counts$mpa_defacto_designation)
-
-kelp_upc_counts <- kelp_upc_counts %>%
-  group_by(year, region3, region4, affiliated_mpa, mpa_defacto_class, mpa_defacto_designation, species) %>%
-  dplyr::summarise(mean_pct_cov = mean(pct_cov)) #take transect levels means
+  dplyr::select(year, baseline_region, site,latitude, longitude, affiliated_mpa=ca_mpa_name_short,mpa_class, mpa_designation, zone, transect, species,
+                #sum_count, transect_total,
+                pct_cov) %>%
+  mutate(mpa_designation = ifelse(mpa_designation=="reference","ref",mpa_class)) 
 
 
 
 #reshape to wide format
-kelp_upc_mpa_year_step1 <- kelp_upc_counts %>%
-  pivot_wider(names_from=species, values_from=mean_pct_cov) %>%
+kelp_upc_build10 <- kelp_upc_build9 %>%
+  pivot_wider(names_from=species, values_from=pct_cov) %>%
   janitor::clean_names()%>%
-  drop_na(region4) %>%
+  #drop_na(region4) %>%
   mutate(MHW = ifelse(year>=2014 & year<=2016, "during",ifelse(year<2014, "before","after")))%>%
-  dplyr::select(year, region3, region4, affiliated_mpa, mpa_defacto_class, MHW, everything())%>%
-  mutate(group='kelp')
-#dplyr::select(-c(no_organisms_present_in_this_sample))
-
-
-kelp_upc_mpa_year <- left_join(kelp_upc_mpa_year_step1, envr_dat, 
-                               by=c("year","group",
-                                    "region3","region4",
-                                    "mpa_defacto_class",
-                                    "mpa_defacto_designation",
-                                    "affiliated_mpa"="mpa_name"))%>%
-  dplyr::select(1:7,64:87,8:63) %>%
-  mutate(group="kelp_upc")%>%
-  dplyr::select(!c("mpa_class","mpa_designation")) %>%
-  dplyr::select(group, everything()) %>%
-  mutate_at(c(30:85), ~replace_na(.,0))%>%
-  filter(region3 == 'central') %>%
-  select(where(~ any(. != 0))) %>%
-  mutate_all(~ifelse(is.nan(.), NA, .))
+  #dplyr::select(year, region3, region4, affiliated_mpa, mpa_defacto_class, MHW, everything())%>%
+  #filter central coast only
+  filter(baseline_region == "CENTRAL") %>%
+  #filter years >= 2007
+  filter(year >= 2007) %>%
+  mutate_at(c(11:67), ~replace_na(.,0)) 
+  #filter(region3 == 'central') %>%
+  #select(where(~ any(. != 0)))
+  #mutate_all(~ifelse(is.nan(.), NA, .))
 
 #Export
-#path_aurora <- "/home/shares/ca-mpa/data/sync-data/monitoring/processed_data/community_climate_derived_data" 
-#write.csv(kelp_upc_mpa_year,file.path(path_aurora, "kelp_upc_mpa_year.csv"), row.names = FALSE)
+write.csv(kelp_upc_build10,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_upc_cov_CC.csv"), row.names = FALSE)
 
 
-```
+
 
