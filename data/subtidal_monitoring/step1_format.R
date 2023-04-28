@@ -113,7 +113,8 @@ kelp_fish_build7 <- as.data.frame(kelp_fish_build6) %>%
              'trachurus_symmetricus',
              'ulvicola_sanctaerosae')))%>%
   #drop string
-  rename(citharichthys=citharichthys_merge)
+  rename(citharichthys=citharichthys_merge) %>%
+  dplyr::select(year, MHW, everything())
 
 
 #Export
@@ -199,7 +200,8 @@ kelp_swath_zero_drop <- kelp_swath_build7 %>% filter(baseline_region=='CENTRAL')
   select(!(where(~ any(. != 0))))
 
 kelp_swath_build8 <- kelp_swath_build7 %>% filter(baseline_region=='CENTRAL') %>%
-  select(where(~ any(. != 0)))
+  select(where(~ any(. != 0))) %>%
+  dplyr::select(year, MHW, everything())
 
 #Export
 #write.csv(kelp_swath_build8,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv"), row.names = FALSE)
@@ -289,13 +291,14 @@ kelp_upc_build10 <- kelp_upc_build9 %>%
   filter(baseline_region == "CENTRAL") %>%
   #filter years >= 2007
   filter(year >= 2007) %>%
-  mutate_at(c(11:67), ~replace_na(.,0)) 
+  mutate_at(c(11:67), ~replace_na(.,0)) %>%
+  dplyr::select(year, MHW, everything())
   #filter(region3 == 'central') %>%
   #select(where(~ any(. != 0)))
   #mutate_all(~ifelse(is.nan(.), NA, .))
 
 #Export
-write.csv(kelp_upc_build10,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_upc_cov_CC.csv"), row.names = FALSE)
+#write.csv(kelp_upc_build10,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_upc_cov_CC.csv"), row.names = FALSE)
 
 
 
