@@ -98,6 +98,35 @@ names(baseline_rast)
 plot(baseline_rast$Q3)
 
 ################################################################################
+#convert to polygons
+
+
+# Loop through each layer in the stack and convert it to polygons
+for(i in 1:nlayers(baseline_rast)) {
+  # convert raster to polygons
+  poly <- rasterToPolygons(baseline_rast[[i]], dissolve = TRUE)
+  # assign polygon object to environment
+  assign(paste0(names(baseline_rast)[i], "_poly"), poly)
+}
+
+plot(Q1_poly)
+plot(Q2_poly)
+plot(Q3_poly, col = Q3_poly@data$Q3)
+
+# Test plot
+# convert Q3_poly to data frame
+# convert Q3_poly to data frame with attribute data included
+Q3_df <- merge(fortify(Q3_poly), Q3_poly@data)
+
+# create custom color scale based on range of attribute values
+color_scale <- scale_fill_gradient(low = "yellow", high = "red")
+
+# create ggplot2 plot
+ggplot(Q3_df, aes(x = long, y = lat, group = group, fill = Q3)) +
+  geom_polygon() +
+  color_scale
+
+################################################################################
 #Step 2 - define max kelp extent
 
 #select MPEN as focal region 

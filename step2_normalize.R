@@ -22,9 +22,9 @@ swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kel
 #pre-processing
 
 #drop species that were never encountered
-fish_build1 <- fish_raw %>% select(where(~ any(. != 0)))
-upc_build1 <- upc_raw %>% select(where(~ any(. != 0)))
-swath_build1 <- swath_raw %>% select(where(~ any(. != 0)))
+fish_build1 <- fish_raw %>% dplyr::select(where(~ any(. != 0)))
+upc_build1 <- upc_raw %>% dplyr::select(where(~ any(. != 0)))
+swath_build1 <- swath_raw %>% dplyr::select(where(~ any(. != 0)))
 
 #check the number of transects per site. We are going to take the mean
 

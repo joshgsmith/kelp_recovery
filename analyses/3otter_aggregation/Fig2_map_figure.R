@@ -90,6 +90,7 @@ g1 <- ggplot() +
   coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs=4326) +
   theme_bw()
 
+g1
 
 ################################################################################
 #step 3 - simulate non-random otter aggregations post-2016
@@ -139,9 +140,9 @@ pts_spat <- rast(pts_nonrand_raster, na.value=NA)
   theme_bw()
 )
 
+g1
 
-
-
+g2
 
 
 
