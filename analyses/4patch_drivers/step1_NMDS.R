@@ -19,8 +19,21 @@ stan_dat <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp
 #replace any NAs with 0
 stan_dat <- stan_dat %>% mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
               #select sites in Carmel and Monterey Bay only
-              dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045)
-              
+              dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
+              #drop sites with insufficient data
+              dplyr::filter(!(site == "ASILOMAR_DC" |
+                                site == "ASILOMAR_UC" |
+                                site == "CHINA_ROCK" |
+                                site == "CYPRESS_PT_DC" |
+                                site == "CYPRESS_PT_UC" |
+                                site == "PINNACLES_IN" |
+                                site == "PINNACLES_OUT" |
+                                site == "PT_JOE" |
+                                site == "SPANISH_BAY_DC" |
+                                site == "SPANISH_BAY_UC" |
+                                site == "BIRD_ROCK"))
+
+
 
 ################################################################################
 #prepare data for ordination
@@ -91,8 +104,7 @@ stan_trajectory<- ggplot(data=cent %>%
       #                      max.overlaps=Inf,
        #                     size=4) +
   facet_wrap(~site, scales="free")+
-  scale_color_manual(values=c("forestgreen","purple"))+
-  scale_fill_manual(values=c("forestgreen","purple"))+
+  scale_color_manual(values=c("purple","forestgreen"))+
   theme_bw()
 
 stan_trajectory
@@ -100,15 +112,32 @@ stan_trajectory
 
 
 
+################################################################################
+#cluster analysis to determine optimal grouping
 
+# Create a list of data frames, one for each site
+site_list <- split(stan_dat, stan_dat$site)
 
-
-
-
-
-
-
-
-
-
-
+# Loop through each site and perform the cluster analysis and plot the dendrogram
+for (site in names(site_list)) {
+  # Subset the data to only include the current site
+  site_data <- site_list[[site]]
+  
+  # Calculate the distance matrix using a suitable distance measure
+  dist_matrix <- vegdist(site_data[, 10:ncol(site_data)], method = "bray")
+  
+  # Perform the cluster analysis
+  cluster_result <- hclust(dist_matrix)
+  
+  # Cut the dendrogram to obtain the cluster assignments
+  cluster_assignments <- cutree(cluster_result, k = length(unique(site_data$year)))
+  
+  # Add the cluster assignments as a new column to the original data
+  site_data$clusters <- cluster_assignments
+  
+  # Create a vector of labels to be used in the plot
+  label_vec <- site_data$year
+  
+  # Plot the dendrogram for this site, with custom labels
+  plot(cluster_result, labels = label_vec, main = paste("Dendrogram for", site))
+}

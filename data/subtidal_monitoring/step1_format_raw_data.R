@@ -126,10 +126,16 @@ kelp_fish_build7 <- as.data.frame(kelp_fish_build6) %>%
 
 #select vars and clean
 kelp_swath_build1 <- kelp_swath_raw %>%
-  dplyr::select(year, site, zone, transect, classcode, count)%>%
+  #drop species
+  dplyr::filter(!(classcode == "STRPURREC" |
+                    classcode == "MESFRAREC"))%>%
+  dplyr::select(year, site, zone, transect, classcode, count, size)%>%
   group_by(year, site, zone, transect, classcode)%>%
-  dplyr::summarize(total_count = sum(count)) #counts in raw data are grouped by size class. Take summary across all sizes
-
+  dplyr::summarize(total_count = sum(count), #counts in raw data are grouped by size class. Take summary across all sizes
+                   total_size = sum(size)) %>% #this is for stipe counts only 
+  mutate(total_count = ifelse(classcode == "MACPYRAD",total_size, total_count)) %>% #replace num plants with total stipes
+  dplyr::select(!(total_size))
+  
 #join species names by class code 
 kelp_swath_build2 <- left_join(kelp_swath_build1, kelp_taxon, by="classcode")
 
@@ -172,13 +178,13 @@ unique(kelp_swath_build6$site)
 
 kelp_swath_build7 <- as.data.frame(kelp_swath_build6) %>%
   #merge species
-  dplyr::mutate(urticina_merge = rowSums(select(.,'urticina', 
+  dplyr::mutate(urticina_merge = rowSums(dplyr::select(.,'urticina', 
                                                 'urticina_coriacea', 'urticina_crassicornis', 'urticina_piscivora')
   ))%>%
-  select(!(c('urticina', 
+  dplyr::select(!(c('urticina', 
              'urticina_coriacea', 'urticina_crassicornis', 'urticina_piscivora'))) %>%
   #drop species
-  select(!(c('anthopleura',
+  dplyr::select(!(c('anthopleura',
              'apostichopus',
              'asteroidea',
              'haliotis',
@@ -197,11 +203,14 @@ kelp_swath_build7 <- as.data.frame(kelp_swath_build6) %>%
 
 #drop species that were never observed on the central coast
 kelp_swath_zero_drop <- kelp_swath_build7 %>% filter(baseline_region=='CENTRAL') %>%
-  select(!(where(~ any(. != 0))))
+  dplyr::select(!(where(~ any(. != 0))))
 
 kelp_swath_build8 <- kelp_swath_build7 %>% filter(baseline_region=='CENTRAL') %>%
-  select(where(~ any(. != 0))) %>%
+  dplyr::select(where(~ any(. != 0))) %>%
   dplyr::select(year, MHW, everything())
+
+
+names(kelp_swath_build8)
 
 #Export
 #write.csv(kelp_swath_build8,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv"), row.names = FALSE)
