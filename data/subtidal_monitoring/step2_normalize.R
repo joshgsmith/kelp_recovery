@@ -37,7 +37,7 @@ ggplot(data = t_fish, aes(x = year, y=n_t)) +
   ggtitle("Bar plot of Count by Year and Site")
 
 
-#take sum of spp counts at the site level
+#take mean spp counts per transect
 fish_build2 <- fish_build1 %>%
   dplyr::group_by(year, MHW, baseline_region, latitude, longitude, site,
                   affiliated_mpa, mpa_class, mpa_designation) %>%
@@ -72,7 +72,7 @@ nrow(upc_build2) #check length
 nrow(upc_stan) #check length
 #join with group vars
 upc_stan1 <- cbind(upc_build2[1:9],upc_stan) %>%
-  select(!c('macrocystis_pyrifera',
+  dplyr::select(!c('macrocystis_pyrifera',
             'stylaster_californicus',
             'stephanocystis_osmundacea')) #remove UPC species that are recorded by swath
 
