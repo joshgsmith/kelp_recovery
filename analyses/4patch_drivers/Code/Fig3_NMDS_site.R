@@ -167,7 +167,7 @@ stan_trajectory <- ggplot(data = cent_new %>%
   theme(plot.title = element_text(size = 16, face = "bold"),
         axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
-        legend.position = "bottom") + my_theme
+        legend.position = "right") + my_theme
 stan_trajectory
 
 
