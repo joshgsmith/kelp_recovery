@@ -37,8 +37,12 @@ stan_dat <- stan_dat %>% mutate(across(where(is.numeric), ~replace_na(., 0))) %>
                     site == "PT_JOE" |
                     site == "SPANISH_BAY_DC" |
                     site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK"))
-
+                    site == "BIRD_ROCK")) # %>%
+  #test permova if urchins, kelp, and sea stars are removed
+  #dplyr::select(!(c(strongylocentrotus_purpuratus, macrocystis_pyrifera,
+   #                 pycnopodia_helianthoides, pisaster_brevispinus,
+    #                pisaster_giganteus, pisaster_ochraceus,
+     #              dermasterias_imbricata)))
 
 
 ################################################################################
