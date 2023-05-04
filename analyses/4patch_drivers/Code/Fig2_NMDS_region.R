@@ -20,6 +20,10 @@ stan_dat <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp
 stan_dat <- stan_dat %>% mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
   #select sites in Carmel and Monterey Bay only
   dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
+  #drop sea stars and purple urchins
+  #dplyr::select(!(c(strongylocentrotus_purpuratus,
+   #                 pycnopodia_helianthoides,
+    #                macrocystis_pyrifera)))%>%
   #drop sites with insufficient data
   dplyr::filter(!(site == "ASILOMAR_DC" |
                     site == "ASILOMAR_UC" |
@@ -56,7 +60,6 @@ stan_max_distmat <- vegdist(stan_rel, method = "bray", na.rm = T)
 stan_untransformed_distmat <- vegdist(stan_ord_dat, method = "bray", na.rm = T)
 
 
-
 ################################################################################
 #ordinate data
 
@@ -69,9 +72,14 @@ stan_untrans_ord <- metaMDS(stan_untransformed_distmat, distance = "bray", paral
 
 
 
-
 ################################################################################
 #Step 2 - determine optimal centroid clustering
+
+#indexing
+species_names <- colnames(stan_ord_dat)
+# Find the index of the species of interest
+species_index <- match("strongylocentrotus_purpuratus", species_names)
+species_scores <- scores(stan_ord, display = "sites")[,] 
 
 
 scrs<- as.data.frame(scores(stan_ord, display="site"))
@@ -108,11 +116,10 @@ stan_trajectory <- ggplot(data = cent %>% mutate(basin = ifelse(year < 2012, "be
                             size=4) +
   ggtitle("Kelp forest community structure") +
   theme_bw() +
-  
   theme(plot.title = element_text(size = 16, face = "bold"),
         axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
-        legend.position = "bottom")
+        legend.position = "right")
 
 stan_trajectory
 
