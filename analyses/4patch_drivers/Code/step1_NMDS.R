@@ -3,7 +3,7 @@
 
 rm(list=ls())
 
-librarian::shelf(tidyverse, here, vegan)
+librarian::shelf(tidyverse, here, vegan, ggplot2, cluster, ggforce)
 
 
 ################################################################################
@@ -67,6 +67,95 @@ num_cores = 8
 stan_ord <- metaMDS(stan_max_distmat, distance = "bray", parallel = num_cores, trymax=300)
 stan_untrans_ord <- metaMDS(stan_untransformed_distmat, distance = "bray", parallel = num_cores, trymax=300)
 
+
+
+
+################################################################################
+#Step 2 - determine optimal centroid clustering
+
+
+scrs<- as.data.frame(scores(stan_ord, display="site"))
+scrs <- cbind(as.data.frame(scrs), year=stan_group_vars$year) #to facilitate computing centroids, add group var
+cent <- aggregate(cbind(NMDS1, NMDS2) ~ year, data = scrs, FUN = mean) #computes centroids by MHW and region
+
+# determine optimal number of clusters using elbow method
+wss <- (nrow(cent)-1)*sum(apply(cent[,2:3],2,var))
+for(i in 1:13) wss[i] <- sum(kmeans(cent[,2:3],centers=i)$withinss)
+plot(1:13, wss, type="b", xlab="Number of clusters", ylab="Within groups sum of squares")
+
+# choose number of clusters based on elbow in plot
+k <- 2
+
+# perform k-means clustering and add cluster label to data frame
+set.seed(123)
+cent$cluster <- kmeans(cent[,2:3], k)$cluster
+
+# plot centroids with ellipses around clusters
+stan_trajectory <- ggplot(data = cent %>% mutate(basin = ifelse(year < 2012, "before",ifelse(year > 2014, "after",NA))),
+                          aes(NMDS1, NMDS2)) +
+  geom_segment(aes(x = NMDS1, y = NMDS2, xend = lead(NMDS1), yend = lead(NMDS2)),
+               arrow = arrow(length = unit(0.25, "cm"), type = "closed"),
+               size = 0.5, color = "black",
+               data = cent, size=4) +
+  stat_ellipse(aes(fill = factor(cluster)), type = "norm", level = 0.8, geom = "polygon", alpha = 0.2) +
+  scale_fill_manual(values = c("forestgreen", "purple")) +
+  #labs(shape="Heatwave period",color='Site type')+
+  ggrepel::geom_label_repel(aes(label = year),
+                           box.padding   = 1, 
+                        point.padding = 0.1,
+                        segment.color = 'grey',
+                        max.overlaps=Inf,
+                       size=4) +
+  ggtitle("Kelp forest community structure") +
+  theme_bw() +
+  
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        legend.position = "bottom")
+
+stan_trajectory
+
+
+
+
+
+################################################################################
+#scores and plot for entire region
+#Calculate centroids
+scrs<- as.data.frame(scores(stan_ord, display="site"))
+
+scrs <- cbind(as.data.frame(scrs), year=stan_group_vars$year) #to facilitate computing centroids, add group var
+cent <- aggregate(cbind(NMDS1, NMDS2) ~ year, data = scrs, FUN = mean) #computes centroids by MHW and region
+
+
+stan_trajectory<- ggplot(data=cent %>%
+                           mutate(basin = ifelse(year < 2012, "before",ifelse(year > 2014, "after",NA)))
+                         
+                         , aes(NMDS1, NMDS2)) +
+  #add year-to-year trajectory
+  geom_segment(aes(x = NMDS1, y = NMDS2, xend = lead(NMDS1), yend = lead(NMDS2)),
+               arrow = arrow(length = unit(0.25, "cm"), type = "closed"),
+               size = 0.5, color = "black",
+               data = cent, size=4) +
+  #add confidence ellipses
+  stat_ellipse(level=0.95, size=1.1, aes(color=basin))+
+  ggtitle("Kelp forest community structure")+
+  #scale_color_manual(values=c('#D81B60','#1E88E5'))+
+  theme(strip.text = element_text(size=18, face="bold"))+
+  theme(plot.title = element_text(size=16, face="bold"))+
+  theme(text = element_text(20))+
+  #labs(shape="Heatwave period",color='Site type')+
+  #ggrepel::geom_label_repel(aes(label = year),
+  #                         box.padding   = 1, 
+  #                      point.padding = 0.1,
+  #                      segment.color = 'grey',
+  #                      max.overlaps=Inf,
+  #                     size=4) +
+  scale_color_manual(values=c("purple","forestgreen"))+
+  theme_bw()
+
+stan_trajectory
 
 ################################################################################
 #scores and plot
@@ -141,3 +230,4 @@ for (site in names(site_list)) {
   # Plot the dendrogram for this site, with custom labels
   plot(cluster_result, labels = label_vec, main = paste("Dendrogram for", site))
 }
+
