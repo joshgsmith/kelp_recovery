@@ -251,7 +251,7 @@ stan_trajectory <- ggplot(data = cent %>% mutate(basin = ifelse(year < 2012, "be
                             max.overlaps=Inf,
                             size=2) +
   ggtitle("Kelp forest community structure") +
-  labs(color = 'Cluster', fill = "Cluster", tag = "A")+
+  labs(color = 'K-means \ncluster', fill = "K-means \ncluster", tag = "A")+
   theme_bw() + my_theme
 
 stan_trajectory
@@ -259,22 +259,22 @@ stan_trajectory
 
 shannon <- ggplot()+
   #swath
-  geom_point(aes(x = year, y=swath_shannon, color = "Swath", fill="Swath"), alpha = 0.05, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
+  geom_point(aes(x = year, y=swath_shannon, color = "Swath", fill="Swath"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=swath_shannon, color = "Swath", fill="Swath"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #fish
-  geom_point(aes(x = year-0.1, y=fish_shannon, color = "Fish", fill="Fish"), alpha = 0.05, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year-0.1, y=fish_shannon, color = "Fish", fill="Fish"), alpha = 0.025, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=fish_shannon, color = "Fish", fill="Fish"),data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)) ) +
   #upc
-  geom_point(aes(x = year+0.1, y=upc_shannon, color = "UPC",fill="UPC"), alpha = 0.05, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year+0.1, y=upc_shannon, color = "UPC",fill="UPC"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=upc_shannon, color = "UPC", fill = "UPC"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #color
   scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   theme_bw() + my_theme +
-  labs(color = 'Survey method', fill = "Survey method")+
+  labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
   ylab("Shannon diversity")+
   xlab("Year")+
   ggtitle("Shannon diversity")
@@ -283,22 +283,22 @@ shannon
 
 simpson <- ggplot()+
   #swath
-  geom_point(aes(x = year, y=swath_simpson, color = "Swath", fill="Swath"), alpha = 0.05, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
+  geom_point(aes(x = year, y=swath_simpson, color = "Swath", fill="Swath"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=swath_simpson, color = "Swath", fill="Swath"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #fish
-  geom_point(aes(x = year-0.1, y=fish_simpson, color = "Fish", fill="Fish"), alpha = 0.05, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year-0.1, y=fish_simpson, color = "Fish", fill="Fish"), alpha = 0.025, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=fish_simpson, color = "Fish", fill="Fish"),data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)) ) +
   #upc
-  geom_point(aes(x = year+0.1, y=upc_simpson, color = "UPC",fill="UPC"), alpha = 0.05, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year+0.1, y=upc_simpson, color = "UPC",fill="UPC"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=upc_simpson, color = "UPC", fill = "UPC"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #color
   scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   theme_bw() + my_theme +
-  labs(color = 'Survey method', fill = "Survey method")+
+  labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
   ylab("Simpson diversity")+
   xlab("Year")+
   ggtitle("Simpson diversity")
@@ -308,22 +308,22 @@ simpson
 
 richness <- ggplot()+
   #swath
-  geom_point(aes(x = year, y=S.obs, color = "Swath", fill="Swath"), alpha = 0.05, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
+  geom_point(aes(x = year, y=S.obs, color = "Swath", fill="Swath"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=S.obs, color = "Swath", fill="Swath"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #fish
-  geom_point(aes(x = year-0.1, y=S.obs, color = "Fish", fill="Fish"), alpha = 0.05, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year-0.1, y=S.obs, color = "Fish", fill="Fish"), alpha = 0.025, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=S.obs, color = "Fish", fill="Fish"),data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)) ) +
   #upc
-  geom_point(aes(x = year+0.1, y=S.obs, color = "UPC",fill="UPC"), alpha = 0.05, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year+0.1, y=S.obs, color = "UPC",fill="UPC"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=S.obs, color = "UPC", fill = "UPC"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #color
   scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   theme_bw() + my_theme +
-  labs(color = 'Survey method', fill = "Survey method")+
+  labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
   ylab("Species richness (n)")+
   xlab("Year")+
   ggtitle("Species richness")
@@ -334,22 +334,22 @@ richness
 
 evenness <- ggplot()+
   #swath
-  geom_point(aes(x = year, y=swath_evenness, color = "Swath", fill="Swath"), alpha = 0.05, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
+  geom_point(aes(x = year, y=swath_evenness, color = "Swath", fill="Swath"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=swath_evenness, color = "Swath", fill="Swath"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #fish
-  geom_point(aes(x = year-0.1, y=fish_evenness, color = "Fish", fill="Fish"), alpha = 0.05, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year-0.1, y=fish_evenness, color = "Fish", fill="Fish"), alpha = 0.025, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=fish_evenness, color = "Fish", fill="Fish"),data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)) ) +
   #upc
-  geom_point(aes(x = year+0.1, y=upc_evenness, color = "UPC",fill="UPC"), alpha = 0.05, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year+0.1, y=upc_evenness, color = "UPC",fill="UPC"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=upc_evenness, color = "UPC", fill = "UPC"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #color
   scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   theme_bw() + my_theme +
-  labs(color = 'Survey method', fill = "Survey method")+
+  labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
   ylab("Species evenness")+
   xlab("Year")+
   ggtitle("Species evenness")
@@ -358,7 +358,8 @@ evenness
 
 
 # Combine ggplots with ggarrange()
-combined_plot <- ggarrange(shannon, simpson, richness, evenness, ncol = 2, nrow=2, common.legend = TRUE, legend = "right") + labs(tag = "B") + theme(plot.tag=element_text(size=8))
+combined_plot <- ggarrange(shannon, simpson, richness, evenness, ncol = 2, nrow=2, common.legend = TRUE, legend = "right") + 
+  labs(tag = "B") + theme(plot.tag=element_text(size=8))
 # Display the plot
 combined_plot
 
@@ -366,8 +367,8 @@ combined_plot
 region_wide_plot <- ggarrange(stan_trajectory, combined_plot, ncol=1)
 
 
-#ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics.png"), bg = "white",
- #      width=6, height=8, units="in", dpi=600) 
+ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics_new.png"), bg = "white",
+       width=6, height=8, units="in", dpi=600) 
 
 
 
