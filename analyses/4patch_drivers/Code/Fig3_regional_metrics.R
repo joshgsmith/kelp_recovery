@@ -256,7 +256,7 @@ stan_trajectory <- ggplot(data = cent %>% mutate(basin = ifelse(year < 2012, "be
 
 stan_trajectory
 
-
+ymax <- max(swath_alphadiv$swath_shannon, na.rm=TRUE)
 shannon <- ggplot()+
   #swath
   geom_point(aes(x = year, y=swath_shannon, color = "Swath", fill="Swath"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
@@ -273,6 +273,8 @@ shannon <- ggplot()+
   #color
   scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
+  # Heatwave
+  annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
   labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
   ylab("Shannon diversity")+
@@ -281,6 +283,7 @@ shannon <- ggplot()+
 
 shannon
 
+ymax <- max(swath_alphadiv$swath_simpson, na.rm=TRUE)
 simpson <- ggplot()+
   #swath
   geom_point(aes(x = year, y=swath_simpson, color = "Swath", fill="Swath"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
@@ -297,6 +300,8 @@ simpson <- ggplot()+
   #color
   scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
+  # Heatwave
+  annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
   labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
   ylab("Simpson diversity")+
@@ -322,6 +327,8 @@ richness <- ggplot()+
   #color
   scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
+  # Heatwave
+  annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
   labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
   ylab("Species richness (n)")+
@@ -348,6 +355,8 @@ evenness <- ggplot()+
   #color
   scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
   scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
+  # Heatwave
+  annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
   labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
   ylab("Species evenness")+
@@ -368,7 +377,7 @@ region_wide_plot <- ggarrange(stan_trajectory, combined_plot, ncol=1)
 
 
 ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics_new.png"), bg = "white",
-       width=6, height=8, units="in", dpi=600) 
+      width=5.5, height=8, units="in", dpi=600) 
 
 
 
