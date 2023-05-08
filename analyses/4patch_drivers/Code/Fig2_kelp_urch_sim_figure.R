@@ -5,7 +5,6 @@
 rm(list=ls())
 librarian::shelf(tidyverse, here, vegan, reshape2)
 
-library(dplyr)
 
 ################################################################################
 #set directories and load data
@@ -131,7 +130,7 @@ names(df_mean_kelp)
 
 df_means <- df_mean_kelp %>%
               #add a constant
-              mutate( #mean_count_before = ifelse(mean_count_before == 0 , 0.0001,mean_count_before),
+              mutate( mean_count_before = ifelse(mean_count_before == 0 , 0.0001,mean_count_before),
                 perc_change = (mean_count_after-mean_count_before)/mean_count_before) 
 
 
@@ -151,6 +150,7 @@ df_means2 <- df_means %>%
 #join with sim 
 
 plot_dat <- left_join(df_means2, dist_long1, by="site")
+
 
 ################################################################################
 #plot
@@ -178,23 +178,28 @@ my_theme <-  theme(axis.text=element_text(size=6),
                    strip.text = element_text(size = 6 ,face="bold"),
 )
 
-p <- ggplot(plot_dat %>% mutate(site = str_to_title(gsub("_", " ", site)),
+
+#%change by density plot
+p1 <- ggplot(plot_dat %>% mutate(site = str_to_title(gsub("_", " ", site)),
                            site = str_replace(site, "Dc", "DC"),
                            site = str_replace(site, "Uc", "UC")),
        aes(x = mean_strongy/60, y = mean_macro, label = site, color = mean_sim)) +
   geom_point(size=3) +
   geom_errorbar(aes(ymin = mean_macro - se_macro, ymax = mean_macro + se_macro), width = 0) +
   geom_errorbarh(aes(xmin = mean_strongy/60 - se_strongy/60, xmax = mean_strongy/60 + se_strongy/60), height = 0) +
-  labs(color = "Community similarity \n (after vs. before)")+
-  xlab("Mean purple sea urchin density (per m²)") +
-  ylab("Kelp stipe percent change \n(after vs. before)") +
-  ggrepel::geom_label_repel(box.padding = 1.5, point.padding = 0, color = "black", size=2) +
+  labs(color = "Community similarity \n (2007-2013 vs. 2014-2020)")+
+  xlab("Mean purple sea urchin density 2014-2020 (per m²)") +
+  ylab("Kelp stipe percent change \n(2014-2020 vs. 2007-2013)") +
+  ggrepel::geom_label_repel(box.padding = 1, point.padding = 0, color = "black", size=2) +
   scale_color_gradient(low = "#B4AEE8", high = "#82B366")+
   theme_bw()+my_theme
 
-# Export figure
-ggsave(p, filename=file.path(figdir, "Fig2_kelp_urchins_sim.png"), 
-       width=7, height=6, units="in", dpi=600)
+ggsave(p1, filename=file.path(figdir, "Fig2_kelp_urchins_sim.png"), 
+      width=7, height=6, units="in", dpi=600)
+
+
+
+
 
 
 

@@ -5,7 +5,6 @@
 rm(list=ls())
 librarian::shelf(tidyverse, here, vegan)
 
-library(dplyr)
 
 ################################################################################
 #set directories and load data
@@ -78,14 +77,14 @@ my_theme <-  theme(axis.text=element_text(size=6),
 
 
 swath_sub$counts[swath_sub$species == "macrocystis_pyrifera"] <- 
-  swath_sub$counts[swath_sub$species == "macrocystis_pyrifera"] + 0.1
+  swath_sub$counts[swath_sub$species == "macrocystis_pyrifera"] + 0.1 #add a small constant
 
 swath_sub$counts[swath_sub$species == "strongylocentrotus_purpuratus"] <- 
   swath_sub$counts[swath_sub$species == "strongylocentrotus_purpuratus"] + 0.1
 
 
 # create a new column for the site factor with levels ordered by kelp_mean
-swath_sub$site_ordered <- reorder(swath_sub$site, -swath_sub$kelp_mean)
+
 
 g <- ggplot(swath_sub %>%
         mutate(species = ifelse(species == "macrocystis_pyrifera","Giant kelp \n(M. pyrifera)","Purple sea urchins \n(S. purpuratus)"),
@@ -108,17 +107,94 @@ g <- ggplot(swath_sub %>%
   facet_wrap(~ site, scales = "free") +
   scale_color_manual(values = c("forestgreen", "purple")) +
   scale_fill_manual(values = c("forestgreen", "purple")) +
-  ylim(-0.5, 10) +
+  ylim(0, 10) +
   labs(fill = "Species", color = "Species")+
   ylab("Log density (No. individuals per 60 m²)")+
   xlab("Year")+
   my_theme + theme(legend.position = "top")
 
+g
+
 # Export figure
-ggsave(g, filename=file.path(figdir, "FigS1_urchin_kelp_timeseries.png"), 
-       width=6.5, height=7, units="in", dpi=600)
+#ggsave(g, filename=file.path(figdir, "FigS1_urchin_kelp_timeseries.png"), 
+ #      width=6.5, height=7, units="in", dpi=600)
+
+################################################################################
+#plot region
+# Theme
+my_theme <-  theme(axis.text=element_text(size=6),
+                   axis.text.y = element_text(angle = 90, hjust = 0.5),
+                   axis.title=element_text(size=6),
+                   plot.tag=element_blank(), #element_text(size=8),
+                   plot.title =element_text(size=7, face="bold"),
+                   # Gridlines 
+                   panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   axis.line = element_line(colour = "black"),
+                   # Legend
+                   legend.key = element_blank(),
+                   legend.background = element_rect(fill=alpha('white', 0)),
+                   legend.key.height = unit(1, "lines"), 
+                   legend.text = element_text(size = 6),
+                   legend.title = element_text(size = 7),
+                   #legend.spacing.y = unit(0.75, "cm"),
+                   #facets
+                   strip.background = element_blank(),
+                   strip.text = element_text(size = 6 ,face="bold"),
+)
+
+swath_sub_site <- swath_sub %>% group_by(year, site, species) %>% summarize(count_mean = mean(counts)) %>%
+  mutate(log_den = ifelse(species == "strongylocentrotus_purpuratus", log(count_mean),count_mean),
+         sqrt_den = ifelse(species == "strongylocentrotus_purpuratus", sqrt(count_mean),count_mean)) %>%
+  dplyr::select(year, site, species, sqrt_den)%>%
+        pivot_wider(values_from = sqrt_den, names_from = species) %>%
+  mutate(sqrt_5 = strongylocentrotus_purpuratus*5)
 
 
+#trick ggplot to think it is monotone
+f <- Vectorize(function(x) {
+  if (x < 1) return(x/1e10)
+  (x/5)^2 #reverse operation of sqrt transformation
+})
+
+g1 <- ggplot(swath_sub_site %>%
+              mutate(
+                     site = gsub("_", " ", site)), aes(x=year)) +
+  geom_point(aes(y = macrocystis_pyrifera, color = "Kelp \n(M. pyrifera)"), alpha = 0.2, size=0.5) +
+  geom_smooth(method = "auto", se = TRUE, size = 0.5, aes(y=macrocystis_pyrifera,color = "Kelp \n(M. pyrifera)",
+                                                          fill = "Kelp \n(M. pyrifera)"
+                                                          ), alpha = 0.3, inherit.aes = TRUE) +
+  geom_point(aes(y = sqrt_5, color = "Sea urchins \n(S. purpuratus)"), alpha = 0.2, size=0.5) +
+  geom_smooth(method = "auto", se = TRUE, size = 0.5, aes(y=sqrt_5, color = "Sea urchins \n(S. purpuratus)",
+                                                          fill = "Sea urchins \n(S. purpuratus)"), alpha = 0.3, inherit.aes = TRUE) +
+  #SSW
+  geom_vline(xintercept = 2013, linetype = "dotted", size=0.3)+
+  annotate(geom="text", label="SSW", x=2011, y=200 , size=2) +
+  annotate("segment", x = 2011.8, y = 198, xend = 2012.7, yend = 188,
+           arrow = arrow(type = "closed", length = unit(0.02, "npc")))+
+  # Heatwave
+  annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
+  annotate(geom="text", label="MHW", x=2017.5, y=200 , size=2) +
+  annotate("segment", x = 2016.5, y = 200, xend = 2015, yend = 200,
+           arrow = arrow(type = "closed", length = unit(0.02, "npc")))+
+  scale_color_manual(values = c("Kelp \n(M. pyrifera)" = "forestgreen", "Sea urchins \n(S. purpuratus)" = "purple")) +
+  scale_fill_manual(values = c("Kelp \n(M. pyrifera)" = "forestgreen", "Sea urchins \n(S. purpuratus)" = "purple")) +
+  scale_y_continuous(name="Macrocystis pyrifera \n(no. stipe per 60m²)", sec.axis = sec_axis(~f(.), name = "Strongylocentrotus purpuratus \n(no. per 60m²)",
+                     breaks = c(2, 50, 200, 400, 800, 1600, 3200)),
+                     limits = c(-3,200) #set limit of y1
+                     ) +
+  
+  scale_fill_manual(values = c("forestgreen", "purple")) +
+  #ylim(0, 300) +
+  labs(fill = "Species", color = "Species")+
+  guides(color = guide_legend(title = NULL),
+         fill = guide_legend(title = NULL))+ 
+  ylab("Log density (No. individuals per 60 m²)")+
+  xlab("Year")+
+  my_theme + theme(legend.position = "top")
+
+g1
 
 
 

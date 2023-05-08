@@ -120,11 +120,14 @@ g1_inset <-  ggplotGrob(
 g1_inset
 
 
+###MUST RUN FigS1_kelp_urchin_timeseries
+g2_inset <- ggplotGrob(g1)
+
 
 # Plot the county boundaries and site locations with non-overlapping labels
 map <- ggplot() +
   geom_sf(data = ca_counties_mpen) +
-  geom_sf(data = site_locations) +
+  geom_sf(data = site_locations_sf) +
   ggrepel::geom_label_repel(
     data = site_locations_labels,
     aes(x = longitude, y = latitude, label = site),
@@ -138,13 +141,21 @@ map <- ggplot() +
   # Plot cities
   geom_text(data=landmarks, mapping=aes(x=long, y=lat, label=place),
             size=6, fontface= "bold") +
-  coord_sf(xlim = c(-122.05, -121.84), ylim = c(36.5, 36.66)) +
-  ggsn::north(x.min = -122.05, x.max = -121.84, 
+  coord_sf(xlim = c(-122.08, -121.86), ylim = c(36.5, 36.66)) +
+  ggsn::north(x.min = -122.05, x.max = -121.86, 
               y.min = 36.5, y.max = 36.66,
               location = "topright", 
               scale = 0.05, 
               symbol = 10)+
-  ggsn::scalebar(x.min = -122.05, x.max = -121.84, 
+  theme_bw() + my_theme +
+  xlab("Longitude")+
+  ylab("Latitude")+
+  # Add CA inset
+  annotation_custom(grob = g1_inset, 
+                    xmin = -121.88, 
+                    xmax = -121.848,
+                    ymin = 36.63) +
+  ggsn::scalebar(x.min = -122.088, x.max = -121.88, 
                  y.min = 36.5, y.max = 36.66,
                  #anchor=c(x=-124.7,y=41),
                  location="bottomleft",
@@ -156,19 +167,22 @@ map <- ggplot() +
                  border.size=.5,
                  height=.02
   )+
-  theme_bw() + my_theme +
-  xlab("Longitude")+
-  ylab("Latitude")+
-  # Add inset
-  annotation_custom(grob = g1_inset, 
-                    xmin = -122.061, 
-                    xmax = -122.03,
-                    ymin = 36.63) 
+  ggsn::north(x.min = -122.05, x.max = -121.85, 
+              y.min = 36.5, y.max = 36.665,
+              location = "topright", 
+              scale = 0.05, 
+              symbol = 10)+
+  # Add plot inset
+  annotation_custom(grob = g2_inset, 
+                    xmin = -122.093, 
+                    xmax = -121.97,
+                    ymin = 36.59) 
+
+map
 
 
-
-ggsave(map, filename=file.path(figdir, "Fig1_site_map.png"), bg = "white",
-       width=6, height=6, units="in", dpi=600) 
+ggsave(map, filename=file.path(figdir, "Fig1_site_map_new.png"), bg = "white",
+       width=7, height=6, units="in", dpi=600) 
 
 
 
