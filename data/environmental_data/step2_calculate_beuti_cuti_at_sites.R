@@ -15,11 +15,18 @@ figdir <- here::here("analyses","4patch_drivers","Figures")
 
 # Downloaded from: https://mjacox.com/upwelling-indices/
 
-# Format CUTI
-################################################################################
-
 # Read CUTI
 cuti_orig <- read.csv(file.path(basedir, "/data/environmental_data/CUTI/raw/CUTI_daily.csv"), as.is=T)
+
+#load monitoring site table
+site_table <- read.csv(file.path(basedir, "data/subtidal_monitoring/raw/MLPA_kelpforest_site_table.4.csv")) %>%
+  janitor::clean_names() %>%
+  dplyr::select(site, latitude, longitude, ca_mpa_name_short, mpa_class=site_designation, mpa_designation=site_status, 
+                baseline_region)%>%
+  distinct() #remove duplicates
+
+# Format CUTI
+################################################################################
 
 # Format CUTI
 cuti <- cuti_orig %>% 
@@ -61,7 +68,7 @@ data <- cuti %>%
   mutate(lat_dd_lo=lat_dd_bin-0.5,
          lat_dd_hi=lat_dd_bin+0.5) %>% 
   # Arrange
-  dplyr::select(year:date, lat_dd_bin, lat_dd_lo, lat_dd_hi)
+  dplyr::select(year:date, lat_dd_bin, lat_dd_lo, lat_dd_hi, everything())
 
 # Inspect
 table(data$lat_dd_bin)
@@ -69,6 +76,14 @@ table(data$lat_dd_bin)
 # Export
 saveRDS(data, file.path(basedir, "/data/environmental_data/CUTI/processed/1988_2022_cuti_beuti_daily.Rds"))
 
-# Merge data
+# 
 ################################################################################
+# Build upwelling time series
 
+sites_bin <- site_table %>% mutate(lat_bin = round(latitude))
+
+site_upwelling <- left_join(data, sites_bin, by=c("lat_dd_bin"="lat_bin")) %>%
+                  filter(!(is.na(site)))
+
+# Export data
+saveRDS(site_upwelling, file.path(basedir, "/data/environmental_data/CUTI/processed/1988_2022_cuti_beuti_daily_by_PISCO_site.Rds"))
