@@ -15,7 +15,7 @@ figdir <- here::here("analyses","4patch_drivers","Figures")
 # Source
 # https://coastwatch.pfeg.noaa.gov/erddap/
 
-# Multi-scale Ultra-high Resolution (MUR) SST Analysis fv04.1, Global, 0.01°, 2002-present, Monthly
+# Multi-scale Ultra-high Resolution (MUR) SST Analysis fv04.1, Global, 0.01°, 2002-present, Daily
 
 # Build data
 ################################################################################
@@ -32,17 +32,16 @@ datasets_tables <- ed_datasets(which="tabledap", url="https://coastwatch.pfeg.no
 
 # Set start and end dates
 start_date <- as.Date("2002-06-16")
-end_date <- as.Date("2002-09-16")
+end_date <- as.Date("2022-12-31")
 
 # Calculate number of days between start and end dates
 days_diff <- as.numeric(end_date - start_date)
 
 # Define chunk size 
-chunk_size <- days_diff / 3
+chunk_size <- days_diff / 20
 
 # Calculate number of chunks
 num_chunks <- ceiling(days_diff / chunk_size)
-
 
 # Create empty list to store data
 data_list <- list()
