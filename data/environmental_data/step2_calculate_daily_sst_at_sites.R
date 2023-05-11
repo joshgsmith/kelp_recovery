@@ -8,7 +8,7 @@
 # Clear workspace
 rm(list = ls())
 
-librarian::shelf(rerddap, lubridate, tidyverse, beepr)
+librarian::shelf(rerddap, lubridate, tidyverse, beepr, data.table, purrr)
 
 
 # Directories
@@ -41,11 +41,11 @@ end_date <- as.Date("2020-12-31")
 
 # Loop over years
 for (year in unique(year(start_date):year(end_date))) {
-  # Calculate start and end dates for this year
+  # Calculate start and end dates for current year
   chunk_start <- as.Date(paste0(year, "-01-01"))
   chunk_end <- as.Date(paste0(year, "-12-31"))
   
-  # Download data for this year
+  # Download data for current year
   data_info <- info("jplMURSST41")
   data_chunk <- griddap(dataset="jplMURSST41", 
                         time = c(chunk_start, chunk_end),
@@ -59,25 +59,53 @@ for (year in unique(year(start_date):year(end_date))) {
   # Remove rows with missing values
   data_combined <- data_combined[complete.cases(data_combined), ]
   
+  #Make into df and clean
   sst_daily <- data_combined %>%
     mutate(date=gsub("T00:00:00Z", "", time),
            year = lubridate::year(date),
            month = lubridate::month(date),
            day = lubridate::day(date))
   
-  # Create a filename for this year
+  # Create a filename for current year
   filename <- paste0(year, "_sst_daily.Rds")
   
-  # Save data for this year to an Rds file
+  # Save data for current year to an Rds file
   saveRDS(sst_daily, file.path(export_path,filename))
   
-  # Remove data for this year from memory before iterating again
+  # Remove current run from local environment to save memory 
   rm(data_info)
   rm(data_list)
   rm(sst_daily)
   rm(data_combined)
   rm(data_chunk)
 }
+
+
+# Read .Rds files inside directory and merge
+#################################################
+
+setwd("/Users/jossmith/Desktop/test_data")
+
+# Create a list of all the .Rds files in the directory
+file_list <- list.files(pattern = "*.Rds")
+
+# Read all the .Rds files into a list using purrr::map()
+file_list <- map(file_list, readRDS)
+
+# Merge all the .Rds files using data.table::rbindlist()
+merged_data <- rbindlist(file_list)
+
+# Save the merged data as a single .Rds file
+saveRDS(merged_data, "2003_2022_daily_SST.Rds")
+
+
+# Test load to local environment
+#################################################
+
+sst_dat <- readRDS("2003_2022_daily_SST.Rds")
+
+names(sst_dat)
+
 
 
 
