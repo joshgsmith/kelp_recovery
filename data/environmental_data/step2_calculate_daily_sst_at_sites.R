@@ -56,7 +56,7 @@ for (i in seq(0, days_diff, by = chunk_size)) {
   data_info <- info("jplMURSST41")
   data_chunk <- griddap(dataset="jplMURSST41", 
                         time = c(chunk_start, chunk_end),
-                        longitude = c(-125, -117), latitude = c(34.48084, 38.95117), #vandenberg to Pt. Arena
+                        longitude = c(-125, -117), latitude = c(36.500888, 37.122990), #Ano Nuevo to Lobos
                         fields="analysed_sst")
   
   # Append data to list
