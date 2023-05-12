@@ -40,9 +40,10 @@ swath_sub1 <- swath_raw %>% dplyr::select(1:11, 'macrocystis_pyrifera', 'strongy
 #calculate mean kelp density pre-2013
 
 kelp_mean <- swath_sub1 %>% filter(species == "macrocystis_pyrifera") %>% group_by(year, site, outbreak_period)%>%
-                summarise(kelp_mean = mean(counts))
-                
+                summarise(kelp_mean = mean(counts, na.rm=TRUE),
+                          one_sd = sd(counts, na.rm=TRUE)) 
 
+                
 
 #join
 swath_sub <- left_join(swath_sub1, kelp_mean, by=c("year", "site", "outbreak_period"))
@@ -188,6 +189,78 @@ g1 <- ggplot(swath_sub_site %>%
                   axis.text.y = element_text(angle = 0, hjust = 1))
 
 g1
+
+
+
+
+
+
+
+
+
+
+
+library(ggplot2)
+# Compute mean and standard deviation of kelp_mean for the "before" outbreak period
+before_kelp <- subset(kelp_mean, outbreak_period == "before")
+mean_kelp <- mean(before_kelp$kelp_mean)
+sd_kelp <- sd(before_kelp$kelp_mean)
+
+# Create a new column indicating whether each year is within, above or below 1 sd of the mean
+kelp_mean$color <- ifelse(kelp_mean$kelp_mean > mean_kelp + sd_kelp, "Above 1 SD",
+                          ifelse(kelp_mean$kelp_mean < mean_kelp - sd_kelp, "Below 1 SD", "Within 1 SD"))
+
+# Subset the data to only include years exceeding +/- 1 sd of the "before" mean
+subset_kelp <- kelp_mean[kelp_mean$color != "Within 1 SD",]
+
+# Create the time series plot
+ggplot(data = kelp_mean, aes(x = year, y = kelp_mean)) +
+  geom_line() +
+  geom_point(data = subset_kelp, aes(color = color), size = 3) +
+  geom_hline(yintercept = mean_kelp, linetype = "solid") +
+  geom_hline(yintercept = mean_kelp + sd_kelp, linetype = "dashed") +
+  geom_hline(yintercept = mean_kelp - sd_kelp, linetype = "dashed") +
+  labs(x = "Year", y = "Kelp Mean", color = "") +
+  scale_color_manual(values = c("Within 1 SD" = "black", "Above 1 SD" = "green", "Below 1 SD" = "purple")) +
+  facet_wrap(~site, scales = "fixed") +
+  theme_classic()
+
+
+
+
+
+
+#######THIS WORKS GOOD
+
+library(dplyr)
+library(ggplot2)
+
+# Compute site-level mean and standard deviation of kelp_mean for the "before" outbreak period
+before_kelp <- subset(kelp_mean, outbreak_period == "before")
+site_stats <- before_kelp %>%
+  group_by(site) %>%
+  summarize(mean_kelp = mean(kelp_mean), sd_kelp = sd(kelp_mean))
+
+# Merge site-level mean and sd back into the kelp_mean dataset
+kelp_mean <- kelp_mean %>% left_join(site_stats, by = "site")
+
+# Create a new column indicating whether each year is within, above or below 1 sd of the mean at each site
+kelp_mean$color <- ifelse(kelp_mean$kelp_mean > kelp_mean$mean_kelp + kelp_mean$sd_kelp, "Above 1 SD",
+                          ifelse(kelp_mean$kelp_mean < kelp_mean$mean_kelp - kelp_mean$sd_kelp, "Below 1 SD", "Within 1 SD"))
+
+# Subset the data to only include years exceeding +/- 1 sd of the mean at each site
+subset_kelp <- kelp_mean[kelp_mean$color != "Within 1 SD",]
+
+# Create the time series plot
+ggplot(data = kelp_mean, aes(x = year, y = kelp_mean)) +
+  geom_line() +
+  geom_ribbon(data = kelp_mean, aes(ymin = mean_kelp - sd_kelp, ymax = mean_kelp + sd_kelp), fill = "gray80", alpha = 0.5) +
+  geom_point(data = subset_kelp, aes(color = color), size = 3) +
+  geom_hline(data = site_stats, aes(yintercept = mean_kelp), linetype = "solid") + # add horizontal line
+  labs(x = "Year", y = "Kelp Mean", color = "") +
+  scale_color_manual(values = c("Within 1 SD" = "black", "Above 1 SD" = "green", "Below 1 SD" = "purple")) +
+  facet_wrap(~reorder(site, -mean_kelp), scales = "fixed") +
+  theme_classic()
 
 
 
