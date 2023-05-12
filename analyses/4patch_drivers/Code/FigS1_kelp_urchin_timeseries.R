@@ -75,21 +75,13 @@ my_theme <-  theme(axis.text=element_text(size=6),
                    )
 
 
-
-swath_sub$counts[swath_sub$species == "macrocystis_pyrifera"] <- 
-  swath_sub$counts[swath_sub$species == "macrocystis_pyrifera"] + 0.1 #add a small constant
-
-swath_sub$counts[swath_sub$species == "strongylocentrotus_purpuratus"] <- 
-  swath_sub$counts[swath_sub$species == "strongylocentrotus_purpuratus"] + 0.1
-
-
 # create a new column for the site factor with levels ordered by kelp_mean
 
 
 g <- ggplot(swath_sub %>%
         mutate(species = ifelse(species == "macrocystis_pyrifera","Giant kelp \n(M. pyrifera)","Purple sea urchins \n(S. purpuratus)"),
                site = gsub("_", " ", site))
-       , aes(x = year, y = log(counts), fill = species, color=species, group=species)) +
+       , aes(x = year, y = pmax(log(counts), 0.001), fill = species, color=species, group=species)) +
   geom_point(aes(color = species), alpha = 0.2, size=0.5) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, aes(group = species, color = species), alpha = 0.3, inherit.aes = TRUE) +
   #SSW
@@ -107,7 +99,7 @@ g <- ggplot(swath_sub %>%
   facet_wrap(~ site, scales = "free") +
   scale_color_manual(values = c("forestgreen", "purple")) +
   scale_fill_manual(values = c("forestgreen", "purple")) +
-  ylim(0, 10) +
+  ylim(-1, 10) +
   labs(fill = "Species", color = "Species")+
   ylab("Log density (No. individuals per 60 m²)")+
   xlab("Year")+
@@ -116,8 +108,8 @@ g <- ggplot(swath_sub %>%
 g
 
 # Export figure
-#ggsave(g, filename=file.path(figdir, "FigS1_urchin_kelp_timeseries.png"), 
- #      width=6.5, height=7, units="in", dpi=600)
+ggsave(g, filename=file.path(figdir, "FigS1_urchin_kelp_timeseries.png"), 
+      width=6.5, height=7, units="in", dpi=600)
 
 ################################################################################
 #plot region
