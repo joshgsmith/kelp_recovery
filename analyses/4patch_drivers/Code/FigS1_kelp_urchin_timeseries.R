@@ -184,7 +184,8 @@ g1 <- ggplot(swath_sub_site %>%
          fill = guide_legend(title = NULL))+ 
   ylab("Log density (No. individuals per 60 m²)")+
   xlab("Year")+
-  my_theme + theme(legend.position = "top")
+  my_theme + theme(legend.position = "top",
+                  axis.text.y = element_text(angle = 0, hjust = 1))
 
 g1
 
