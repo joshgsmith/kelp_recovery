@@ -8,7 +8,7 @@
 # Clear workspace
 rm(list = ls())
 
-librarian::shelf(rerddap, lubridate, tidyverse, beepr, data.table, purrr)
+librarian::shelf(rerddap, lubridate, tidyverse, beepr, data.table, purrr, sf)
 
 
 # Directories
@@ -29,10 +29,10 @@ datasets_tables <- ed_datasets(which="tabledap", url="https://coastwatch.pfeg.no
 
 
 # Get data
-#################################################
+################################################################################
 
 #set export location
-export_path <- file.path("/Users/jossmith/Desktop/test_data")
+export_path <- file.path("SET_EXPORT_PATH")
 
 #Set start and end dates
 start_date <- as.Date("2003-01-01")
@@ -45,11 +45,11 @@ for (year in unique(year(start_date):year(end_date))) {
   chunk_start <- as.Date(paste0(year, "-01-01"))
   chunk_end <- as.Date(paste0(year, "-12-31"))
   
-  # Download data for current year
+  # Download daily sst data for current year
   data_info <- info("jplMURSST41")
   data_chunk <- griddap(dataset="jplMURSST41", 
                         time = c(chunk_start, chunk_end),
-                        longitude = c(-125, -117), latitude = c(36.500888, 37.122990), #Ano Nuevo to Lobos
+                        longitude = c(-125, -117), latitude = c(36.500888, 37.122990), #Ano Nuevo to Lobos and offshore 5 Km
                         fields="analysed_sst")
   
   # Combine data frames in data_list
@@ -82,7 +82,7 @@ for (year in unique(year(start_date):year(end_date))) {
 
 
 # Read .Rds files inside directory and merge
-#################################################
+################################################################################
 
 setwd("/Users/jossmith/Desktop/test_data")
 
@@ -100,11 +100,105 @@ saveRDS(merged_data, "2003_2022_daily_SST.Rds")
 
 
 # Test load to local environment
-#################################################
+################################################################################
 
 sst_dat <- readRDS("2003_2022_daily_SST.Rds")
 
 names(sst_dat)
+
+
+
+# calculate SST at central coast pisco sites
+################################################################################
+#intersect monitoring sites with SST
+
+#load sites --- available from https://opc.dataone.org/view/MLPA_kelpforest.metadata.2
+site_table <- read.csv(file.path(basedir, "data/subtidal_monitoring/raw/MLPA_kelpforest_site_table.4.csv")) %>%
+  janitor::clean_names() %>%
+  dplyr::select(site, latitude, longitude, ca_mpa_name_short, mpa_class=site_designation, mpa_designation=site_status, 
+                baseline_region)%>%
+  #select sites in Carmel and Monterey Bay only
+  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
+  #drop sites with insufficient data
+  dplyr::filter(!(site == "ASILOMAR_DC" |
+                    site == "ASILOMAR_UC" |
+                    site == "CHINA_ROCK" |
+                    site == "CYPRESS_PT_DC" |
+                    site == "CYPRESS_PT_UC" |
+                    site == "PINNACLES_IN" |
+                    site == "PINNACLES_OUT" |
+                    site == "PT_JOE" |
+                    site == "SPANISH_BAY_DC" |
+                    site == "SPANISH_BAY_UC" |
+                    site == "BIRD_ROCK"))%>%
+  distinct() #remove duplicates
+
+export_dir <- "/Users/jossmith/Desktop/test_data/sst_at_sites"
+
+
+library(sf)
+library(nngeo)
+
+library(sf)
+
+library(sf)
+
+
+# convert site table to sf object with lon and lat as coordinates
+site_sf <- st_as_sf(site_table, coords = c("longitude", "latitude"), crs = 4326)
+
+library(sf)
+
+library(sf)
+library(nngeo)
+
+# read in site table
+site_table <- read.csv("/Users/jossmith/Desktop/test_data/site_table.csv")
+
+# loop through each year
+for (year in 2003:2004) {
+  
+  # read in .Rds file for current year
+  sst_file <- paste0(year, "_sst_daily.Rds")
+  sst_data <- readRDS(file.path("/Users/jossmith/Desktop/test_data", sst_file))
+  
+  # convert sst data to sf object
+  sst_sf <- st_as_sf(sst_data, coords = c("longitude", "latitude"), crs = 4326)
+  
+  # loop through each site in site table
+  for (i in 1:nrow(site_table)) {
+    
+    # create a sf point for the current site
+    site_sf <- st_as_sf(site_table[i,], coords = c("longitude", "latitude"), crs = 4326)
+    
+    # find the closest point in the sst data to the current site
+    nearest_sst <- st_nearest_feature(site_sf, sst_sf)
+    
+    # get the analysed_sst value for the closest point
+    if (is.data.frame(nearest_sst)) {
+      analysed_sst <- nearest_sst$analysed_sst
+    } else {
+      analysed_sst <- NA
+    }
+    
+    # save the analysed_sst value to the site table
+    site_table[i, paste0("analysed_sst_", year)] <- analysed_sst
+    
+  }
+  
+  # save the updated site table for the current year to a new .Rds file
+  site_file <- paste0("site_table_", year, ".Rds")
+  saveRDS(site_table, file.path("/Users/jossmith/Desktop/test_data/sst_at_sites", site_file))
+  
+  # clear memory before next iteration
+  rm(sst_data, sst_sf)
+  
+}
+
+
+
+
+
 
 
 
