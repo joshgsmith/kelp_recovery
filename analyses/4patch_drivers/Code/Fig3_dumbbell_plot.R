@@ -209,6 +209,21 @@ ggsave(C, filename=file.path(figdir, "Fig3_dumbbell.png"),
 
 
 
+B <- ggplot(data = macro, aes(x = mean_count_after, y = mean_count_before)) +
+  geom_segment(aes(x = strong$mean_count_before, xend = strong$mean_count_after, y = macro$mean_count_before, yend = macro$mean_count_after, color = mean_sim), 
+               size = 1, arrow = arrow(length = unit(0.5, "cm"))) +
+  geom_point(aes(x = strong$mean_count_before, y = macro$mean_count_before, color = mean_sim), size = 3) +
+  xlab("Purple sea urchin density (per 60 m²)") +
+  ylab("Kelp stipe density (per 60 m²)") +
+  labs(color = "Community similarity \n (2007-2013 vs. 2014-2020)")+
+  scale_x_log10("Purple sea urchin density (log no. per 60 m²)") +
+  scale_color_viridis_c() +
+  theme_classic()+
+  ggrepel::geom_label_repel(data = macro, aes(x = strong$mean_count_before, y = macro$mean_count_before, label = site), size=2, box.padding = 1, force = 20,min.segment.length = 1)+
+  my_theme
+
+B
+
 
 
 
