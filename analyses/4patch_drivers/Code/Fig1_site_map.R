@@ -133,14 +133,14 @@ map <- ggplot() +
     aes(x = longitude, y = latitude, label = site),
     box.padding = 0.3,
     point.padding = 0.5,
-    force = 20,
+    force = 18,
     size = 2,
     min.segment.length = 0.1,
     segment.color = "grey50"
   ) +
   # Plot cities
   geom_text(data=landmarks, mapping=aes(x=long, y=lat, label=place),
-            size=6, fontface= "bold") +
+            size=4, fontface= "bold") +
   coord_sf(xlim = c(-122.08, -121.86), ylim = c(36.5, 36.66)) +
   ggsn::north(x.min = -122.05, x.max = -121.86, 
               y.min = 36.5, y.max = 36.66,
