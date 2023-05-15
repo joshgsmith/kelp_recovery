@@ -125,13 +125,13 @@ panel_A <- ggplot(data = resist_sites, aes(x = year, y = kelp_mean)) +
   geom_ribbon(aes(ymin = mean_kelp - sd_kelp, ymax = mean_kelp + sd_kelp), fill = "gray80", alpha = 0.5) +
   geom_point(data = subset_kelp %>% filter(site %in% resist_sites$site), aes(color = color), size = 2) +
   geom_hline(data = site_stats %>% filter(site %in% resist_sites$site), aes(yintercept = mean_kelp), linetype = "solid") + # add horizontal line
-  labs(x = "Year", y = "Kelp density (stipes per m²)", color = "") +
+  labs(x = "Year", y = "Kelp density \n(stipes per m²)", color = "") +
   scale_color_manual(values = c("Within 1 SD" = "black", "Above 1 SD" = "forestgreen", "Below 1 SD" = "purple")) +
   facet_wrap(~reorder(site, -mean_kelp), scales = "fixed", nrow=1, ncol=5) +
   scale_y_continuous(breaks = c(0, 100,200,300))+
   labs(tag = "A") +
   theme_classic() +
-  theme(plot.margin = unit(c(0, 0, 0, 0), "lines"),
+  theme(plot.margin = unit(c(0, 1, 0.5, 0), "lines"),
         aspect.ratio = 1.1) + my_theme
 
 # Create the time series plot for transition_sites
@@ -140,23 +140,25 @@ panel_B <- ggplot(data = transition_sites, aes(x = year, y = kelp_mean)) +
   geom_ribbon(aes(ymin = mean_kelp - sd_kelp, ymax = mean_kelp + sd_kelp), fill = "gray80", alpha = 0.5) +
   geom_point(data = subset_kelp %>% filter(site %in% transition_sites$site), aes(color = color), size = 2) +
   geom_hline(data = site_stats %>% filter(site %in% transition_sites$site), aes(yintercept = mean_kelp), linetype = "solid") + # add horizontal line
-  labs(x = "Year", y = "Kelp density (stipes per m²)", color = "") +
+  labs(x = "Year", y = "Kelp density \n(stipes per m²)", color = "") +
   scale_color_manual(values = c("Within 1 SD" = "black", "Above 1 SD" = "forestgreen", "Below 1 SD" = "purple")) +
   facet_wrap(~reorder(site, -mean_kelp), scales = "fixed", ncol=5) +
   scale_y_continuous(breaks = c(0, 100,200,300), limits = c(0,300))+
   labs(tag = "B") +
   theme_classic() +
-  theme(plot.margin = unit(c(0, 0, 0, 0), "lines"),
+  theme(plot.margin = unit(c(0, 1, 0.5, 0), "lines"),
         aspect.ratio = 1.1) + my_theme
 
 # Combine the two plots into one figure with two panels
-g <- ggpubr::ggarrange(panel_A, panel_B, ncol = 1, common.legend = TRUE, legend = "right",
-                  align = "v", heights = c(1, 3)
-                  )+ theme(panel.spacing = unit(0.01, "lines"))
+g <- ggpubr::ggarrange(panel_A, panel_B, ncol = 1, common.legend = TRUE, legend = "top",
+                  align = "v", heights = c(1, 3.25)
+                  ) # + theme(panel.spacing = unit(0.01, "lines"))
 
+
+g
 
 ggsave(g, filename=file.path(figdir, "FigX_starting_conditions.png"), 
-       width=7, height=9, units="in", dpi=600, bg="white")
+       width=7, height=8, units="in", dpi=600, bg="white")
 
 
 
