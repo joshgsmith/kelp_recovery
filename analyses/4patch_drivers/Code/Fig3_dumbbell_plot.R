@@ -194,8 +194,8 @@ A <- ggplot(data = macro, aes(x = mean_count_after, y = mean_count_before)) +
 B <- ggplot(data = macro, aes(x = mean_count_after/60, y = mean_count_before/60)) +
   geom_segment(aes(x = strong$mean_count_before/60, xend = strong$mean_count_after/60, y = macro$mean_count_before/60, yend = macro$mean_count_after/60, color = mean_sim), size = 1, arrow = arrow(length = unit(0.25, "cm"))) +
   geom_point(aes(x = strong$mean_count_before/60, y = macro$mean_count_before/60, color = mean_sim), size = 3) +
-  xlab("Purple sea urchin density (per 60 m²)") +
-  ylab("Kelp stipe density (per 60 m²)") +
+  xlab("Purple sea urchin density (per m²)") +
+  ylab("Kelp stipe density (per m²)") +
   labs(color = "Community similarity \n (2007-2013 vs. 2014-2020)")+
   #scale_x_log10("Purple sea urchin density (log no. per 60 m²)") +
   scale_color_viridis_c() +
@@ -210,7 +210,7 @@ C
 
 
 ggsave(B, filename=file.path(figdir, "Fig3_dumbbell.png"), 
-       width=7, height=7, bg="white", units="in", dpi=600)
+       width=7, height=5, bg="white", units="in", dpi=600)
 
 
 

@@ -125,7 +125,7 @@ panel_A <- ggplot(data = resist_sites, aes(x = year, y = kelp_mean)) +
   geom_ribbon(aes(ymin = mean_kelp - sd_kelp, ymax = mean_kelp + sd_kelp), fill = "gray80", alpha = 0.5) +
   geom_point(data = subset_kelp %>% filter(site %in% resist_sites$site), aes(color = color), size = 2) +
   geom_hline(data = site_stats %>% filter(site %in% resist_sites$site), aes(yintercept = mean_kelp), linetype = "solid") + # add horizontal line
-  labs(x = "Year", y = "Kelp density \n(stipes per m²)", color = "") +
+  labs(x = "Year", y = "Kelp density \n(stipes per 60 m²)", color = "") +
   scale_color_manual(values = c("Within 1 SD" = "black", "Above 1 SD" = "forestgreen", "Below 1 SD" = "purple")) +
   facet_wrap(~reorder(site, -mean_kelp), scales = "fixed", nrow=1, ncol=5) +
   scale_y_continuous(breaks = c(0, 100,200,300))+
@@ -140,7 +140,7 @@ panel_B <- ggplot(data = transition_sites, aes(x = year, y = kelp_mean)) +
   geom_ribbon(aes(ymin = mean_kelp - sd_kelp, ymax = mean_kelp + sd_kelp), fill = "gray80", alpha = 0.5) +
   geom_point(data = subset_kelp %>% filter(site %in% transition_sites$site), aes(color = color), size = 2) +
   geom_hline(data = site_stats %>% filter(site %in% transition_sites$site), aes(yintercept = mean_kelp), linetype = "solid") + # add horizontal line
-  labs(x = "Year", y = "Kelp density \n(stipes per m²)", color = "") +
+  labs(x = "Year", y = "Kelp density \n(stipes per 60 m²)", color = "") +
   scale_color_manual(values = c("Within 1 SD" = "black", "Above 1 SD" = "forestgreen", "Below 1 SD" = "purple")) +
   facet_wrap(~reorder(site, -mean_kelp), scales = "fixed", ncol=5) +
   scale_y_continuous(breaks = c(0, 100,200,300), limits = c(0,300))+
