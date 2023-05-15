@@ -108,7 +108,7 @@ swath_sub1 <- swath_raw %>% dplyr::select(1:11, 'macrocystis_pyrifera', 'strongy
 #calculate mean kelp density pre-2013
 
 kelp_mean <- swath_sub1 %>% filter(species == "macrocystis_pyrifera") %>% group_by(year, site, outbreak_period)%>%
-  summarise(kelp_mean = mean(counts))
+  summarise(kelp_mean = mean(counts, na.rm=TRUE))
 
 
 
@@ -121,7 +121,7 @@ swath_sub <- left_join(swath_sub1, kelp_mean, by=c("year", "site", "outbreak_per
 
 df_mean_kelp <- swath_sub %>%
   group_by(site, species, outbreak_period) %>% 
-  dplyr::summarise(mean_count = mean(counts),
+  dplyr::summarise(mean_count = mean(counts, na.rm=TRUE),
                    se_count = sd(counts, na.rm = TRUE)/sqrt(sum(!is.na(counts))))%>%
   pivot_wider(names_from = outbreak_period, values_from = c(mean_count, se_count)) %>%
   mutate_all(~ if_else(is.na(.), 0, .))
@@ -162,8 +162,16 @@ my_theme <-  theme(axis.text=element_text(size=6),
 
 
 # Subset the data by species
-macro <- subset(plot_dat, species == "macrocystis_pyrifera")
-strong <- subset(plot_dat, species == "strongylocentrotus_purpuratus")
+macro <- subset(plot_dat, species == "macrocystis_pyrifera") %>%
+              #fix names
+        mutate(site = str_to_title(gsub("_", " ", site)),
+         site = str_replace(site, "Dc", "DC"),
+         site = str_replace(site, "Uc", "UC"))
+strong <- subset(plot_dat, species == "strongylocentrotus_purpuratus")%>%
+  #fix names
+  mutate(site = str_to_title(gsub("_", " ", site)),
+         site = str_replace(site, "Dc", "DC"),
+         site = str_replace(site, "Uc", "UC"))
 
 
 # Create the dumbbell plot with arrows
@@ -183,46 +191,26 @@ A <- ggplot(data = macro, aes(x = mean_count_after, y = mean_count_before)) +
 
 
 # Create the dumbbell plot with arrows and log scale for strongylocentrotus_purpuratus
-B <- ggplot(data = macro, aes(x = mean_count_after, y = mean_count_before)) +
-  geom_segment(aes(x = strong$mean_count_before, xend = strong$mean_count_after, y = macro$mean_count_before, yend = macro$mean_count_after, color = mean_sim), size = 1, arrow = arrow(length = unit(0.25, "cm"))) +
-  geom_point(aes(x = strong$mean_count_before, y = macro$mean_count_before, color = mean_sim), size = 3) +
+B <- ggplot(data = macro, aes(x = mean_count_after/60, y = mean_count_before/60)) +
+  geom_segment(aes(x = strong$mean_count_before/60, xend = strong$mean_count_after/60, y = macro$mean_count_before/60, yend = macro$mean_count_after/60, color = mean_sim), size = 1, arrow = arrow(length = unit(0.25, "cm"))) +
+  geom_point(aes(x = strong$mean_count_before/60, y = macro$mean_count_before/60, color = mean_sim), size = 3) +
   xlab("Purple sea urchin density (per 60 m²)") +
   ylab("Kelp stipe density (per 60 m²)") +
   labs(color = "Community similarity \n (2007-2013 vs. 2014-2020)")+
-  scale_x_log10("Purple sea urchin density (log no. per 60 m²)") +
+  #scale_x_log10("Purple sea urchin density (log no. per 60 m²)") +
   scale_color_viridis_c() +
   theme_classic()+
-  ggrepel::geom_label_repel(data = macro, aes(x = strong$mean_count_before, y = macro$mean_count_before, label = site), size=2, box.padding = 1, force = 20,min.segment.length = 1)+
+  ggrepel::geom_label_repel(data = macro, aes(x = strong$mean_count_before/60, y = macro$mean_count_before/60, label = site), size=2, box.padding = 1, force = 20,min.segment.length = 1)+
   my_theme
 
+B
 
 C <- ggpubr::ggarrange(A, B, ncol=1)
 C
 
 
-ggsave(C, filename=file.path(figdir, "Fig3_dumbbell.png"), 
-       width=7, height=8, bg="white", units="in", dpi=600)
-
-
-
-
-
-
-
-B <- ggplot(data = macro, aes(x = mean_count_after, y = mean_count_before)) +
-  geom_segment(aes(x = strong$mean_count_before, xend = strong$mean_count_after, y = macro$mean_count_before, yend = macro$mean_count_after, color = mean_sim), 
-               size = 1, arrow = arrow(length = unit(0.5, "cm"))) +
-  geom_point(aes(x = strong$mean_count_before, y = macro$mean_count_before, color = mean_sim), size = 3) +
-  xlab("Purple sea urchin density (per 60 m²)") +
-  ylab("Kelp stipe density (per 60 m²)") +
-  labs(color = "Community similarity \n (2007-2013 vs. 2014-2020)")+
-  scale_x_log10("Purple sea urchin density (log no. per 60 m²)") +
-  scale_color_viridis_c() +
-  theme_classic()+
-  ggrepel::geom_label_repel(data = macro, aes(x = strong$mean_count_before, y = macro$mean_count_before, label = site), size=2, box.padding = 1, force = 20,min.segment.length = 1)+
-  my_theme
-
-B
+ggsave(B, filename=file.path(figdir, "Fig3_dumbbell.png"), 
+       width=7, height=7, bg="white", units="in", dpi=600)
 
 
 
