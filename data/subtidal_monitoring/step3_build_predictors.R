@@ -16,6 +16,7 @@ bat_raw <- readxl::read_excel(file.path(basedir,"data/seafloor_data/processed/ba
 
 #load environmental data
 envr_raw <- readRDS( file.path(basedir, "/data/environmental_data/cuti/processed/beuti_cuti_sst_monthly_amoms_by_PISCO_site.Rds"))
+npp_raw <- readRDS( file.path(basedir, "/data/environmental_data/NPP/processed/npp_at_PISCO_site.Rds"))
 
 ################################################################################
 #load sites
@@ -108,6 +109,49 @@ envr_build1 <- envr_raw %>% #select sites in Carmel and Monterey Bay only
 site_predict_build2 <- left_join(envr_build1, site_predict_build1, by="site") %>%
                       dplyr::select(year, month, baseline_region, site, latitude, longitude,
                                     ca_mpa_name_short, mpa_class, mpa_designation, everything())
+
+
+################################################################################
+#join with NPP
+
+npp_build1 <- npp_raw %>% dplyr::select(year, month, site, npp=chlorophyll) 
+
+site_predict_build3 <- site_predict_build2 %>% 
+                        #rename to match missing values with their closest relative site
+                        mutate(nearest_site = ifelse(site == "BLUEFISH_UC", "BLUEFISH_DC",
+                                                                            ifelse(site == "BUTTERFLY_UC","BUTTERFLY_DC",
+                                                                                   ifelse(site == "PESCADERO_UC","PESCADERO_DC",site))))
+
+site_predict_build4 <- left_join(site_predict_build3, npp_build1, by=c("year","month","nearest_site"="site")) %>%
+                        dplyr::select(!(nearest_site))
+
+
+
+#export predictors
+
+#saveRDS(site_predict_build4, file.path(basedir, "data/environmental_data/predictors_at_pisco_sites.Rds"))
+
+################################################################################
+#plot
+
+library(ggplot2)
+
+# convert month to a factor with ordered levels
+npp_build1$month <- factor(npp_build1$month, levels = month.name, ordered = TRUE)
+
+# create the plot
+ggplot(npp_build1 %>% filter(npp <2), aes(x = year, y = npp, color = site
+                                          )) +
+  geom_point() +                    # add points
+  stat_summary(fun.y = mean, geom = "line", size = 1.5) +   # add mean line
+  scale_x_continuous(breaks = seq(min(npp_build1$year), max(npp_build1$year), by = 1)) +   # set breaks on x-axis
+  labs(x = "Year", y = "NPP", color = "Site")   # set axis and legend labels
+
+
+
+
+
+
 
 
 
