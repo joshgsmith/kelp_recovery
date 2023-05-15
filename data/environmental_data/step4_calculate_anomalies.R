@@ -20,7 +20,9 @@ cb_annual_baseline <- cb_orig %>%
                 filter(year <=2012) %>%
                 group_by(site)%>%
                 dplyr::summarize(cuti_annual_baseline = mean(cuti, na.rm=TRUE),
-                                 beuti_annual_baseline = mean(beuti, na.rm=TRUE))
+                                 cuti_annual_sd = sd(cuti, na.rm=TRUE),
+                                 beuti_annual_baseline = mean(beuti, na.rm=TRUE),
+                                 beuti_annual_baseline = sd(beuti, na.rm=TRUE))
 
 
 #establish montlhy baseline
@@ -28,14 +30,18 @@ cb_month_base <- cb_orig %>%
   filter(year <=2012) %>%
   group_by(site, month)%>%
   dplyr::summarize(cuti_month_baseline = mean(cuti, na.rm=TRUE),
-                   beuti_month_baseline = mean(beuti, na.rm=TRUE))
+                   cuti_month_sd = sd(cuti, na.rm=TRUE),
+                   beuti_month_baseline = mean(beuti, na.rm=TRUE),
+                   beuti_month_baseline_sd = sd(beuti, na.rm=TRUE))
 
 
 #calculate monthly observed and anomalies
 cb_monthly_obs <- cb_orig %>%
                     group_by(year, month, site)%>%
                     dplyr::summarize(cuti_month_obs = mean(cuti, na.rm=TRUE),
-                                     beuti_month_obs = mean(beuti, na.rm=TRUE)) %>%
+                                     cuti_month_obs_sd = sd(cuti, na.rm=TRUE),
+                                     beuti_month_obs = mean(beuti, na.rm=TRUE),
+                                     beuti_month_obs_sd = sd(beuti, na.rm=TRUE)) %>%
                     #join baselines
                     left_join(cb_annual_baseline, by=c("site"))%>%
                     left_join(cb_month_base, by=c("site","month")) %>%
@@ -54,7 +60,8 @@ sst_annual_baseline <- sst_orig %>%
   data.frame()%>%
   filter(year <=2012) %>%
   group_by(site)%>%
-  dplyr::summarize(sst_annual_baseline = mean(sst_c, na.rm=TRUE))
+  dplyr::summarize(sst_annual_baseline = mean(sst_c, na.rm=TRUE),
+                   sst_annual_baseline_sd = sd(sst_c, na.rm=TRUE))
 
 #establish monthly baseline
 sst_month_baseline <- sst_orig %>%
@@ -64,7 +71,8 @@ sst_month_baseline <- sst_orig %>%
   data.frame()%>%
   filter(year <=2012) %>%
   group_by(site, month)%>%
-  dplyr::summarize(sst_month_baseline = mean(sst_c, na.rm=TRUE))
+  dplyr::summarize(sst_month_baseline = mean(sst_c, na.rm=TRUE),
+                   sst_month_baseline_sd = sd(sst_c, na.rm=TRUE))
 
 #calculate monthly observed and anomalies
 sst_monthly_obs <- sst_orig %>%
@@ -73,7 +81,8 @@ sst_monthly_obs <- sst_orig %>%
          day=lubridate::month(date))%>%
   data.frame()%>%
   group_by(year, month, site)%>%
-  dplyr::summarize(sst_month_obs = mean(sst_c, na.rm=TRUE)) %>%
+  dplyr::summarize(sst_month_obs = mean(sst_c, na.rm=TRUE),
+                   sst_month_obs_sd =mean(sst_c, na.rm = TRUE)) %>%
   #join baselines
   left_join(sst_annual_baseline, by=c("site"))%>%
   left_join(sst_month_baseline, by=c("site","month")) %>%
