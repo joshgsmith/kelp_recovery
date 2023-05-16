@@ -49,6 +49,13 @@ mod_predict_build1 <- mod_predict %>%
                                           sst_month_baseline_sd, sst_month_anom, 
                                           ))) #these are calculated at monthly intervals so irrelevant here. 
 
+################################################################################
+#calculate baseline kelp density
+
+kelp_baseline <- swath_raw %>% dplyr::select(year, site, zone, transect, macrocystis_pyrifera)%>%
+                  filter(year <= 2013)%>%
+                  group_by(site)%>%
+                  summarize(baseline_kelp = mean(macrocystis_pyrifera, na.rm=TRUE))
 
 ################################################################################
 #process response variable
@@ -72,7 +79,8 @@ mod_dat <- left_join(response_vars, mod_predict_build1, by=c("year","site")) %>%
                                               site == "MACABEE_DC" |
                                               site == "SIREN"|
                                               site == "CANNERY_UC","resistant","transitioned")
-                  ) 
+                  ) %>%
+          left_join(kelp_baseline, by="site")
 
 
 ################################################################################
@@ -94,7 +102,9 @@ mod_dat_build3$sst_norm <- scale(mod_dat_build3$sst_c_mean)
 #build full model
 
 # Fit mixed model with random intercepts and slopes for site and year
-full_mod <- lme4::lmer(stipe_mean ~  npp_lag2 + vrm_sum + bat_mean + beuti_month_obs + slope_mean + sst_month_obs + year + (1|site), data = mod_dat)
+full_mod <- lme4::lmer(stipe_mean ~  npp_lag2 + vrm_sum + bat_mean + beuti_month_obs + 
+                         slope_mean + sst_month_obs + year + baseline_kelp +
+                         (1|site), data = mod_dat)
 
 # fit the model
 fit <- summary(full_mod)
@@ -182,8 +192,14 @@ p1 <- ggplot(mod_out, aes(x = reorder(predictor, -Estimate), y = Estimate)) +
 
 
 
+
 slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
   geom_boxplot(fill = "#1B9E77", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+              map_signif_level = TRUE,
+              textsize=3)+
+  ylim(0,20)+
   xlab("Resistance") +
   ylab("Slope Mean") +
   ggtitle("Slope") +
@@ -195,6 +211,11 @@ slope
 
 bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
   geom_boxplot(fill = "#D95F02", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        textsize=3)+
+  ylim(5,23)+
   xlab("Resistance") +
   ylab("Depth (m) Mean") +
   ggtitle("Depth range") +
@@ -206,6 +227,11 @@ bat
 
 beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
   geom_boxplot(fill = "#7570B3", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        textsize=3)+
+  ylim(2,13)+
   xlab("Resistance") +
   ylab("BEUTI Mean") +
   ggtitle("BEUTI") +
@@ -216,6 +242,11 @@ beuti
 
 sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
   geom_boxplot(fill = "#E7298A", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        textsize=3)+
+  ylim(12,16)+
   xlab("Resistance") +
   ylab("SST Mean") +
   ggtitle("SST") +
@@ -225,13 +256,28 @@ sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
 sst
 
 
-predictors <- ggpubr::ggarrange(slope, bat, beuti, sst) 
+kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp)) +
+  geom_boxplot(fill = "#66A61E", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        textsize=3)+
+  ylim(50,220)+
+  xlab("Resistance") +
+  ylab("SST Mean") +
+  ggtitle("Kelp baseline") +
+  labs(tag="")+
+  theme_classic()+
+  my_theme
+kelp
+
+predictors <- ggpubr::ggarrange(slope, bat, kelp, beuti, sst, ncol=3, nrow=2) 
 predictors
 
 
-full_plot <- ggarrange(p1, predictors, nrow=1)
+full_plot <- ggarrange(p1, predictors, nrow=1,  widths=c(1.5,2))
 
-ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors.png"), 
-       width=7, height=5, bg="white", units="in", dpi=600)
+ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new.png"), 
+       width=7, height=6, bg="white", units="in", dpi=600)
 
 
