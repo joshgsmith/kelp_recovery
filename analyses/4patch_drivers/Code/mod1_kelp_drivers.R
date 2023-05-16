@@ -275,7 +275,7 @@ kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp)) +
                         textsize=3)+
   ylim(50,220)+
   xlab("Resistance") +
-  ylab("Kelp baseline density \n(no stiped per m²)") +
+  ylab("Kelp baseline density \n(no stipes per m²)") +
   ggtitle("Kelp baseline") +
   labs(tag="")+
   theme_classic()+
