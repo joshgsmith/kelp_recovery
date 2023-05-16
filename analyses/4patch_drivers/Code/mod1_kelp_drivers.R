@@ -176,7 +176,18 @@ my_theme <-  theme(axis.text=element_text(size=6),
 )
 
 # Create a forest plot with points and error bars
-p1 <- ggplot(mod_out, aes(x = reorder(predictor, -Estimate), y = Estimate)) +
+p1 <- ggplot(mod_out %>%
+               
+               mutate(predictor = ifelse(predictor == "sst_month_obs","SST",
+                                         ifelse(predictor == "npp_lag2","NPP",
+                                                ifelse(predictor == "beuti_month_obs","BEUTI",
+                                                       ifelse(predictor == "baseline_kelp","Kelp baseline \n(2007-2013",
+                                                              ifelse(predictor == "vrm_sum","Rugosity (m)",
+                                                                     ifelse(predictor == "slope_mean","Slope (m)",
+                                                                            ifelse(predictor == "bat_mean","Depth range (m)",
+                                                                                   ifelse(predictor == "year","Year",predictor)))))))))
+             
+             , aes(x = reorder(predictor, -Estimate), y = Estimate)) +
   geom_point(#aes(color = Estimate), 
              size = 2) +
   #scale_color_gradient2(low = "navy", mid = "blue", high = "darkred", midpoint = 0) +
@@ -186,7 +197,7 @@ p1 <- ggplot(mod_out, aes(x = reorder(predictor, -Estimate), y = Estimate)) +
   xlab("Predictor") +
   ylab("Effect size") +
   labs(color = "Effect size", tag = "A")+
-  ggtitle("Forest plot of predictor effect sizes") +
+  ggtitle("Mixed model effect sizes") +
   theme_classic() +
   my_theme
 
