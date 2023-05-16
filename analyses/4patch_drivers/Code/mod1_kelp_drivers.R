@@ -29,46 +29,51 @@ swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kel
                     site == "SPANISH_BAY_UC" |
                     site == "BIRD_ROCK"))
 
-#load environmental data
+#load model predictors
 
-cuti_beuti_raw <- readRDS(file.path(basedir, "/data/environmental_data/CUTI/processed/1988_2022_cuti_beuti_daily_by_PISCO_site.Rds"))
-sst_raw <- readRDS(file.path(basedir, "/data/environmental_data/MURSST/processed/2002_2022_mursst_monthly_by_PISCO_site.Rds"))
+mod_predict <- readRDS(file.path(basedir, "data/environmental_data/predictors_at_pisco_sites.Rds"))
+
 
 ################################################################################
 #process environmental data
 
-cuti_beuti_build1 <- cuti_beuti_raw %>% dplyr::select(site, year, month, date, cuti, beuti) %>%
-                      #calculate annual means at each site
-                      group_by(site, year) %>%
-                      dplyr::summarize(cuti_avg = mean(cuti),
-                                       beuti_avg = mean(beuti))
+mod_predict_build1 <- mod_predict %>%
+                        dplyr::filter(year>=2007 & year <= 2020)%>%
+                        #calculate annual means
+                        group_by(site, year)%>%
+                        summarize(across(8:36,mean, na.rm=TRUE)) %>%
+                        #drop monthly statistics
+                        dplyr::select(!(c(cuti_month_baseline, cuti_month_sd,
+                                          beuti_month_baseline, beuti_month_baseline_sd,
+                                          sst_month_baseline,
+                                          sst_month_baseline_sd, sst_month_anom, 
+                                          ))) #these are calculated at monthly intervals so irrelevant here. 
 
-sst_build1 <- sst_raw %>% 
-              dplyr::mutate(year = lubridate::year(date),
-                            month = lubridate::month(date),
-                            day = lubridate::day(date))%>%
-              dplyr::select(year, month, day, site, sst_c)%>%
-              #calculate annial means at each site
-              group_by(year, site)%>%
-              dplyr::summarize(sst_c_mean = mean(sst_c))
+
+################################################################################
+#process response variable
+
+response_vars <- swath_raw %>% dplyr::select(year, site, zone, transect,
+                                             macrocystis_pyrifera) %>%
+                  group_by(year, site) %>%
+                  summarize(stipe_mean = mean(macrocystis_pyrifera, na.rm = TRUE))
+
 
 ################################################################################
 #join sampling data with environmental
 
-mod_dat_build1 <- left_join(swath_raw, cuti_beuti_build1, by = c("year", "site")) %>%
-                    dplyr::select(year, beuti_avg, cuti_avg, everything())
+mod_dat <- left_join(response_vars, mod_predict_build1, by=c("year","site")) %>%
+                  #create lagged variables
+                  mutate(npp_lag1 = lag(npp,1),
+                         npp_lag2 = lag(npp,2),
+                  #designate resistant site
+                        resistance = ifelse(site == "HOPKINS_UC" |
+                                              site == "CANNERY_UC" |
+                                              site == "MACABEE_DC" |
+                                              site == "SIREN"|
+                                              site == "CANNERY_UC","resistant","transitioned")
+                  ) 
 
-mod_dat_build2 <- left_join(mod_dat_build1, sst_build1, by = c("year", "site")) %>%
-                    dplyr::select(year, sst_c_mean, everything())
-
-# create lagged variables
-mod_dat_build3 <- mod_dat_build2 %>%
-                  mutate(lag_beuti_1 = lag(beuti_avg, 1),
-                         lag_cuti_1 = lag(cuti_avg, 1),
-                         lag_sst_1 = lag(sst_c_mean, 1),
-                         lag_beuti_2 = lag(beuti_avg, 2),
-                         lag_cuti_2 = lag(cuti_avg, 2),
-                         lag_sst_2 = lag(sst_c_mean, 2))
 
 ################################################################################
 #check for collinearity and normalize where needed
@@ -86,40 +91,147 @@ print(cor_matrix)
 mod_dat_build3$sst_norm <- scale(mod_dat_build3$sst_c_mean)
 
 ################################################################################
-#build model
+#build full model
 
 # Fit mixed model with random intercepts and slopes for site and year
-mod1 <- lmer(macrocystis_pyrifera ~ sst_c_mean + lag_sst_1 + #lag_sst_2+#lag_beuti_1 + lag_cuti_1 +#set fixed effects
-               (1 | year:site),  #set random effects grouping
-             data = mod_dat_build3)
+full_mod <- lme4::lmer(stipe_mean ~  npp_lag2 + vrm_sum + bat_mean + beuti_month_obs + slope_mean + sst_month_obs + year + (1|site), data = mod_dat)
+
+# fit the model
+fit <- summary(full_mod)
 
 # Print model summary
-summary(mod1)
+summary(full_mod)
 
-# Add residuals to the data frame
-# Create partial residual plots for each predictor
-car::crPlots(mod1)
 
-# Create facet plot of residuals by site
-ggplot(data = mod_dat_build3, aes(x = macrocystis_pyrifera, y = resid, color = site)) +
-  geom_point() +
-  facet_wrap(~site, ncol = 4) +
-  labs(x = "Observed Macrocyctis Pyrifera", y = "Residuals") +
-  theme_minimal()
+################################################################################
+#build sub models 
 
+sub_mod1 <- lme4::lmer(stipe_mean ~ vrm_mean + year + (1 | site), data = mod_dat)
+
+
+# Compare the full model to the sub-models using an LRT
+anova(full_mod, sub_mod1)
 
 
 
 
+################################################################################
+#prep plotting
+
+
+# Extract the estimated effect size and confidence intervals for each predictor
+effect_sizes <- data.frame(coef(summary(full_mod))[,1:3])
+effect_sizes$predictor <- rownames(effect_sizes)
+
+# Calculate confidence intervals
+pred_ci <- confint(full_mod, level = 0.95) %>% data.frame() %>% rownames_to_column()
+
+
+mod_out <- left_join(effect_sizes, pred_ci, by=c("predictor"="rowname")) %>%
+              rename("ci_lower" = `X2.5..`,
+                     "ci_upper" = `X97.5..`)
+
+
+# Calculate the upper and lower bounds of the error bars
+mod_out$lower_error <- effect_sizes$Estimate - 1.96 * effect_sizes$Std..Error
+mod_out$upper_error <- effect_sizes$Estimate + 1.96 * effect_sizes$Std..Error
+
+# Exclude the row corresponding to the intercept
+mod_out <- mod_out[mod_out$predictor != "(Intercept)",]
+
+################################################################################
+#Plot
+
+# Theme
+my_theme <-  theme(axis.text=element_text(size=6),
+                   axis.text.y = element_text(angle = 90, hjust = 0.5),
+                   axis.title=element_text(size=8),
+                   plot.tag=element_text(size=8),
+                   plot.title =element_text(size=7, face="bold"),
+                   # Gridlines 
+                   panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   axis.line = element_line(colour = "black"),
+                   # Legend
+                   legend.key = element_blank(),
+                   legend.background = element_rect(fill=alpha('blue', 0)),
+                   legend.key.height = unit(1, "lines"), 
+                   legend.text = element_text(size = 6),
+                   legend.title = element_text(size = 7),
+                   #legend.spacing.y = unit(0.75, "cm"),
+                   #facets
+                   strip.background = element_blank(),
+                   strip.text = element_text(size = 6 ,face="bold"),
+)
+
+# Create a forest plot with points and error bars
+p1 <- ggplot(mod_out, aes(x = reorder(predictor, -Estimate), y = Estimate)) +
+  geom_point(#aes(color = Estimate), 
+             size = 2) +
+  #scale_color_gradient2(low = "navy", mid = "blue", high = "darkred", midpoint = 0) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2, size = 0.5) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  coord_flip() +
+  xlab("Predictor") +
+  ylab("Effect size") +
+  labs(color = "Effect size", tag = "A")+
+  ggtitle("Forest plot of predictor effect sizes") +
+  theme_classic() +
+  my_theme
 
 
 
+slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
+  geom_boxplot(fill = "#1B9E77", color = "black") +
+  xlab("Resistance") +
+  ylab("Slope Mean") +
+  ggtitle("Slope") +
+  labs(tag="B")+
+  theme_classic()+
+  my_theme
+slope
 
 
+bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
+  geom_boxplot(fill = "#D95F02", color = "black") +
+  xlab("Resistance") +
+  ylab("Depth (m) Mean") +
+  ggtitle("Depth range") +
+  labs(tag="")+
+  theme_classic()+
+  my_theme
+bat
 
 
+beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
+  geom_boxplot(fill = "#7570B3", color = "black") +
+  xlab("Resistance") +
+  ylab("BEUTI Mean") +
+  ggtitle("BEUTI") +
+  labs(tag="")+
+  theme_classic()+
+  my_theme
+beuti
+
+sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
+  geom_boxplot(fill = "#E7298A", color = "black") +
+  xlab("Resistance") +
+  ylab("SST Mean") +
+  ggtitle("SST") +
+  labs(tag="")+
+  theme_classic()+
+  my_theme
+sst
 
 
+predictors <- ggpubr::ggarrange(slope, bat, beuti, sst) 
+predictors
 
+
+full_plot <- ggarrange(p1, predictors, nrow=1)
+
+ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors.png"), 
+       width=7, height=5, bg="white", units="in", dpi=600)
 
 
