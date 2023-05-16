@@ -136,8 +136,6 @@ site_predict_build4 <- left_join(site_predict_build3, npp_build1, by=c("year","m
 
 library(ggplot2)
 
-# convert month to a factor with ordered levels
-npp_build1$month <- factor(npp_build1$month, levels = month.name, ordered = TRUE)
 
 # create the plot
 ggplot(npp_build1 %>% filter(npp <2), aes(x = year, y = npp, color = site
@@ -145,18 +143,20 @@ ggplot(npp_build1 %>% filter(npp <2), aes(x = year, y = npp, color = site
   geom_point() +                    # add points
   stat_summary(fun.y = mean, geom = "line", size = 1.5) +   # add mean line
   scale_x_continuous(breaks = seq(min(npp_build1$year), max(npp_build1$year), by = 1)) +   # set breaks on x-axis
-  labs(x = "Year", y = "NPP", color = "Site")   # set axis and legend labels
+  labs(x = "Year", y = "NPP", color = "Site") +  # set axis and legend labels
+  theme_bw()
 
 
 
 
 
-
-
-
-
-
-
+ggplot(npp_build1 %>% filter(npp < 2), aes(x = as.Date(paste(year, month, "01", sep = "-")), y = npp, #color = site
+                                           )) +
+  geom_point(alpha=0.8, color="gray80", fill="gray80") +
+  stat_summary(fun.y = mean, geom = "line", size = 1.5) +
+  scale_x_date(date_breaks = "12 month", date_labels = "%Y", limits = c(as.Date("2003-01-01"), as.Date("2020-01-01"))) +
+  labs(x = "Year", y = "NPP", color = "Site") +
+  theme_bw()
 
 
 
