@@ -47,6 +47,21 @@ kelp_mean <- swath_sub1 %>% filter(species == "macrocystis_pyrifera") %>% group_
          site = str_replace(site, "Dc", "DC"),
          site = str_replace(site, "Uc", "UC"))
 
+################################################################################
+
+# Perform t-test for each site
+ttest_results <- kelp_mean %>%
+  mutate(MHW = ifelse(year <2014, "before",ifelse(year > 2016, "after","during")))%>%
+  filter(MHW == "before" | MHW == "after")%>%
+  group_by(site) %>%
+  summarise(p_value = t.test(kelp_mean ~ MHW)$p.value) %>%
+  mutate(site = factor(site))
+
+ttest_results$sig_col <- ifelse(ttest_results$p_value > 0.05, "forestgreen", "purple")
+
+# Merge t-test results with kelp_mean data
+kelp_mean <- left_join(kelp_mean, ttest_results, by = "site")
+
 
 ################################################################################
 #plot
@@ -98,8 +113,8 @@ kelp_mean$color <- ifelse(kelp_mean$kelp_mean > kelp_mean$mean_kelp + kelp_mean$
 subset_kelp <- kelp_mean[kelp_mean$color != "Within 1 SD",]
 
 
-resist_sites <- kelp_mean %>% dplyr::filter(site == "Hopkins UC" | site == "Cannery UC" | site == "Macabee DC" | site =="Siren" | site == "Cannery DC") %>% data.frame()
-transition_sites <- kelp_mean %>% dplyr::filter(!(site == "Hopkins UC" | site == "Cannery UC" | site == "Macabee DC" | site =="Siren" | site == "Cannery DC")) %>% data.frame()
+resist_sites <- kelp_mean %>% dplyr::filter(site =="Siren" | site == "Cannery DC" | site == "Hopkins UC" | site == "Butterfly DC" | site == "Cannery UC") %>% data.frame()
+transition_sites <- kelp_mean %>% dplyr::filter(!(site =="Siren" | site == "Cannery DC" | site == "Hopkins UC" | site == "Butterfly DC" | site == "Cannery UC")) %>% data.frame()
 
 
 # Create the time series plot
@@ -108,16 +123,27 @@ overall <- ggplot(data = kelp_mean, aes(x = year, y = kelp_mean)) +
   geom_ribbon(data = kelp_mean , aes(ymin = mean_kelp - sd_kelp, ymax = mean_kelp + sd_kelp), fill = "gray80", alpha = 0.5) +
   geom_point(data = subset_kelp, aes(color = color), size = 3) +
   geom_hline(data = site_stats , aes(yintercept = mean_kelp), linetype = "solid") + # add horizontal line
+  geom_vline(data = site_stats , aes(xintercept = 2013), linetype = "dashed") + # add vertical line
   labs(x = "Year", y = "Kelp Mean", color = "") +
   scale_color_manual(values = c("Within 1 SD" = "black", "Above 1 SD" = "forestgreen", "Below 1 SD" = "purple")) +
-  facet_wrap(~reorder(site, -mean_kelp), scales = "fixed", ncol=5) +
-  theme_classic()
+  facet_wrap(~site, scales = "fixed", ncol=5) +
+  theme_classic()+
+  #add t-test results
+  # Add p-values with color based on significance level
+  geom_text(data = ttest_results, aes(label = paste("p-value:", signif(p_value, digits = 2)), 
+                                      x = max(kelp_mean$year), y = max(kelp_mean$kelp_mean)), hjust = 1, vjust = 1)
+  #geom_smooth(method = "lm", se = FALSE, color = "black", linetype= "dotted",formula = y ~ x)+
+  #ggpmisc::stat_poly_eq(aes(label = paste("P-value:", signif(..p.value.., digits = 2))),
+  #             formula = y ~ x, parse = TRUE)
+
 
 overall
 
 
 
 ####split
+
+# Calculate maximum values for each site
 
 # Create the time series plot for resist_sites
 panel_A <- ggplot(data = resist_sites, aes(x = year, y = kelp_mean)) +
@@ -127,12 +153,20 @@ panel_A <- ggplot(data = resist_sites, aes(x = year, y = kelp_mean)) +
   geom_hline(data = site_stats %>% filter(site %in% resist_sites$site), aes(yintercept = mean_kelp), linetype = "solid") + # add horizontal line
   labs(x = "Year", y = "Kelp density \n(stipes per 60 m²)", color = "") +
   scale_color_manual(values = c("Within 1 SD" = "black", "Above 1 SD" = "forestgreen", "Below 1 SD" = "purple")) +
-  facet_wrap(~reorder(site, -mean_kelp), scales = "fixed", nrow=1, ncol=5) +
+  facet_wrap(~reorder(site, -mean_kelp), scales = "fixed", nrow=1, ncol=5
+             )+
   scale_y_continuous(breaks = c(0, 100,200,300))+
   labs(tag = "A") +
   theme_classic() +
   theme(plot.margin = unit(c(0, 1, 0.5, 0), "lines"),
-        aspect.ratio = 1.1) + my_theme
+        aspect.ratio = 1.1) + my_theme +
+  #add ttest p-val
+  geom_text(data = resist_sites %>% filter(year == 2007), aes(label = paste("P[B,A]:", signif(p_value, digits = 2)), 
+                                     x = 2013.5, y = 330, hjust = 1, vjust = 1), size=2)+
+  # Heatwave
+  annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) 
+
+panel_A
 
 # Create the time series plot for transition_sites
 panel_B <- ggplot(data = transition_sites, aes(x = year, y = kelp_mean)) +
@@ -147,7 +181,13 @@ panel_B <- ggplot(data = transition_sites, aes(x = year, y = kelp_mean)) +
   labs(tag = "B") +
   theme_classic() +
   theme(plot.margin = unit(c(0, 1, 0.5, 0), "lines"),
-        aspect.ratio = 1.1) + my_theme
+        aspect.ratio = 1.1) + my_theme+
+  #add ttest p-val
+  geom_text(data = transition_sites %>% filter(year == 2007), aes(label = paste("P[B,A]:", signif(p_value, digits = 2)), 
+                                                              x = 2014, y = 300, hjust = 1, vjust = 1), size=2)+
+  # Heatwave
+  annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) 
+panel_B
 
 # Combine the two plots into one figure with two panels
 g <- ggpubr::ggarrange(panel_A, panel_B, ncol = 1, common.legend = TRUE, legend = "top",
@@ -157,7 +197,7 @@ g <- ggpubr::ggarrange(panel_A, panel_B, ncol = 1, common.legend = TRUE, legend 
 
 g
 
-ggsave(g, filename=file.path(figdir, "FigX_starting_conditions.png"), 
+ggsave(g, filename=file.path(figdir, "FigX_starting_conditions_new.png"), 
        width=7, height=8, units="in", dpi=600, bg="white")
 
 
