@@ -159,7 +159,8 @@ swath_plot <- swath_raw %>% dplyr::select(year,MHW, site, zone, transect,
                 pivot_longer(cols = c(balanus_nubilus, pterygophora_californica, cribrinopsis_albopunctata, laminaria_setchellii,
                                       pomaulax_gibberosus, stephanocystis_osmundacea), names_to = "species",
                              values_to = "counts") %>%
-                mutate(MHW = str_to_title(factor(MHW, levels=c('before','during','after'))),
+                mutate(outbreak_period = ifelse(year <2014,"Before","After"),
+                  MHW = str_to_title(factor(MHW, levels=c('before','during','after'))),
                        species = str_to_sentence(gsub("_", " ", species)),
                        #make titles
                        `Organism type` = factor(ifelse(species == "Pterygophora californica" | species == "Laminaria setchellii" | species == "Stephanocystis osmundacea","Brown algae",
@@ -167,13 +168,14 @@ swath_plot <- swath_raw %>% dplyr::select(year,MHW, site, zone, transect,
                        )),
                        species = ifelse(species == "Balanus nubilus", "Balanus \nnubilus",
                                         ifelse(species == "Cribrinopsis albopunctata", "Cribrinopsis \nalbopunctata",
-                                               ifelse(species == "Laminaria setchellii", "Laminaria \nsetchelli",
+                                               ifelse(species == "Laminaria setchellii", "Laminaria \nsetchellii",
                                                       ifelse(species == "Pomaulax gibberosus", "Pomaulax \ngibberosus",
-                                                             ifelse(species == "Pterygophora californica", "Pterygophoroa \ncalifornica",
+                                                             ifelse(species == "Pterygophora californica", "Pterygophora \ncalifornica",
                                                                     ifelse(species == "Stephanocystis osmundacea","Stephanocystis \nosmundacea",species)))))))
+swath_plot$outbreak_period <- factor(swath_plot$outbreak_period, levels = c("Before","After"))
 swath_plot$MHW <- factor(swath_plot$MHW, levels = c("Before", "During", "After"))
 swath_plot$`Organism type` <- factor(swath_plot$`Organism type`, levels = c("Brown algae","Sessile invert","Mobile invert"))
-swath_plot$species <- factor(swath_plot$species, levels = c("Pterygophoroa \ncalifornica", "Laminaria \nsetchelli", "Stephanocystis \nosmundacea",
+swath_plot$species <- factor(swath_plot$species, levels = c("Pterygophora \ncalifornica", "Laminaria \nsetchellii", "Stephanocystis \nosmundacea",
                                                             "Balanus \nnubilus","Cribrinopsis \nalbopunctata",
                                                             "Pomaulax \ngibberosus"))
 
@@ -185,13 +187,14 @@ fish_plot <- fish_raw %>% dplyr::select(year,MHW, site, zone,level, transect,
                         oxyjulis_californica,
                         sebastes_serranoides_flavidus), names_to = "species",
                values_to = "counts") %>%
-  mutate(MHW = str_to_title(factor(MHW, levels=c('before','during','after'))),
+  mutate(outbreak_period = ifelse(year <2014,"Before","After"),
+    MHW = str_to_title(factor(MHW, levels=c('before','during','after'))),
          species = str_to_sentence(gsub("_", " ", species)),
          `Organism type` = "Fish",
          species = ifelse(species == "Oxyjulis californica","Oxyjulis \ncalifornica", ifelse(species == "Sebastes mystinus","Sebastes \nmystinus",
                                                             ifelse(species == "Sebastes serranoides flavidus", "Sebastes serranoides \nor flavidus",species))))
 fish_plot$MHW <- factor(fish_plot$MHW, levels = c("Before", "During", "After"))
-
+fish_plot$outbreak_period <- factor(fish_plot$outbreak_period, levels = c("Before","After"))
 
 upc_plot <- upc_raw %>% dplyr::select(year,MHW, site, zone, transect,
                                       coralline_algae_crustose, 
@@ -205,7 +208,8 @@ upc_plot <- upc_raw %>% dplyr::select(year,MHW, site, zone, transect,
                             values_to = "counts") %>%
                   #rename for plotting
                   mutate(species = str_to_sentence(gsub("_", " ", species))) %>%
-                  mutate(MHW = str_to_title(factor(MHW, levels=c('before','during','after'))),
+                  mutate(outbreak_period = ifelse(year <2014,"Before","After"),
+                    MHW = str_to_title(factor(MHW, levels=c('before','during','after'))),
                          `Organism type` = ifelse(species == "Red algae branching flat blade"| species == "Red algae leaf like","Macroalgae","Encrusting"),
                          #make boxplot titles
                          species = ifelse(species == "Coralline algae crustose","Coralline algae \n(encrusting)",
@@ -215,7 +219,7 @@ upc_plot <- upc_raw %>% dplyr::select(year,MHW, site, zone, transect,
 upc_plot$MHW <- factor(upc_plot$MHW, levels = c("Before", "During", "After"))
 #upc_plot$species <- factor(upc_plot$species, levels = c("Flat blade red macroalgae","Leaf-like red macroalgae", "Crustose coralline algae","Encrusting red algae"))
 upc_plot$`Organism type` <- factor(upc_plot$`Organism type`, levels = c("Encrusting", "Macroalgae"))
-
+upc_plot$outbreak_period <- factor(upc_plot$outbreak_period, levels = c("Before","After"))
 ################################################################################
 
 ################################################################################
@@ -248,23 +252,87 @@ my_theme <-  theme(axis.text=element_text(size=6),
 
 
 
-p1 <- ggplot(upc_plot, aes(x = MHW, y = counts, fill = `Organism type`)) +
+p1 <- ggplot(upc_plot, aes(x = outbreak_period, y = counts, fill = `Organism type`)) +
   geom_boxplot() +
+  geom_jitter(width = 0.1, height = 0, alpha = 0.05, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(upc_plot, species == "Coralline algae \n(encrusting)"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+                        )+
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(upc_plot, species == "Red algae \n(encrusting)"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(upc_plot, species == "Red algae \n(leaf-like)"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(upc_plot, species == "Red macroalgae \n(flat-branching)"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
   facet_wrap(~ species, scales = "fixed", nrow=1) +
   scale_fill_manual(name = "Organism type",
     values= c("Macroalgae"='#3CB371',"Encrusting" = 'pink', "Purple sea urchin" = "purple", "Red sea urchin" = "indianred","Stipitate algae" = "brown",
               drop=FALSE))+
+  scale_y_continuous(limits=c(0,110))+
   theme_bw() +
   my_theme+
   labs(tag = "A")+
   ylab("Percent cover")+
-  xlab("Heatwave period") + theme(legend.position="top")+ guides(fill = guide_legend(title = NULL))
+  xlab("Outbreak period") + theme(legend.position="top")+ guides(fill = guide_legend(title = NULL))
 p1
 
 
-p2 <- ggplot(swath_plot, aes(x = MHW, y = log(counts))) +
+p2 <- ggplot(swath_plot, aes(x = outbreak_period, y = log(counts))) +
   geom_boxplot( aes(fill = `Organism type`)) +
-  facet_wrap(~ species, scales = "free_y", nrow=1) +
+  geom_jitter(width = 0.1, height = 0, alpha = 0.05, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(swath_plot, species == "Pterygophora \ncalifornica"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(swath_plot, species == "Laminaria \nsetchellii"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(swath_plot, species == "Stephanocystis \nosmundacea"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(swath_plot, species == "Balanus \nnubilus"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(swath_plot, species == "Cribrinopsis \nalbopunctata"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(swath_plot, species == "Pomaulax \ngibberosus"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
+  facet_wrap(~ species, scales = "fixed", nrow=1) +
+  scale_y_continuous(limits=c(0,10))+
   #scale_fill_manual(values= c('#3CB371','pink'))+
   theme_bw() +
   my_theme+
@@ -272,13 +340,33 @@ p2 <- ggplot(swath_plot, aes(x = MHW, y = log(counts))) +
                     values= c("Brown algae"='#A6761D',"Mobile invert" = '#D95F02', "Sessile invert"="#7570B3"))+
   labs(tag = "B", fill = "")+
   ylab("Log density \n(no. individuals per 60 m²)")+
-  xlab("Heatwave period") + theme(legend.position="top")+ guides(fill = guide_legend(title = NULL))
+  xlab("Outbreak period") + theme(legend.position="top")+ guides(fill = guide_legend(title = NULL))
 p2
 
 
-p3 <- ggplot(fish_plot, aes(x = MHW, y = log(counts), fill = `Organism type`)) +
+p3 <- ggplot(fish_plot, aes(x = outbreak_period, y = log(counts), fill = `Organism type`)) +
   geom_boxplot( aes(fill = `Organism type`)) +
-  facet_wrap(~ species, scales = "free_y", nrow=1) +
+  geom_jitter(width = 0.1, height = 0.05, alpha = 0.05, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(fish_plot, species == "Oxyjulis \ncalifornica"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(fish_plot, species == "Sebastes \nmystinus"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
+  ggsignif::geom_signif(comparisons = list(c("Before", "After")),
+                        data = subset(fish_plot, species == "Sebastes serranoides \nor flavidus"),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3
+  )+
+  facet_wrap(~ species, scales = "fixed", nrow=1) +
+  scale_y_continuous(limits=c(0,7))+
   theme_bw() +
   my_theme+
   scale_fill_manual(name = "Organism type",
@@ -287,7 +375,7 @@ p3 <- ggplot(fish_plot, aes(x = MHW, y = log(counts), fill = `Organism type`)) +
                               drop=FALSE))+
   labs(tag = "C", fill = "")+
   ylab("Log density \n(no. individuals per 60 m²)")+
-  xlab("Heatwave period") + theme(legend.position="top")+ guides(fill = guide_legend(title = NULL))
+  xlab("Outbreak period") + theme(legend.position="top")+ guides(fill = guide_legend(title = NULL))
 p3
 
 
