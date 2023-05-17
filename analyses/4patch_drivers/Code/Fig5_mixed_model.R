@@ -76,9 +76,10 @@ mod_dat <- left_join(response_vars, mod_predict_build1, by=c("year","site")) %>%
                   #designate resistant site
                         resistance = ifelse(site == "HOPKINS_UC" |
                                               site == "CANNERY_UC" |
-                                              site == "MACABEE_DC" |
-                                              site == "SIREN"|
-                                              site == "CANNERY_UC","resistant","transitioned")
+                                              site == "SIREN" |
+                                              site == "CANNERY_DC",
+                                              #site == "BUTTERFLY_DC",
+                                            "resistant","transitioned")
                   ) %>%
           left_join(kelp_baseline, by="site")
 
@@ -87,22 +88,22 @@ mod_dat <- left_join(response_vars, mod_predict_build1, by=c("year","site")) %>%
 #check for collinearity and normalize where needed
 
 # Select the predictor variables to check for collinearity
-predictors <- c("beuti_avg", "cuti_avg", "sst_c_mean")
+#predictors <- c("beuti_avg", "cuti_avg", "sst_c_mean")
 
 # Calculate the correlation matrix between the predictor variables
-cor_matrix <- cor(mod_dat_build3[predictors])
+#cor_matrix <- cor(mod_dat_build3[predictors])
 
 # Print the correlation matrix
-print(cor_matrix)
+#print(cor_matrix)
 
 #normalize predictors to account for collinearity
-mod_dat_build3$sst_norm <- scale(mod_dat_build3$sst_c_mean)
+#mod_dat_build3$sst_norm <- scale(mod_dat_build3$sst_c_mean)
 
 ################################################################################
 #build full model
 
 # Fit mixed model with random intercepts and slopes for site and year
-full_mod <- lme4::lmer(stipe_mean ~  npp_lag2 + vrm_sum + bat_mean + beuti_month_obs + 
+full_mod <- lme4::lmer(stipe_mean ~ npp + vrm_sum + bat_mean + beuti_month_obs + 
                          slope_mean + sst_month_obs + year + baseline_kelp +
                          (1|site), data = mod_dat)
 
@@ -116,7 +117,11 @@ summary(full_mod)
 ################################################################################
 #build sub models 
 
-sub_mod1 <- lme4::lmer(stipe_mean ~ vrm_mean + year + (1 | site), data = mod_dat)
+sub_mod1 <- lme4::lmer(stipe_mean ~year +
+                         baseline_kelp +
+                         beuti_month_obs + 
+                         vrm_sum +
+                         (1 | site), data = mod_dat)
 
 
 # Compare the full model to the sub-models using an LRT
@@ -201,7 +206,7 @@ p1 <- ggplot(mod_out %>%
   theme_classic() +
   my_theme
 
-
+p1
 
 
 slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
@@ -209,6 +214,7 @@ slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
               map_signif_level = TRUE,
+              tip_length = c(0.01, 0.01),
               textsize=3)+
   ylim(0,20)+
   xlab("Resistance") +
@@ -225,6 +231,7 @@ bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
                         textsize=3)+
   ylim(5,23)+
   xlab("Resistance") +
@@ -241,6 +248,8 @@ beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
+                        y_position = 11,
+                        tip_length = c(0.01, 0.01),
                         textsize=3)+
   ylim(2,13)+
   xlab("Resistance") +
@@ -256,6 +265,8 @@ sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
+                        y_position = 15.3,
+                        tip_length = c(0.01, 0.01),
                         textsize=3)+
   ylim(12,16)+
   xlab("Resistance") +
@@ -272,6 +283,7 @@ kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp)) +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
                         textsize=3)+
   ylim(50,220)+
   xlab("Resistance") +
