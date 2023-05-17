@@ -59,6 +59,7 @@ swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kel
                     site == "SPANISH_BAY_DC" |
                     site == "SPANISH_BAY_UC" |
                     site == "BIRD_ROCK"))
+
 ################################################################################
 #calculate transect means to reduce memory for SIMPER
 
@@ -92,7 +93,7 @@ swath_build2 <- swath_build1 %>%
 swath_build3 <- swath_build2 %>%
                         ###note::: remove these species, since these might overwhelm other changes
                         dplyr::select(!c(strongylocentrotus_purpuratus, macrocystis_pyrifera,
-                                         mesocentrotus_franciscanus))
+                                         mesocentrotus_franciscanus, patiria_miniata))
 swath_groups <- swath_build3 %>% dplyr::select(1:9)
 swath_dat <- swath_build3 %>% ungroup() %>% dplyr::select(10:ncol(.))
 
@@ -153,32 +154,28 @@ simper_table <- rbind(swath_table,
 #select top contributors from raw data
 
 swath_plot <- swath_raw %>% dplyr::select(year,MHW, site, zone, transect,
-                                          macrocystis_pyrifera, strongylocentrotus_purpuratus, mesocentrotus_franciscanus,
-                                          #balanus_nubilus,
-                                          pterygophora_californica,
-                                          laminaria_setchellii) %>%
-                pivot_longer(cols = c(macrocystis_pyrifera, strongylocentrotus_purpuratus, mesocentrotus_franciscanus,
-                                      #balanus_nubilus,
-                                      pterygophora_californica,
-                                      laminaria_setchellii), names_to = "species",
+                                          balanus_nubilus, pterygophora_californica, cribrinopsis_albopunctata, laminaria_setchellii,
+                                          pomaulax_gibberosus, stephanocystis_osmundacea) %>%
+                pivot_longer(cols = c(balanus_nubilus, pterygophora_californica, cribrinopsis_albopunctata, laminaria_setchellii,
+                                      pomaulax_gibberosus, stephanocystis_osmundacea), names_to = "species",
                              values_to = "counts") %>%
                 mutate(MHW = str_to_title(factor(MHW, levels=c('before','during','after'))),
-                       species = ifelse(species == "balanus_nubilus","Balanus nubilus",ifelse(
-                         species == "laminaria_setchellii","Laminaria setchellii",ifelse(
-                           species == "macrocystis_pyrifera","Macrocystis pyrifera",ifelse(
-                             species == "mesocentrotus_franciscanus","Mesocentrotus franciscanus",ifelse(
-                               species == "pterygophora_californica","Pterygophora californica",ifelse(
-                                 species == "strongylocentrotus_purpuratus","Strongylocentrotus purpuratus",species
-                               )
-                             )
-                           )
-                         )
+                       species = str_to_sentence(gsub("_", " ", species)),
+                       #make titles
+                       `Organism type` = factor(ifelse(species == "Pterygophora californica" | species == "Laminaria setchellii" | species == "Stephanocystis osmundacea","Brown algae",
+                                                       ifelse(species == "Balanus nubilus" | species == "Cribrinopsis albopunctata","Sessile invert","Mobile invert")
                        )),
-                       `Organism type` = factor(ifelse(species == "Macrocystis pyrifera" | species == "Pterygophora californica" | species == "Laminaria setchellii","Stipitate algae",ifelse(
-                         species == "Strongylocentrotus purpuratus","Purple sea urchin","Red sea urchin"
-                       ))))
+                       species = ifelse(species == "Balanus nubilus", "Balanus \nnubilus",
+                                        ifelse(species == "Cribrinopsis albopunctata", "Cribrinopsis \nalbopunctata",
+                                               ifelse(species == "Laminaria setchellii", "Laminaria \nsetchelli",
+                                                      ifelse(species == "Pomaulax gibberosus", "Pomaulax \ngibberosus",
+                                                             ifelse(species == "Pterygophora californica", "Pterygophoroa \ncalifornica",
+                                                                    ifelse(species == "Stephanocystis osmundacea","Stephanocystis \nosmundacea",species)))))))
 swath_plot$MHW <- factor(swath_plot$MHW, levels = c("Before", "During", "After"))
-swath_plot$species <- factor(swath_plot$species, levels = c("Strongylocentrotus purpuratus","Mesocentrotus franciscanus","Macrocystis pyrifera","Pterygophora californica","Laminaria setchellii"))
+swath_plot$`Organism type` <- factor(swath_plot$`Organism type`, levels = c("Brown algae","Sessile invert","Mobile invert"))
+swath_plot$species <- factor(swath_plot$species, levels = c("Pterygophoroa \ncalifornica", "Laminaria \nsetchelli", "Stephanocystis \nosmundacea",
+                                                            "Balanus \nnubilus","Cribrinopsis \nalbopunctata",
+                                                            "Pomaulax \ngibberosus"))
 
 fish_plot <- fish_raw %>% dplyr::select(year,MHW, site, zone,level, transect,
                                         sebastes_mystinus,
@@ -189,11 +186,11 @@ fish_plot <- fish_raw %>% dplyr::select(year,MHW, site, zone,level, transect,
                         sebastes_serranoides_flavidus), names_to = "species",
                values_to = "counts") %>%
   mutate(MHW = str_to_title(factor(MHW, levels=c('before','during','after'))),
-         species = ifelse(species == "sebastes_mystinus","Sebastes mystinus",ifelse(
-           species == "oxyjulis_californica","Oxyjulis californica","Sebastes serranoides"
-         )),
-         `Organism type` = "Fish")
-swath_plot$MHW <- factor(swath_plot$MHW, levels = c("Before", "During", "After"))
+         species = str_to_sentence(gsub("_", " ", species)),
+         `Organism type` = "Fish",
+         species = ifelse(species == "Oxyjulis californica","Oxyjulis \ncalifornica", ifelse(species == "Sebastes mystinus","Sebastes \nmystinus",
+                                                            ifelse(species == "Sebastes serranoides flavidus", "Sebastes serranoides \nor flavidus",species))))
+fish_plot$MHW <- factor(fish_plot$MHW, levels = c("Before", "During", "After"))
 
 
 upc_plot <- upc_raw %>% dplyr::select(year,MHW, site, zone, transect,
@@ -207,20 +204,17 @@ upc_plot <- upc_raw %>% dplyr::select(year,MHW, site, zone, transect,
                                          red_algae_leaf_like), names_to = "species",
                             values_to = "counts") %>%
                   #rename for plotting
-                  mutate(species = ifelse(species == "coralline_algae_crustose","Crustose coralline algae",ifelse(
-                    species == "coralline_algae_erect_articulated","Articulated coralline algae",ifelse(
-                      species == "red_algae_branching_flat_blade","Flat blade red macroalgae",ifelse(
-                        species == "red_algae_encrusting","Encrusting red algae",ifelse(
-                          species == "red_algae_leaf_like","Leaf-like red macroalgae",species
-                        )
-                      )
-                    )
-                  ))) %>%
+                  mutate(species = str_to_sentence(gsub("_", " ", species))) %>%
                   mutate(MHW = str_to_title(factor(MHW, levels=c('before','during','after'))),
-                         `Organism type` = ifelse(species == "Flat blade red macroalgae"| species == "Leaf-like red macroalgae","Macroalgae","Encrusting"))
+                         `Organism type` = ifelse(species == "Red algae branching flat blade"| species == "Red algae leaf like","Macroalgae","Encrusting"),
+                         #make boxplot titles
+                         species = ifelse(species == "Coralline algae crustose","Coralline algae \n(encrusting)",
+                                          ifelse(species == "Red algae branching flat blade", "Red macroalgae \n(flat-branching)",
+                                                 ifelse(species == "Red algae encrusting", "Red algae \n(encrusting)",
+                                                        ifelse(species == "Red algae leaf like", "Red algae \n(leaf-like)",species)))))
 upc_plot$MHW <- factor(upc_plot$MHW, levels = c("Before", "During", "After"))
-upc_plot$species <- factor(upc_plot$species, levels = c("Flat blade red macroalgae","Leaf-like red macroalgae", "Crustose coralline algae","Encrusting red algae"))
-upc_plot$`Organism type` <- factor(upc_plot$`Organism type`, levels = c("Macroalgae","Encrusting"))
+#upc_plot$species <- factor(upc_plot$species, levels = c("Flat blade red macroalgae","Leaf-like red macroalgae", "Crustose coralline algae","Encrusting red algae"))
+upc_plot$`Organism type` <- factor(upc_plot$`Organism type`, levels = c("Encrusting", "Macroalgae"))
 
 ################################################################################
 
@@ -262,9 +256,9 @@ p1 <- ggplot(upc_plot, aes(x = MHW, y = counts, fill = `Organism type`)) +
               drop=FALSE))+
   theme_bw() +
   my_theme+
-  labs(tag = "A", fill = "Organism type")+
+  labs(tag = "A")+
   ylab("Percent cover")+
-  xlab("Heatwave period")
+  xlab("Heatwave period") + theme(legend.position="top")+ guides(fill = guide_legend(title = NULL))
 p1
 
 
@@ -275,11 +269,10 @@ p2 <- ggplot(swath_plot, aes(x = MHW, y = log(counts))) +
   theme_bw() +
   my_theme+
   scale_fill_manual(name = "Organism type",
-                    values= c("Macroalgae"='#3CB371',"Encrusting" = 'pink', "Purple sea urchin" = "purple", "Red sea urchin" = "indianred","Stipitate algae" = "brown",
-                              drop=FALSE))+
+                    values= c("Brown algae"='#A6761D',"Mobile invert" = '#D95F02', "Sessile invert"="#7570B3"))+
   labs(tag = "B", fill = "")+
   ylab("Log density \n(no. individuals per 60 m²)")+
-  xlab("Heatwave period")
+  xlab("Heatwave period") + theme(legend.position="top")+ guides(fill = guide_legend(title = NULL))
 p2
 
 
@@ -294,27 +287,28 @@ p3 <- ggplot(fish_plot, aes(x = MHW, y = log(counts), fill = `Organism type`)) +
                               drop=FALSE))+
   labs(tag = "C", fill = "")+
   ylab("Log density \n(no. individuals per 60 m²)")+
-  xlab("Heatwave period")
+  xlab("Heatwave period") + theme(legend.position="top")+ guides(fill = guide_legend(title = NULL))
 p3
 
 
-combined_plot <- ggpubr::ggarrange(p1,p2,p3,ncol=1, common.legend = TRUE, legend = "right")
+combined_plot <- ggpubr::ggarrange(p1,p2,p3,ncol=1)
 combined_plot
 
 
+ggsave(combined_plot, filename=file.path(figdir, "Fig4_boxplot_new.png"), bg = "white",
+       width=7, height=9, units="in", dpi=600) 
+
+#library(patchwork)
+
+#combined <- p1 + p2 + p3 + plot_layout(
+ # ncol=1,
+#  guides = "collect") + theme(legend.position = "right",
+ #                             legend.spacing = unit(-4, "cm"))
+#combined
 
 
-library(patchwork)
-
-combined <- p1 + p2 + p3 + plot_layout(
-  ncol=1,
-  guides = "collect") + theme(legend.position = "right",
-                              legend.spacing = unit(-4, "cm"))
-combined
-
-
-ggsave(combined, filename=file.path(figdir, "Fig4_boxplot.png"), bg = "white",
-       width=7, height=8, units="in", dpi=600) 
+#ggsave(combined, filename=file.path(figdir, "Fig4_boxplot.png"), bg = "white",
+ #      width=7, height=8, units="in", dpi=600) 
 
 
 
