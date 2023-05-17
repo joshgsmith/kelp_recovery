@@ -90,12 +90,6 @@ my_theme <-  theme(axis.text=element_text(size=7),
 )
 
 
-
-#######THIS WORKS GOOD
-
-library(dplyr)
-library(ggplot2)
-
 # Compute site-level mean and standard deviation of kelp_mean for the "before" outbreak period
 before_kelp <- subset(kelp_mean, outbreak_period == "before")
 site_stats <- before_kelp %>%
@@ -113,8 +107,10 @@ kelp_mean$color <- ifelse(kelp_mean$kelp_mean > kelp_mean$mean_kelp + kelp_mean$
 subset_kelp <- kelp_mean[kelp_mean$color != "Within 1 SD",]
 
 
-resist_sites <- kelp_mean %>% dplyr::filter(site =="Siren" | site == "Cannery DC" | site == "Hopkins UC" | site == "Butterfly DC" | site == "Cannery UC") %>% data.frame()
-transition_sites <- kelp_mean %>% dplyr::filter(!(site =="Siren" | site == "Cannery DC" | site == "Hopkins UC" | site == "Butterfly DC" | site == "Cannery UC")) %>% data.frame()
+resist_sites <- kelp_mean %>% dplyr::filter(site =="Siren" | site == "Cannery DC" | site == "Hopkins UC" | site == "Cannery UC" 
+                                            #| site == "Butterfly DC" #even though this site is non-sig, it went to 0. 
+                                            ) %>% data.frame()
+transition_sites <- kelp_mean %>% dplyr::filter(!(site =="Siren" | site == "Cannery DC" | site == "Hopkins UC" | site == "Cannery UC")) %>% data.frame()
 
 
 # Create the time series plot
@@ -191,13 +187,13 @@ panel_B
 
 # Combine the two plots into one figure with two panels
 g <- ggpubr::ggarrange(panel_A, panel_B, ncol = 1, common.legend = TRUE, legend = "top",
-                  align = "v", heights = c(1, 3.25)
+                  align = "v", heights = c(1, 3.1)
                   ) # + theme(panel.spacing = unit(0.01, "lines"))
 
 
 g
 
-ggsave(g, filename=file.path(figdir, "FigX_starting_conditions_new.png"), 
+ggsave(g, filename=file.path(figdir, "FigX_starting_conditions_new2.png"), 
        width=7, height=8, units="in", dpi=600, bg="white")
 
 
