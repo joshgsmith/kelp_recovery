@@ -121,7 +121,7 @@ swath_p_sig <- swath_p_out %>%
 
 #merge
 
-swath_mvabund <- rbind(swath_t_sig, swath_p_sig)
+swath_mvabund <- rbind(swath_t_sig, swath_p_sig) 
 
 
 ################################################################################
@@ -239,14 +239,80 @@ fish_mvabund <- rbind(fish_t_sig, fish_p_sig)
 
 
 
+################################################################################
+#filter data based on significant results
+
+swath_filtered <- swath_mod_dat %>%
+                    pivot_longer(12:68, names_to = "species", values_to = "counts")%>%
+                  dplyr::select(!(transition_site))%>%
+                  #filter to significant species
+                  left_join(swath_mvabund, by="species", relationship = "many-to-many")%>%
+                  filter(!(is.na(group)))
+
+upc_filtered <- upc_mod_dat %>%
+  pivot_longer(12:50, names_to = "species", values_to = "counts")%>%
+  dplyr::select(!(transition_site))%>%
+  #filter to significant species
+  left_join(upc_mvabund, by="species", relationship = "many-to-many")%>%
+  filter(!(is.na(group)))
+
+fish_filtered <- fish_mod_dat %>%
+  pivot_longer(12:67, names_to = "species", values_to = "counts")%>%
+  dplyr::select(!(transition_site))%>%
+  #filter to significant species
+  left_join(fish_mvabund, by="species", relationship = "many-to-many")%>%
+  filter(!(is.na(group)))
 
 
 
+################################################################################
+#plot using dumbbell approach
+
+means_before <- fish_filtered %>%
+  filter(outbreak_period == "Before") %>%
+  group_by(species, transition_site) %>%
+  summarize(mean_counts_before = mean(counts, na.rm = TRUE))
+
+# Calculate the mean counts for "After" outbreak
+means_after <- fish_filtered %>%
+  filter(outbreak_period == "After") %>%
+  group_by(species, transition_site) %>%
+  summarize(mean_counts_after = mean(counts, na.rm = TRUE))
+
+# Merge the mean counts for "Before" and "After"
+means <- merge(means_before, means_after, by = c("species", "transition_site"))
+
+# Create the dumbbell plot
+ggplot(means) +
+  geom_segment(aes(x = mean_counts_before, xend = mean_counts_after, y = species, yend = species, color = (mean_counts_after > mean_counts_before)), size = 1) +
+  facet_wrap(~ transition_site, scales = "free_y") +
+  scale_color_manual(values = c("blue", "red"), guide = FALSE) +
+  labs(x = "Log(Counts)", y = "Species") +
+  theme_minimal()
 
 
 
+################################################################################
+#plot using percent change
 
+# Calculate the average perc_change for each species
+avg_perc_change <- swath_pc %>%
+  group_by(species) %>%
+  summarize(avg_change = mean(perc_change, na.rm = TRUE)) %>%
+  arrange(desc(avg_change))
 
+# Reorder the levels of the species factor based on avg_perc_change
+swath_pc$species <- factor(swath_pc$species, levels = avg_perc_change$species)
+
+# Create the plot
+ggplot(swath_pc, aes(x = perc_change, y = species)) +
+  geom_point() +
+  geom_segment(aes(x = 0, xend = perc_change, yend = species), linetype = "solid") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  facet_wrap(~ transition_site, ncol = 1, scales = "free_y") +
+  xlab("Percentage Change") +
+  ylab("Species") +
+  theme_bw()
 
 
 
