@@ -8,7 +8,7 @@ librarian::shelf(tidyverse, here, ggplot2, mvabund)
 
 ################################################################################
 #set directories and load data
-basedir <- "/Volumes/seaotterdb$/kelp_recovery/"
+basedir <- "/Volumes/seaotterdb$/kelp_recovery"
 figdir <- here::here("analyses","4patch_drivers","Figures")
 
 #load raw dat
@@ -60,6 +60,35 @@ swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kel
                     site == "SPANISH_BAY_UC" |
                     site == "BIRD_ROCK"))
 
+#load species attribute table
+spp_attribute <- readxl::read_excel(file.path(basedir,"data/subtidal_monitoring/raw/spp_attribute_table.xlsx"), sheet = 2)
+
+################################################################################
+#process attribute table
+
+spp_att_build1 <- spp_attribute %>% janitor::clean_names() %>% 
+                    dplyr::select(genusspecies, common_name, primary_taxonomic, secondary_taxonomic,
+                                  feeding_mode, primary_trophic) %>%
+                    mutate(genusspecies =  str_to_sentence(gsub("_", " ", genusspecies))) %>%
+                    #fix obsolete names
+                    mutate(genusspecies_renamed = ifelse(genusspecies == "Megastrea gibberosa","Pomaulax gibberosus",
+                                                         ifelse(genusspecies == "Parastichopus californicus","Apostichopus californicus",
+                                                                ifelse(genusspecies == "Parastichopus parvimensis","Apostichopus parvimensis",
+                                                                       ifelse(genusspecies == "Balanus nubilis","Balanus nubilus",
+                                                                              ifelse(genusspecies == "Crassedoma giganteum","Crassadoma gigantea",
+                                                                                     ifelse(genusspecies == "Loxorhynchus scyra spp","Loxorhynchus crispatus scyra acutifrons",
+                                                                                            ifelse(genusspecies == "Pugettia spp","Pugettia foliata",
+                                                                                                   ifelse(genusspecies == "Tethya aurantia","Tethya californiana",
+                                                                                                          ifelse(genusspecies == "Coralline algae -crustose","Coralline algae crustose",
+                                                                                                                 ifelse(genusspecies == "Red algae -encrusting","Red algae encrusting",
+                                                                                                                        ifelse(genusspecies == "Red algae (leaf-like)","Red algae leaf like",
+                                                                                                                               ifelse(genusspecies == "Serpulorbis squamigerus","Thylacodes squamigerus",
+                                                                                                                                      ifelse(genusspecies == "Desmarestia spp","Desmarestia",
+                                                                                                                                             ifelse(genusspecies == "Dictyotales spp","Dictyoneurum californicum reticulatum",
+                                                                                                                                                    ifelse(genusspecies == "Sponge","Porifera",
+                                                                                                                                                           ifelse(genusspecies == "Red algae (branching flat blade)","Red algae branching flat blade",
+                                                                                                                                                                  ifelse(genusspecies == "Red algae (lacy branching)","Red algae lacy branching",
+                                                                                                                                                                         ifelse(genusspecies == "Tunicate -colonial,compund,social","Tunicate colonial compund social",genusspecies)))))))))))))))))))
 ################################################################################
 #calculate transect means to reduce memory 
 
@@ -244,23 +273,23 @@ swath_mvabund <- rbind(swath_t_sig, swath_p_sig)
 
 swath_filtered <- swath_mod_dat %>%
                     pivot_longer(12:68, names_to = "species", values_to = "counts")%>%
-                  dplyr::select(!(transition_site))%>%
+                  #dplyr::select(!(transition_site))%>%
                   #filter to significant species
-                  left_join(swath_mvabund, by="species", relationship = "many-to-many")%>%
+                  left_join(swath_mvabund, by=c("transition_site","species"), relationship = "many-to-many")%>%
                   filter(!(is.na(group)))
 
 upc_filtered <- upc_mod_dat %>%
   pivot_longer(12:50, names_to = "species", values_to = "counts")%>%
-  dplyr::select(!(transition_site))%>%
+  #dplyr::select(!(transition_site))%>%
   #filter to significant species
-  left_join(upc_mvabund, by="species", relationship = "many-to-many")%>%
+  left_join(upc_mvabund, by=c("transition_site","species"), relationship = "many-to-many")%>%
   filter(!(is.na(group)))
 
-swath_filtered <- swath_mod_dat %>%
+fish_filtered <- fish_mod_dat %>%
   pivot_longer(12:67, names_to = "species", values_to = "counts")%>%
-  dplyr::select(!(transition_site))%>%
+  #dplyr::select(!(transition_site))%>%
   #filter to significant species
-  left_join(swath_mvabund, by="species", relationship = "many-to-many")%>%
+  left_join(fish_mvabund, by=c("transition_site","species"), relationship = "many-to-many")%>%
   filter(!(is.na(group)))
 
 
@@ -298,10 +327,10 @@ ggplot(means) +
 # Calculate percent change for each species within each transition site
 swath_pc <- swath_filtered %>%
   group_by(transition_site, outbreak_period, species)%>%
-  dplyr::summarize(mean_counts = mean(counts, na.rm=TRUE))%>%
+  dplyr::summarize(mean_counts = mean(counts, na.rm=TRUE)+0.0001)%>% #ddd a small constant to avoid -Inf
   pivot_wider(names_from = outbreak_period,
               values_from = mean_counts) %>%
-  mutate(perc_change = ((After - Before)/After * 100))
+  mutate(perc_change = ((After - Before)/Before * 100))
 
 # Calculate the average perc_change for each species
 avg_perc_change <- swath_pc %>%
@@ -322,7 +351,7 @@ upc_pc <- upc_filtered %>%
   dplyr::summarize(mean_counts = mean(counts, na.rm=TRUE))%>%
   pivot_wider(names_from = outbreak_period,
               values_from = mean_counts) %>%
-  mutate(perc_change = ((After - Before)/After * 100))
+  mutate(perc_change = ((After - Before)/Before * 100))
 
 # Calculate the average perc_change for each species
 avg_perc_change <- upc_pc %>%
@@ -342,7 +371,7 @@ fish_pc <- fish_filtered %>%
   dplyr::summarize(mean_counts = mean(counts, na.rm=TRUE))%>%
   pivot_wider(names_from = outbreak_period,
               values_from = mean_counts) %>%
-  mutate(perc_change = ((After - Before)/After * 100))
+  mutate(perc_change = ((After - Before)/Before * 100))
 
 # Calculate the average perc_change for each species
 avg_perc_change <- fish_pc %>%
@@ -358,32 +387,208 @@ fish_pc$species <- factor(fish_pc$species, levels = avg_perc_change$species)
 
 ##merge
 
-plot_merge <- rbind(swath_pc, fish_pc, upc_pc)
+plot_merge <- rbind(swath_pc, fish_pc, upc_pc) %>%
+  mutate(species = str_to_sentence(gsub("_", " ", species)))%>%
+  #join with species attributes
+  left_join(spp_att_build1, by=c("species"="genusspecies_renamed")) %>%
+  #drop sea stars
+  filter(!(species == "Pycnopodia helianthoides" | species == "Orthasterias koehleri" |
+             species == "Pisaster giganteus" | species == "Patiria miniata" | species == "Cirripedia")) %>%
+  #rename common names
+  mutate(common_name = ifelse(common_name == "Red Algae (Lacy Branching)","Red Algae (Lacy)",
+                              ifelse(common_name == "Red Algae (Branching Flat Blade)", "Red algae (flat blade)",
+                                     ifelse(common_name == "Decorator Crab, Moss Crab", "Decorator crab",
+                                            ifelse(common_name == "Tunicate -Colonial,Compund,Social","Tunicate (colonial)",common_name)))),
+         common_name = str_to_sentence(common_name),
+         primary_trophic = str_to_sentence(primary_trophic))
+
 avg_perc_change <- plot_merge %>%
   group_by(transition_site, species) %>%
   summarize(avg_change = mean(perc_change, na.rm = TRUE)) %>%
   arrange(desc(avg_change))
 
 
+
+################################################################################
+#Plot
+
+my_theme <-  theme(axis.text=element_text(size=6),
+                   axis.text.y = element_text(angle = 90, hjust = 0.5),
+                   axis.title=element_text(size=8),
+                   plot.tag=element_text(size=8, face="bold"),
+                   plot.title =element_text(size=7, face="bold"),
+                   # Gridlines 
+                   panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   axis.line = element_line(colour = "black"),
+                   # Legend
+                   legend.key = element_blank(),
+                   legend.background = element_rect(fill=alpha('blue', 0)),
+                   legend.key.height = unit(1, "lines"), 
+                   legend.text = element_text(size = 6),
+                   legend.title = element_text(size = 7),
+                   #legend.spacing.y = unit(0.75, "cm"),
+                   #facets
+                   strip.background = element_blank(),
+                   strip.text = element_text(size = 6 ,face="bold"),
+)
+
 # Create ggplot plot
-ggplot(plot_merge, aes(x = perc_change, y = reorder(species,-perc_change))) +
-  geom_point() +
-  geom_segment(aes(x = 0, xend = perc_change, yend = species), linetype = "solid") +
+
+ggplot(plot_merge %>% group_by(transition_site) %>%
+         mutate(species = tidytext::reorder_within(species, perc_change, transition_site),
+                #make sentence case
+                species = str_to_sentence(gsub("_", " ", species)),
+                #remove trailing spaces
+                species = str_remove(str_trim(species), "\\s+\\w+$")),
+       aes(x = perc_change, y = reorder(species, perc_change, FUN = function(x) -max(x)))) +
+  geom_point(aes(color = primary_trophic)) +
+  geom_segment(aes(x = 0, xend = perc_change, yend = species, color = primary_trophic), linetype = "solid") +
   geom_vline(xintercept = 0, linetype = "dashed") +
+  #add genus species labels
+  geom_text(
+    aes(x = ifelse(plot_merge$perc_change >= 0, 0.1, -0.1), label = species, fontface = "italic"),
+    hjust = ifelse(plot_merge$perc_change >= 0, 0, 1),
+    color = "black",
+    size = 3,
+    position = position_nudge(y = -0.2)
+  ) +
+  #add common name labels
+  geom_text(
+    aes(x = ifelse(plot_merge$perc_change >= 0, 0.1, -0.1), label = common_name),
+    hjust = ifelse(plot_merge$perc_change >= 0, 0, 1),
+    color = "black",
+    size = 3,
+    position = position_nudge(y =0.2)
+  ) +
+  #add pre-post densities
+  geom_text(
+    aes(x = perc_change, label = paste0("(",round(Before,2),", ",round(After,2),")")),
+    #hjust = ifelse(plot_merge$perc_change >= 0, 1, -1),
+    color = "black",
+    size = 3,
+    position = position_nudge(y = 0.2)
+  ) +
+  scale_x_continuous(
+    trans = ggallin::pseudolog10_trans,
+    breaks = c(-20000, -10000, -1000, -100, -10, -1, 1, 10, 100, 1000, 10000),
+    labels = c(-20000, -10000, -1000, -100, -10, -1, 1, 10, 100, 1000, 10000)
+  ) +
+  scale_color_brewer(palette = "Dark2")+
   facet_wrap(~ transition_site, ncol = 2, scales = "free_y") +
   xlab("Percentage Change") +
   ylab("Species") +
-  theme_bw()
+  theme_bw() + my_theme + theme(axis.text.y = element_blank())
 
 
 
 
 
+resist_dat <- plot_merge %>% filter(transition_site == "no")
+
+p1 <- ggplot(resist_dat,
+       aes(x = perc_change, y = reorder(species, -perc_change))) +
+  geom_point(aes(color = primary_trophic)) +
+  geom_segment(aes(x = 0, xend = perc_change, yend = species, color = primary_trophic), linetype = "solid", size=1) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  #add genus species labels
+  geom_text(
+    aes(x = ifelse(resist_dat$perc_change >= 0, 0.1, -0.1), label = species, fontface = "italic"),
+    hjust = ifelse(resist_dat$perc_change >= 0, 0, 1),
+    color = "black",
+    size = 2,
+    position = position_nudge(y = -0.1)
+  ) +
+  #add common name labels
+  geom_text(
+    aes(x = ifelse(resist_dat$perc_change >= 0, 0.1, -0.1), label = common_name),
+    hjust = ifelse(resist_dat$perc_change >= 0, 0, 1),
+    color = "black",
+    size = 3,
+    position = position_nudge(y =0.1)
+  ) +
+  #add pre-post densities
+  geom_text(
+    aes(x = ifelse(resist_dat$perc_change >= 0, -7, 7), label = paste0("(", round(Before, 2), ", ", round(After, 2), ")")),
+    color = "black",
+    size = 3,
+    # position = position_nudge(x = 0.15)
+  ) +
+  scale_x_continuous(
+    trans = ggallin::pseudolog10_trans,
+    breaks = c(-20000, -10000, -1000, -100, -10, -1, 1, 10, 100, 1000, 10000),
+    labels = c(-20000, -10000, -1000, -100, -10, -1, 1, 10, 100, 1000, 10000)
+  ) +
+  scale_color_brewer(palette = "Dark2")+
+  #facet_wrap(~ transition_site, ncol = 2, scales = "free_y") +
+  xlab("") +
+  ylab("") +
+  labs(tag = "A", color = "Trophic role")+
+  ggtitle("Kelp forest")+
+  theme_bw() + my_theme + theme(axis.text.y = element_blank())
+p1
 
 
+transition_dat <- plot_merge %>% filter(transition_site == "yes") %>% filter(!(species == "Leptasterias hexactis" | species == "Cirripidia")) %>%
+                    #drop UPC macro
+                  filter(!(species == "Macrocystis pyrifera" & After <1))
+
+p2 <- ggplot(transition_dat,
+             aes(x = perc_change, y = reorder(species, -perc_change))) +
+  geom_point(aes(color = primary_trophic)) +
+  geom_segment(aes(x = 0, xend = perc_change, yend = species, color = primary_trophic), linetype = "solid", size=1) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  #add genus species labels
+  geom_text(
+    aes(x = ifelse(transition_dat$perc_change >= 0, 0.1, -0.1), label = species, fontface = "italic"),
+    hjust = ifelse(transition_dat$perc_change >= 0, 0, 1),
+    color = "black",
+    size = 2,
+    position = position_nudge(y = -0.2)
+  ) +
+  #add common name labels
+  geom_text(
+    aes(x = ifelse(transition_dat$perc_change >= 0, 0.1, -0.1), label = common_name),
+    hjust = ifelse(transition_dat$perc_change >= 0, 0, 1),
+    color = "black",
+    size = 3,
+    position = position_nudge(y =0.3)
+  ) +
+  # add pre-post densities
+  geom_text(
+    aes(x = ifelse(transition_dat$perc_change >= 0, -7, 7), label = paste0("(", round(Before, 2), ", ", round(After, 2), ")")),
+    color = "black",
+    size = 3,
+   # position = position_nudge(x = 0.15)
+  ) +
+  scale_x_continuous(
+    trans = ggallin::pseudolog10_trans,
+    breaks = c(-10000, -1000, -100, -10, -1, 1, 10, 100, 1000, 10000),
+    labels = c(-10000, -1000, -100, -10, -1, 1, 10, 100, 1000, 10000),
+    limits = c(-10000, 20000)
+  ) +
+  scale_color_brewer(palette = "Dark2")+
+  #facet_wrap(~ transition_site, ncol = 2, scales = "free_y") +
+  xlab("") +
+  ylab("") +
+  labs(tag = "B", color = "Trophic role")+
+  ggtitle("Sea urchin barren")+
+  theme_bw() + my_theme + theme(axis.text.y = element_blank())
+p2
 
 
+combined_plot <- ggpubr::ggarrange(p1, p2, common.legend = TRUE, align = "h") 
 
+combined_plot_annotated <- annotate_figure(combined_plot,
+                bottom = text_grob("Percent change", 
+                                   hjust = 4.5, x = 1, size = 10),
+                left = text_grob("Species", rot = 90, size = 10)
+)
+
+
+ggsave(combined_plot_annotated, filename=file.path(figdir, "Fig4_mvabund.png"), bg = "white",
+       width=8, height=10, units="in", dpi=600) 
 
 
 
