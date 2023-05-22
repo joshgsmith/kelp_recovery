@@ -218,13 +218,13 @@ slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
               tip_length = c(0.01, 0.01),
               textsize=3)+
   ylim(0,20)+
-  xlab("Resistance") +
+  xlab("") +
   ylab("Slope Mean") +
   ggtitle("Slope") +
   labs(tag="B")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
 slope
 
 
@@ -236,13 +236,13 @@ bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
                         tip_length = c(0.01, 0.01),
                         textsize=3)+
   ylim(5,23)+
-  xlab("Resistance") +
+  xlab("") +
   ylab("Depth (m) Mean") +
   ggtitle("Depth range") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
 bat
 
 
@@ -255,13 +255,13 @@ beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
                         tip_length = c(0.01, 0.01),
                         textsize=3)+
   ylim(2,13)+
-  xlab("Resistance") +
+  xlab("") +
   ylab("BEUTI Mean") +
   ggtitle("BEUTI") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
 beuti
 
 sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
@@ -273,13 +273,13 @@ sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
                         tip_length = c(0.01, 0.01),
                         textsize=3)+
   ylim(12,16)+
-  xlab("Resistance") +
+  xlab("") +
   ylab("SST Mean") +
   ggtitle("SST") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
 sst
 
 
@@ -291,13 +291,13 @@ kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp)) +
                         tip_length = c(0.01, 0.01),
                         textsize=3)+
   ylim(50,220)+
-  xlab("Resistance") +
+  xlab("") +
   ylab("Kelp baseline density \n(no stipes per m²)") +
   ggtitle("Kelp baseline") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
 kelp
 
 rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
@@ -308,22 +308,28 @@ rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
                         tip_length = c(0.01, 0.01),
                         textsize=3)+
   #ylim(50,220)+
-  xlab("Resistance") +
+  xlab("") +
   ylab("Vector ruggedness") +
   ggtitle("Rugosity") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
 rugosity
 
-predictors <- ggpubr::ggarrange(slope, bat, kelp, beuti, sst,rugosity, ncol=3, nrow=2) 
+predictors <- ggpubr::ggarrange(slope, bat, kelp, beuti, sst,rugosity, ncol=3, nrow=2, align = "v") 
 predictors
 
 
-full_plot <- ggarrange(p1, predictors, nrow=1,  widths=c(1.5,2))
+full_plot <- ggarrange(p1, predictors, nrow=1,  widths=c(1.3,2))
+
+full_plot <- annotate_figure(full_plot,
+                             bottom = text_grob("Site type", 
+                                                hjust = 5.5, vjust = -2, x = 1, size = 8)
+)
+full_plot
 
 ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new.png"), 
-       width=7, height=6, bg="white", units="in", dpi=600)
+       width=8, height=6, bg="white", units="in", dpi=600)
 
 
