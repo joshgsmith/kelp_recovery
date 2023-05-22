@@ -103,7 +103,8 @@ mod_dat <- left_join(response_vars, mod_predict_build1, by=c("year","site")) %>%
 #build full model
 
 # Fit mixed model with random intercepts and slopes for site and year
-full_mod <- lme4::lmer(stipe_mean ~ npp + vrm_sum + bat_mean + beuti_month_obs + 
+full_mod <- lme4::lmer(stipe_mean ~ #npp +
+                         vrm_sum + bat_mean + beuti_month_obs + 
                          slope_mean + sst_month_obs + year + baseline_kelp +
                          (1|site), data = mod_dat)
 
@@ -161,7 +162,7 @@ mod_out <- mod_out[mod_out$predictor != "(Intercept)",]
 my_theme <-  theme(axis.text=element_text(size=6),
                    axis.text.y = element_text(angle = 90, hjust = 0.5),
                    axis.title=element_text(size=8),
-                   plot.tag=element_text(size=8),
+                   plot.tag=element_text(size=8, face = "bold"),
                    plot.title =element_text(size=7, face="bold"),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
@@ -222,7 +223,8 @@ slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
   ggtitle("Slope") +
   labs(tag="B")+
   theme_classic()+
-  my_theme
+  my_theme+
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
 slope
 
 
@@ -239,7 +241,8 @@ bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
   ggtitle("Depth range") +
   labs(tag="")+
   theme_classic()+
-  my_theme
+  my_theme+
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
 bat
 
 
@@ -257,7 +260,8 @@ beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
   ggtitle("BEUTI") +
   labs(tag="")+
   theme_classic()+
-  my_theme
+  my_theme+
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
 beuti
 
 sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
@@ -274,7 +278,8 @@ sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
   ggtitle("SST") +
   labs(tag="")+
   theme_classic()+
-  my_theme
+  my_theme+
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
 sst
 
 
@@ -291,10 +296,28 @@ kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp)) +
   ggtitle("Kelp baseline") +
   labs(tag="")+
   theme_classic()+
-  my_theme
+  my_theme+
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
 kelp
 
-predictors <- ggpubr::ggarrange(slope, bat, kelp, beuti, sst, ncol=3, nrow=2) 
+rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
+  geom_boxplot(fill = "#66C2A5", color = "black") +
+  geom_jitter(width = 0.1, height = 0, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  #ylim(50,220)+
+  xlab("Resistance") +
+  ylab("Vector ruggedness") +
+  ggtitle("Rugosity") +
+  labs(tag="")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests turned \nbarren"))  # Renaming levels
+rugosity
+
+predictors <- ggpubr::ggarrange(slope, bat, kelp, beuti, sst,rugosity, ncol=3, nrow=2) 
 predictors
 
 
