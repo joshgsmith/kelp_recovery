@@ -400,7 +400,16 @@ plot_merge <- rbind(swath_pc, fish_pc, upc_pc) %>%
                                      ifelse(common_name == "Decorator Crab, Moss Crab", "Decorator crab",
                                             ifelse(common_name == "Tunicate -Colonial,Compund,Social","Tunicate (colonial)",common_name)))),
          common_name = str_to_sentence(common_name),
-         primary_trophic = str_to_sentence(primary_trophic))
+         primary_trophic = str_to_sentence(primary_trophic)) 
+  #drop species that do not have scientific names
+ # mutate(species = ifelse(species == "Red algae leaf like",NA,
+  #                        ifelse(species == "Coralline algae crustose", NA,
+   #                              ifelse(species == "Red algae encrusting",NA,
+    #                                    ifelse(species == "Red algae lacy branching",NA,
+     #                                          ifelse(species == "Desmarestia","Desmarestia spp",
+      #                                                ifelse(species == "Dictyoneurum californicum reticulatum","Dictyoneurum spp.",
+       #                                                      ifelse(species == "Loxorhynchus crispatus scyra acutifrons","Loxorhynchus spp.",
+        #                                                            ifelse(species == "Tunicate colonial compund social",NA, species)))))))))
 
 avg_perc_change <- plot_merge %>%
   group_by(transition_site, species) %>%
@@ -524,8 +533,8 @@ p1 <- ggplot(resist_dat,
   #facet_wrap(~ transition_site, ncol = 2, scales = "free_y") +
   xlab("") +
   ylab("") +
-  labs(tag = "A", color = "Trophic role")+
-  ggtitle("Kelp forest")+
+  labs(tag = "A", color = "Trophic position")+
+  ggtitle("Persistent forests")+
   theme_bw() + my_theme + theme(axis.text.y = element_blank())
 p1
 
@@ -572,8 +581,8 @@ p2 <- ggplot(transition_dat,
   #facet_wrap(~ transition_site, ncol = 2, scales = "free_y") +
   xlab("") +
   ylab("") +
-  labs(tag = "B", color = "Trophic role")+
-  ggtitle("Sea urchin barren")+
+  labs(tag = "B", color = "Trophic position")+
+  ggtitle("Forests turned barren")+
   theme_bw() + my_theme + theme(axis.text.y = element_blank())
 p2
 
