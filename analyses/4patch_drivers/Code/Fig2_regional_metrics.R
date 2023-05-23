@@ -142,6 +142,23 @@ wss <- (nrow(cent)-1)*sum(apply(cent[,2:3],2,var))
 for(i in 1:13) wss[i] <- sum(kmeans(cent[,2:3],centers=i)$withinss)
 plot(1:13, wss, type="b", xlab="Number of clusters", ylab="Within groups sum of squares")
 
+# Create a data frame for plotting
+df <- data.frame(NumClusters = 1:13, WSS = wss)
+
+# Plot using ggplot2
+elbow_plot <- ggplot(df, aes(x = NumClusters, y = WSS)) +
+  geom_line(size=0.5) +
+  geom_point(size=1) +
+  labs(x = "Number of clusters", y = "Within groups sum of squares", size=2) +
+  theme_bw() + theme(panel.grid.minor = element_blank(), panel.grid.major = element_blank(),
+                     axis.text = element_text(size = 6),
+                     axis.title = element_text(size=8))
+
+
+#ggsave(elbow_plot, filename=file.path(figdir, "FigSX_elbow_plot.png"), bg = "white",
+ #      width=4, height=4, units="in", dpi=600) 
+
+
 # choose number of clusters based on elbow in plot
 k <- 2
 
@@ -259,81 +276,84 @@ stan_trajectory
 ymax <- max(swath_alphadiv$swath_shannon, na.rm=TRUE)
 shannon <- ggplot()+
   #swath
-  geom_point(aes(x = year, y=swath_shannon, color = "Swath", fill="Swath"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
+  geom_point(aes(x = year, y=swath_shannon, color = "Kelp and \nmobile inverts", fill="Kelp and \nmobile inverts"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
              position = position_jitter(width = 0.1)) +
-  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=swath_shannon, color = "Swath", fill="Swath"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
+  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=swath_shannon, color = "Kelp and \nmobile inverts", fill="Kelp and \nmobile inverts"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #fish
   geom_point(aes(x = year-0.1, y=fish_shannon, color = "Fish", fill="Fish"), alpha = 0.025, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=fish_shannon, color = "Fish", fill="Fish"),data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)) ) +
   #upc
-  geom_point(aes(x = year+0.1, y=upc_shannon, color = "UPC",fill="UPC"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year+0.1, y=upc_shannon, color = "Macroalgae and \nsessile inverts",fill="Macroalgae and \nsessile inverts"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
-  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=upc_shannon, color = "UPC", fill = "UPC"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
+  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=upc_shannon, color = "Macroalgae and \nsessile inverts", fill = "Macroalgae and \nsessile inverts"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #color
-  scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
-  scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
+  scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Kelp and \nmobile inverts","Macroalgae and \nsessile inverts"))+ 
+  scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Kelp and \nmobile inverts","Macroalgae and \nsessile inverts"))+ 
   # Heatwave
   annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
-  labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
+  labs(color = "Organism \ntype", fill = "Organism \ntype")+
   ylab("Shannon diversity")+
   xlab("Year")+
-  ggtitle("Shannon diversity")
+  ggtitle("Shannon diversity")+
+  guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(1.1, "lines")))
 
 shannon
 
 ymax <- max(swath_alphadiv$swath_simpson, na.rm=TRUE)
 simpson <- ggplot()+
   #swath
-  geom_point(aes(x = year, y=swath_simpson, color = "Swath", fill="Swath"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
+  geom_point(aes(x = year, y=swath_simpson, color = "Kelp and \nmobile inverts", fill="Kelp and \nmobile inverts"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
              position = position_jitter(width = 0.1)) +
-  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=swath_simpson, color = "Swath", fill="Swath"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
+  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=swath_simpson, color = "Kelp and \nmobile inverts", fill="Kelp and \nmobile inverts"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #fish
   geom_point(aes(x = year-0.1, y=fish_simpson, color = "Fish", fill="Fish"), alpha = 0.025, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=fish_simpson, color = "Fish", fill="Fish"),data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)) ) +
   #upc
-  geom_point(aes(x = year+0.1, y=upc_simpson, color = "UPC",fill="UPC"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year+0.1, y=upc_simpson, color = "Macroalgae and \nsessile inverts",fill="Macroalgae and \nsessile inverts"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
-  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=upc_simpson, color = "UPC", fill = "UPC"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
+  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=upc_simpson, color = "Macroalgae and \nsessile inverts", fill = "Macroalgae and \nsessile inverts"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #color
-  scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
-  scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
+  scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Kelp and \nmobile inverts","Macroalgae and \nsessile inverts"))+ 
+  scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Kelp and \nmobile inverts","Macroalgae and \nsessile inverts"))+ 
   # Heatwave
   annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
-  labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
+  labs(color = "Organism \ntype", fill = "Organism \ntype")+
   ylab("Simpson diversity")+
   xlab("Year")+
-  ggtitle("Simpson diversity")
+  ggtitle("Simpson diversity")+
+  guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(1.1, "lines")))
 
 simpson
 
 
 richness <- ggplot()+
   #swath
-  geom_point(aes(x = year, y=S.obs, color = "Swath", fill="Swath"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
+  geom_point(aes(x = year, y=S.obs, color = "Kelp and \nmobile inverts", fill="Kelp and \nmobile inverts"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
              position = position_jitter(width = 0.1)) +
-  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=S.obs, color = "Swath", fill="Swath"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
+  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=S.obs, color = "Kelp and \nmobile inverts", fill="Kelp and \nmobile inverts"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #fish
   geom_point(aes(x = year-0.1, y=S.obs, color = "Fish", fill="Fish"), alpha = 0.025, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=S.obs, color = "Fish", fill="Fish"),data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)) ) +
   #upc
-  geom_point(aes(x = year+0.1, y=S.obs, color = "UPC",fill="UPC"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year+0.1, y=S.obs, color = "Macroalgae and \nsessile inverts",fill="Macroalgae and \nsessile inverts"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
-  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=S.obs, color = "UPC", fill = "UPC"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
+  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=S.obs, color = "Macroalgae and \nsessile inverts", fill = "Macroalgae and \nsessile inverts"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #color
-  scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
-  scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
+  scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Kelp and \nmobile inverts","Macroalgae and \nsessile inverts"))+ 
+  scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Kelp and \nmobile inverts","Macroalgae and \nsessile inverts"))+ 
   # Heatwave
   annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
-  labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
+  labs(color = "Organism \ntype", fill = "Organism \ntype")+
   ylab("Species richness (n)")+
   xlab("Year")+
-  ggtitle("Species richness")
+  ggtitle("Species richness")+
+  guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(1.1, "lines")))
 
 richness
 
@@ -341,28 +361,28 @@ richness
 
 evenness <- ggplot()+
   #swath
-  geom_point(aes(x = year, y=swath_evenness, color = "Swath", fill="Swath"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
+  geom_point(aes(x = year, y=swath_evenness, color = "Kelp and \nmobile inverts", fill="Kelp and \nmobile inverts"), alpha = 0.025, size=0.5, data = swath_alphadiv %>% mutate(site = gsub("_", " ", site)),
              position = position_jitter(width = 0.1)) +
-  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=swath_evenness, color = "Swath", fill="Swath"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
+  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=swath_evenness, color = "Kelp and \nmobile inverts", fill="Kelp and \nmobile inverts"),data = swath_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #fish
   geom_point(aes(x = year-0.1, y=fish_evenness, color = "Fish", fill="Fish"), alpha = 0.025, size=0.5, data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
   geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=fish_evenness, color = "Fish", fill="Fish"),data = fish_alphadiv %>% mutate(site = gsub("_", " ", site)) ) +
   #upc
-  geom_point(aes(x = year+0.1, y=upc_evenness, color = "UPC",fill="UPC"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
+  geom_point(aes(x = year+0.1, y=upc_evenness, color = "Macroalgae and \nsessile inverts",fill="Macroalgae and \nsessile inverts"), alpha = 0.025, size=0.5, data = upc_alphadiv %>% mutate(site = gsub("_", " ", site)), 
              position = position_jitter(width = 0.1)) +
-  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=upc_evenness, color = "UPC", fill = "UPC"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
+  geom_smooth(method = "auto", se = TRUE, size = 0.5, alpha = 0.3, aes(x = year, y=upc_evenness, color = "Macroalgae and \nsessile inverts", fill = "Macroalgae and \nsessile inverts"),data = upc_alphadiv %>% mutate(site = gsub("_", " ", site))) +
   #color
-  scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
-  scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Swath","UPC"))+ 
+  scale_color_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Kelp and \nmobile inverts","Macroalgae and \nsessile inverts"))+ 
+  scale_fill_manual(values = c("#009E73", "#E69F00","#CC79A7"), labels = c("Fish", "Kelp and \nmobile inverts","Macroalgae and \nsessile inverts"))+ 
   # Heatwave
   annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
-  labs(color = 'Survey \nmethod', fill = "Survey \nmethod")+
+  labs(color = "Organism \ntype", fill = "Organism \ntype")+
   ylab("Species evenness")+
   xlab("Year")+
-  ggtitle("Species evenness")
-
+  ggtitle("Species evenness")+
+  guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(1.1, "lines")))
 evenness
 
 
@@ -373,11 +393,13 @@ combined_plot <- ggarrange(shannon, simpson, richness, evenness, ncol = 2, nrow=
 combined_plot
 
 
-region_wide_plot <- ggarrange(stan_trajectory, combined_plot, ncol=1)
+
+region_wide_plot <- ggpubr::ggarrange(stan_trajectory, combined_plot, ncol=1)
 
 
-ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics_new.png"), bg = "white",
-      width=5.5, height=8, units="in", dpi=600) 
+#ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics_new2.png"), bg = "white",
+ #     width=5.5, height=8, units="in", dpi=600) 
+
 
 
 
