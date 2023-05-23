@@ -137,9 +137,9 @@ plot_dat <- left_join(df_mean_kelp, dist_long1, by="site")
 #plot
 
 # Theme
-my_theme <-  theme(axis.text=element_text(size=6),
+my_theme <-  theme(axis.text=element_text(size=8),
                    axis.text.y = element_text(angle = 90, hjust = 0.5),
-                   axis.title=element_text(size=8),
+                   axis.title=element_text(size=10),
                    plot.tag=element_blank(), #element_text(size=8),
                    plot.title =element_text(size=7, face="bold"),
                    # Gridlines 
@@ -204,6 +204,7 @@ B <- ggplot(data = macro, aes(x = mean_count_after/60, y = mean_count_before/60)
   my_theme
 
 B
+
 
 C <- ggpubr::ggarrange(A, B, ncol=1)
 C
