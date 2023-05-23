@@ -373,15 +373,26 @@ plot_merge <- rbind(swath_pc, fish_pc, upc_pc) %>%
   #rename common names
   mutate(common_name = str_to_sentence(common_name),
          trophic_ecology = str_to_sentence(trophic_ecology),
-         common_name = case_when(
-           common_name == "Red algae (lacy branching)" ~ "Red algae (lacy)",
-           common_name == "Red algae (branching flat blade)" ~ "Red algae (branching)",
-           common_name == "Decorator crab, moss crab" ~ "Decorator or moss crab",
-           common_name == "Tunicate colonial,compund,social" ~ "Colonial tunicate",
-           TRUE ~common_name
-           ),
+         #common_name = case_when(
+          # common_name == "Red algae (lacy branching)" ~ "Red algae (lacy)",
+          # common_name == "Red algae (branching flat blade)" ~ "Red algae (branching)",
+          # common_name == "Decorator crab, moss crab" ~ "Decorator or moss crab",
+          # common_name == "Tunicate colonial,compund,social" ~ "Colonial tunicate",
+         #  TRUE ~common_name
+        #   ),
          #fix trophic ecology
-         trophic_ecology = ifelse(common_name == "Red sea urchin","Herbivore",trophic_ecology))
+        # trophic_ecology = ifelse(common_name == "Red sea urchin","Herbivore",trophic_ecology),
+        # species = case_when(
+        #   species == "Red algae lacy branching" ~ "",
+        #   species == "Red algae leaf like" ~ "",
+           #species == "Coralline algae crustose" ~ "",
+           #species == "Red algae encrusting" ~ "",
+           #species == "Dictyoneurum californicum reticulatum" ~ "Dictyoneurum spp.",
+           #species == "Tunicate colonial,compund,social" ~ "",
+        #   TRUE ~ species
+        # )
+        # 
+        )
 
 
 
