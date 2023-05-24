@@ -128,11 +128,12 @@ my_theme <-  theme(axis.text=element_text(size=3),
                    axis.title=element_text(size=4),
                    plot.tag=element_text(size=4),
                    plot.title =element_text(size=4, face="bold"),
+                   plot.subtitle =element_text(size=5),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
                    panel.background = element_blank(), 
-                   axis.line = element_line(colour = "black"),
+                   #axis.line = element_line(colour = "black"),
                    # Legend
                    legend.key = element_blank(),
                    legend.background = element_rect(fill=alpha('blue', 0)),
@@ -150,7 +151,7 @@ options(gganimate_tempdir = "/Volumes/seaotterdb$/kelp_recovery/analyses/4patch_
 
 
 plot <- ggplot(cent_new, aes(x = NMDS1, y = NMDS2)) +
-  geom_point(color = ifelse(cent_new$year %in% c(2013, 2014, 2015, 2016), "red", "#666666")) +
+  geom_point(color = ifelse(cent_new$year %in% c(2013, 2014, 2015, 2016), "red", "#666666"), size=1) +
   geom_point(data=cent_mean, aes(x = NMDS1, y = NMDS2),color = "purple", size=5, alpha=0.6) +
   #transition_reveal(year)+
   transition_time(year) +
