@@ -74,7 +74,7 @@ stan_untrans_ord <- metaMDS(stan_untransformed_distmat, distance = "bray", paral
 
 scrs<- as.data.frame(scores(stan_ord, display="site"))
 scrs <- cbind(as.data.frame(scrs), year=stan_group_vars$year, site = stan_group_vars$site) #to facilitate computing centroids, add group var
-cent <- aggregate(cbind(NMDS1, NMDS2) ~ year + site, data = scrs, FUN = mean) #computes centroids by MHW and region
+cent <- aggregate(cbind(NMDS1, NMDS2) ~ year + site, data = scrs, FUN = mean) #computes centroids by year and site
 
 
 #Sort cent by site and year to ensure clusters are assigned correctly
@@ -123,12 +123,13 @@ cent_mean <- cent %>% group_by(year) %>% summarize(NMDS1 = mean(NMDS1),
 
 
 # Theme
-my_theme <-  theme(axis.text=element_text(size=3),
+my_theme <-  theme(axis.text=element_text(size=2),
                    axis.text.y = element_text(angle = 90, hjust = 0.5),
-                   axis.title=element_text(size=4),
-                   plot.tag=element_text(size=4),
-                   plot.title =element_text(size=4, face="bold"),
-                   plot.subtitle =element_text(size=5),
+                   axis.title=element_text(size=2),
+                   axis.ticks = element_line(size = 0.1),
+                   plot.tag=element_text(size=2),
+                   plot.title =element_text(size=2, margin = margin(0,0,7,0)),
+                   plot.subtitle =element_text(size=3, face = "bold", margin = margin(0,0,-8,0), hjust = 0.1),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -138,21 +139,18 @@ my_theme <-  theme(axis.text=element_text(size=3),
                    legend.key = element_blank(),
                    legend.background = element_rect(fill=alpha('blue', 0)),
                    legend.key.height = unit(1, "lines"), 
-                   legend.text = element_text(size = 3),
-                   legend.title = element_text(size = 4),
+                   legend.text = element_text(size = 1),
+                   legend.title = element_text(size = 2),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
-                   strip.text = element_text(size = 3 ,face="bold"),
+                   strip.text = element_text(size = 1 ,face="bold"),
 )
-
-#options(gganimate_tempdir = "/Volumes/seaotterdb$/kelp_recovery/analyses/4patch_drivers/Figures/gganimate/frames")
-
 
 
 plot <- ggplot(cent_new, aes(x = NMDS1, y = NMDS2)) +
-  geom_point(color = ifelse(cent_new$year %in% c(2013, 2014, 2015, 2016), "red", "#666666"), size=1) +
-  geom_point(data=cent_mean, aes(x = NMDS1, y = NMDS2),color = "purple", size=5, alpha=0.6) +
+  geom_point(color = ifelse(cent_new$year %in% c(2013, 2014, 2015, 2016), "red", "#666666"), size=0.3) +
+  geom_point(data=cent_mean, aes(x = NMDS1, y = NMDS2),color = "purple", size=3, alpha=0.6) +
   #transition_reveal(year)+
   transition_time(year) +
   ease_aes('linear')+
@@ -161,7 +159,13 @@ plot <- ggplot(cent_new, aes(x = NMDS1, y = NMDS2)) +
   labs(subtitle = "Year: {frame_time}")+
   #annotate("text", x = -0.4, y = 0.5, label = paste("Year:", "{frame_time}"))+
   shadow_mark(alpha = 0.2, size = 0.5)+
-  theme_bw()+my_theme
+  annotate("text", x = 0.1, y = -0.395, label = paste("Created by: Joshua G. Smith"), 
+           size=0.6, hjust = 0) +
+  annotate("text", x = 0.1, y = -0.47, label = paste("Description: Relative abundance of algae, invertebrates, \nand fishes at 24 PISCO sites. Each point depicts a single \nlong-term site moving through multivariate space with the \ncentroid included as the purple bubble. Marine heatwave \nyears (2014-2016) are colored red."), 
+           size=0.6, hjust = 0, vjust = 0.6) +
+  annotate("text", x = 0.1, y = -0.58, label = paste("Data source: 10.25494/P6/MLPA_KELPFOREST.4"), 
+           size=0.5, hjust = 0, fontface = "italic") +
+  theme_bw()+my_theme 
 plot
 
 ################################################################################
@@ -174,7 +178,7 @@ animation <- animate(plot, renderer = gifski_renderer(), fps=7,
 
 
 # Save the animation as a GIF file
-anim_save(animation, filename=file.path(figdir, "comm_change_anim.gif"))
+anim_save(animation, filename=file.path(figdir, "comm_change_anim_credit.gif"))
 
 
 ################################################################################
