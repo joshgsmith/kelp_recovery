@@ -3,7 +3,7 @@
 
 rm(list=ls())
 
-librarian::shelf(tidyverse, here, vegan, ggplot2, cluster, ggforce, gganimate)
+librarian::shelf(tidyverse, here, vegan, ggplot2, cluster, gganimate)
 
 
 ################################################################################
@@ -13,6 +13,9 @@ figdir <- "/Users/jossmith/kelp_recovery/analyses/4patch_drivers/Figures/gganima
 
 stan_dat <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_stan_CC.csv")) 
 
+#data available from https://opc.dataone.org/view/doi:10.25494/P6/MLPA_kelpforest.4
+
+#processing script available at https://github.com/joshgsmith/kelp_recovery/tree/main/data/subtidal_monitoring
 
 ################################################################################
 #pre-analysis processing
@@ -35,11 +38,8 @@ stan_dat <- stan_dat %>% mutate(across(where(is.numeric), ~replace_na(., 0))) %>
                     site == "BIRD_ROCK"))
 
 
-
 ################################################################################
 #prepare data for ordination
-
-#----------------process standardized data--------------------------------------
 
 #define group vars
 stan_group_vars <- stan_dat %>% dplyr::select(1:9)
@@ -146,7 +146,7 @@ my_theme <-  theme(axis.text=element_text(size=3),
                    strip.text = element_text(size = 3 ,face="bold"),
 )
 
-options(gganimate_tempdir = "/Volumes/seaotterdb$/kelp_recovery/analyses/4patch_drivers/Figures/gganimate/frames")
+#options(gganimate_tempdir = "/Volumes/seaotterdb$/kelp_recovery/analyses/4patch_drivers/Figures/gganimate/frames")
 
 
 
@@ -157,13 +157,15 @@ plot <- ggplot(cent_new, aes(x = NMDS1, y = NMDS2)) +
   transition_time(year) +
   ease_aes('linear')+
   theme_minimal()+
-  labs(title = "Kelp forest community structure")+
+  labs(title = "Kelp forest community structure \nMonterey and Carmel Bay, CA")+
   labs(subtitle = "Year: {frame_time}")+
   #annotate("text", x = -0.4, y = 0.5, label = paste("Year:", "{frame_time}"))+
   shadow_mark(alpha = 0.2, size = 0.5)+
   theme_bw()+my_theme
 plot
 
+################################################################################
+#export as .gif
 
 animation <- animate(plot, renderer = gifski_renderer(), fps=7,
                      width = 1080,
@@ -171,12 +173,12 @@ animation <- animate(plot, renderer = gifski_renderer(), fps=7,
                      res = 600)
 
 
-
 # Save the animation as a GIF file
 anim_save(animation, filename=file.path(figdir, "comm_change_anim.gif"))
 
 
-#set up video
+################################################################################
+#export as .mp4
 
 # Set up the animation
 animation <- animate(plot, renderer = av_renderer(), fps = 7,
