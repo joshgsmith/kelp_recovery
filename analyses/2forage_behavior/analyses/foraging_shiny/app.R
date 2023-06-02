@@ -221,7 +221,7 @@ server <- function(input, output, session) {
   })
 }
 
-shinyApp(ui, server) 
+shinyApp(ui, server)
 
  
 #post_memory <- mem_used()  # Capture memory usage after running the script
