@@ -22,7 +22,7 @@ datin <- "/Volumes/seaotterdb$/kelp_recovery/data/kelp_landsat/raw"
 datout <- "/Volumes/seaotterdb$/kelp_recovery/data/kelp_landsat/processed"
 figdir <- here::here("analyses","figures")
 
-landsat_dat <- "LandsatKelpBiomass_2022_Q2_withmetadata.nc"
+landsat_dat <- "LandsatKelpBiomass_2023_Q1_withmetadata.nc"
 
 # read the data in
 landsat_raw <- tidync(file.path(datin, landsat_dat)) 
@@ -85,9 +85,9 @@ kelp_landsat_export <- kelp_landsat_sf %>%
                         #Marina SB = northernmost point
                         latitude <= 36.696714)
                         
-nrow(kelp_landsat_export)
+#nrow(kelp_landsat_export)
 
-st_write(kelp_landsat_export, file.path(datout, "monterey_peninsula/landsat_mpen_1984_2022_points_withNAs.shp"))
+st_write(kelp_landsat_export, file.path(datout, "monterey_peninsula/landsat_mpen_1984_2023_points_withNAs.shp"))
 
 
 ################################################################################
