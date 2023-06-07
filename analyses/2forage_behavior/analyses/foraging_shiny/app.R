@@ -21,7 +21,8 @@ library(terra)
 #setwd(here::here("analyses","2forage_behavior","analyses","foraging_shiny"))
 
 #read landsat dat
-landsat_dat <- st_read("landsat_short.shp")
+#landsat_dat <- st_read("landsat_short.shp") #old
+landsat_dat <- st_read("landsat_2016_2023.shp")
 
 #read foraging data
 forage_dat <- read.csv("foraging_data_2016_2023.csv")
@@ -34,7 +35,7 @@ rast_raw <- landsat_dat
 
 # transform landsat data to Teale Albers
 rast_build1 <- st_transform(rast_raw, crs = 3310) %>% 
-  mutate(biomass = ifelse(biomass == 0, NA, biomass))  %>% filter (year == 2016 | year == 2017 | year == 2018 | year ==2019)
+  mutate(biomass = ifelse(biomass == 0, NA, biomass))  %>% filter (year >= 2016) #reduce years if memory issue
 
 #define blank raster
 r <- rast(rast_build1, res=30)
@@ -96,7 +97,7 @@ kelp_na <- rasterize(kelp_historic, r,"biomass", resolution = 30)
 #Step 3 -- process foraging data
 
 forage_build1 <- forage_dat %>%
-  filter (year == 2016 | year == 2017 | year == 2018 | year ==2019) %>%
+  filter (year >= 2016) %>%
   mutate(quarter = ifelse(month == 1 | month == 2 | month == 3, 1,
                           ifelse(month == 4 | month == 5 | month == 6,2,
                                  ifelse(month == 7 | month == 8 | month == 9,3,4)))) # %>%
@@ -104,7 +105,7 @@ forage_build1 <- forage_dat %>%
  # filter(prey == "pur" | prey == "mus") 
 
 focal_patch <-  forage_dat %>%
-  filter (year == 2016 | year == 2017 | year == 2018 | year ==2019)%>%
+  filter (year >=2016)%>%
   mutate(quarter = ifelse(month == 1:3,1,
                           ifelse(month == 4:6,2,
                                  ifelse(month==7:9,3,4)))) %>%
@@ -159,7 +160,7 @@ ui <- fluidPage(
            p(tags$b("FOR INTERNAL USE ONLY")),
            p("Created by: Joshua G. Smith - Monterey Bay Aquarium"),
            p("Source files:"),
-           p("Landsat - DOI 10.6073/pasta/41f330ccf66fa8c05fc851862e69b1da"),
+           p("Santa Barbara Coastal LTER, T. Bell, K. Cavanaugh, and D. Siegel. 2023. SBC LTER: Time series of quarterly NetCDF files of kelp biomass in the canopy from Landsat 5, 7 and 8, since 1984 (ongoing) ver 20. Environmental Data Initiative. https://doi.org/10.6073/pasta/41f330ccf66fa8c05fc851862e69b1da (Accessed 2023-06-02)."),
            p("Sea otter foraging - Monterey Bay Aquarium"),
     )
   )
@@ -202,14 +203,14 @@ server <- function(input, output, session) {
       tm_map <- tm_shape(kelp_na) +
         tm_raster(palette = "Blues", title = "Kelp footprint \n(all time max)", labels = "") +
         tm_shape(stacked_raster[[stacked_raster_layer_name]]) + 
-        tm_raster(breaks = c(0, 1000, 2000, 4000, 5000), title = "Kelp biomass (Kg)") +
+        tm_raster(breaks = c(0, 1000, 2000, 4000, 8000), title = "Kelp biomass (Kg)") +
         tm_shape(filtered_data_prey()) +
         tm_symbols(scale = 0.1, col = "black")
     } else {
       tm_map <- tm_shape(kelp_na) +
         tm_raster(palette = "Blues", title = "Kelp footprint \n(all time max)", labels = "") +
         tm_shape(stacked_raster[[stacked_raster_layer_name]]) + 
-        tm_raster(breaks = c(0, 1000, 2000, 4000, 5000), title = "Kelp biomass (Kg)")
+        tm_raster(breaks = c(0, 1000, 2000, 4000, 8000), title = "Kelp biomass (Kg)")
     }
     
     tm_map
