@@ -18,6 +18,9 @@ bat_raw <- readxl::read_excel(file.path(basedir,"data/seafloor_data/processed/ba
 envr_raw <- readRDS( file.path(basedir, "/data/environmental_data/cuti/processed/beuti_cuti_sst_monthly_amoms_by_PISCO_site.Rds"))
 npp_raw <- readRDS( file.path(basedir, "/data/environmental_data/NPP/processed/npp_at_PISCO_site.Rds"))
 
+#load environmental data from Natalie Low
+nl_dat <- read.csv(file.path(basedir, "/data/environmental_data/PISCO_site_data/raw/Merged_Env_vars_all_sites_and_years.csv")) %>% janitor::clean_names()
+
 ################################################################################
 #load sites
 
@@ -108,22 +111,28 @@ envr_build1 <- envr_raw %>% #select sites in Carmel and Monterey Bay only
 
 site_predict_build2 <- left_join(envr_build1, site_predict_build1, by="site") %>%
                       dplyr::select(year, month, baseline_region, site, latitude, longitude,
-                                    ca_mpa_name_short, mpa_class, mpa_designation, everything())
+                                    ca_mpa_name_short, mpa_class, mpa_designation, everything()) %>%
+                        #join with natalie low data
+                        left_join(nl_dat, by=c("site","year")) %>%
+                        #clean up
+                      dplyr::select(!(c(id, campus, lat_wgs84, lon_wgs84, x_type, x_freq)))
 
+
+#saveRDS(site_predict_build2, file.path(basedir, "data/environmental_data/predictors_at_pisco_sites_v2.Rds"))
 
 ################################################################################
 #join with NPP
 
-npp_build1 <- npp_raw %>% dplyr::select(year, month, site, npp=chlorophyll) 
+#npp_build1 <- npp_raw %>% dplyr::select(year, month, site, npp=chlorophyll) 
 
-site_predict_build3 <- site_predict_build2 %>% 
+#site_predict_build3 <- site_predict_build2 %>% 
                         #rename to match missing values with their closest relative site
-                        mutate(nearest_site = ifelse(site == "BLUEFISH_UC", "BLUEFISH_DC",
-                                                                            ifelse(site == "BUTTERFLY_UC","BUTTERFLY_DC",
-                                                                                   ifelse(site == "PESCADERO_UC","PESCADERO_DC",site))))
+ #                       mutate(nearest_site = ifelse(site == "BLUEFISH_UC", "BLUEFISH_DC",
+  #                                                                          ifelse(site == "BUTTERFLY_UC","BUTTERFLY_DC",
+   #                                                                                ifelse(site == "PESCADERO_UC","PESCADERO_DC",site))))
 
-site_predict_build4 <- left_join(site_predict_build3, npp_build1, by=c("year","month","nearest_site"="site")) %>%
-                        dplyr::select(!(nearest_site))
+#site_predict_build4 <- left_join(site_predict_build3, npp_build1, by=c("year","month","nearest_site"="site")) %>%
+ #                       dplyr::select(!(nearest_site))
 
 
 
