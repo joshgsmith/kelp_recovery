@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Satellite Imagery Explorer</title>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css" rel="stylesheet" />
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1Ijoiam9zaHVhZ3NtaXRoIiwiYSI6ImNsaXV4a2V1ajFnMmszcXIwd3o2b2E5ZTkifQ.G5gF6ifLo4BPWfN7A1A8mg';
+    var map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/satellite-v9',
+      center: [0, 0],
+      zoom: 0,
+      pitch: 60
+    });
+  </script>
+</body>
+</html>
