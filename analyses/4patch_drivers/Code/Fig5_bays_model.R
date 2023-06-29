@@ -297,7 +297,7 @@ my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
                    axis.text.y = element_blank(),
                    axis.title=element_text(size=8,color = "black"),
                    plot.tag=element_text(size=8, face = "bold",color = "black"),
-                   plot.title =element_text(size=7, face="bold",color = "black"),
+                   plot.title =element_text(size=7, face="bold",color = "black", vjust=-1),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -362,13 +362,17 @@ plot_posterior <- function(parameter, color_scheme) {
   bayesplot::color_scheme_set(color_scheme)
   plot <- mcmc_areas(fit, pars = parameter) +
     coord_cartesian(xlim = c(-20, 30)) +
-    theme(plot.margin = margin(10, 10, 10, 10)) +
+    theme(plot.margin = margin(1, 10, 5, 10)) +
     labs(y = NULL) +
     labs(title = predictor_names[parameter]) +
     my_theme +
     theme(axis.text.y = element_blank()) +
     theme_bw() +
     my_theme
+  
+  # Add a darker vertical line at 0
+  plot <- plot + geom_vline(xintercept = 0, color = "navyblue", linetype = "solid", size = 1) +
+    theme(plot.margin = margin(1, 10, 1, 10)) 
   
   return(plot)
 }
