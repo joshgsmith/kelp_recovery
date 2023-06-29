@@ -113,8 +113,38 @@ formula <-  bf(stipe_mean ~ resistance + (1 | site) + year + vrm_sum + bat_mean 
 mod_dat_std <- mod_dat
 mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
                 "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")] <- scale(mod_dat[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
-                                                                                                                 "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")])
-#
+                                                                                                             "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")])
+
+################################################################################
+#toy with informed priors
+#determine informed priors
+mod_dat_filtered <- mod_dat %>%
+  filter(year <= 2013)
+
+# Calculate the mean and standard deviation for each parameter on the standardized data
+means <- mod_dat_filtered %>%
+  summarise(across(where(is.numeric), mean))
+
+sds <- mod_dat_filtered %>%
+  summarise(across(where(is.numeric), sd))
+
+# Combine the means and standard deviations into a named vector
+param_means <- as.vector(means)
+param_sds <- as.vector(sds)
+param_names <- names(param_means)
+
+# Create informed priors for numeric variables
+priors <- set_prior(
+  class = "b",
+  coef = param_names,
+  prior = "normal",
+  param = list(mean = param_means, sd = param_sds)
+)
+
+# Add prior for the standard deviation
+priors <- c(priors, prior(cauchy(0, 2.5), class = "sigma"))
+################################################################################
+
 # Define priors for regression coefficients
 prior_coeff <- prior(normal(0, 5), class = b)
 
@@ -263,11 +293,11 @@ bayesplot::mcmc_areas(fit_transitioned, pars = c("b_npp_ann_mean","b_baseline_ke
 #Plot
 
 # Theme
-my_theme <-  theme(axis.text=element_text(size=6),
+my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
                    axis.text.y = element_blank(),
-                   axis.title=element_text(size=8),
-                   plot.tag=element_text(size=8, face = "bold"),
-                   plot.title =element_text(size=7, face="bold"),
+                   axis.title=element_text(size=8,color = "black"),
+                   plot.tag=element_text(size=8, face = "bold",color = "black"),
+                   plot.title =element_text(size=7, face="bold",color = "black"),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -277,12 +307,12 @@ my_theme <-  theme(axis.text=element_text(size=6),
                    legend.key = element_blank(),
                    legend.background = element_rect(fill=alpha('blue', 0)),
                    legend.key.height = unit(1, "lines"), 
-                   legend.text = element_text(size = 6),
-                   legend.title = element_text(size = 7),
+                   legend.text = element_text(size = 6,color = "black"),
+                   legend.title = element_text(size = 7,color = "black"),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
-                   strip.text = element_text(size = 6 ,face="bold"),
+                   strip.text = element_text(size = 6 ,face="bold",color = "black"),
 )
 
 
@@ -318,7 +348,7 @@ color_scheme <- list(
   scheme2 = c("#BA68C8", "#E1BEE7", "#9C27B0", "#8E24AA", "#8E24AA", "#CE93D8"),
   scheme3 = c("#A5D6A7", "#C8E6C9", "#4CAF50", "#2E7D32", "#2E7D32", "#81C784"),
   scheme4 = c("#E57373", "#FFCDD2", "#F44336", "#C62828", "#C62828", "#EF9A9A"),
-  scheme5 = c("#90CAF9", "#BBDEFB", "#2196F3", "#1976D2", "#1976D2", "#64B5F6"),
+  scheme5 = c("#0D47A1", "#0D47A1", "#1976D2", "#1976D2", "#1976D2", "#64B5F6"),
   scheme6 = c("#EEEEEE", "#F5F5F5", "#9E9E9E", "#757575", "#757575", "#E0E0E0"),
   scheme7 = c("#FFCC80", "#FFE0B2", "#FF9800", "#E65100", "#E65100", "#FFB74D"),
   scheme8 = c("#81D4FA", "#B3E5FC", "#03A9F4", "#0288D1", "#0288D1", "#4FC3F7"),
@@ -353,19 +383,19 @@ for (i in seq_along(sorted_pars)) {
 # Arrange the plots in a grid
 g1 <- ggpubr::ggarrange(plotlist = plot_list, ncol = 1) + labs(tag = "A") + theme(plot.tag = element_text(size = 8))
 g <- ggpubr::annotate_figure(g1, left = text_grob("Density", 
-                                                rot = 90, vjust = 1, hjust=0.3, size = 12),
-                             bottom = text_grob("", hjust=1, vjust=0, size = 12))
+                                                rot = 90, vjust = 1, hjust=0.3, size = 10),
+                             bottom = text_grob("Standardized beta coefficient", hjust=0.5, vjust=0, size = 10))
 g
 
 
 
 
 # Theme 2
-my_theme <-  theme(axis.text=element_text(size=6),
+my_theme <-  theme(axis.text=element_text(size=6,color = "black"),
                    #axis.text.y = element_blank(),
-                   axis.title=element_text(size=8),
-                   plot.tag=element_text(size=8, face = "bold"),
-                   plot.title =element_text(size=7, face="bold"),
+                   axis.title=element_text(size=8,color = "black"),
+                   plot.tag=element_text(size=8, face = "bold",color = "black"),
+                   plot.title =element_text(size=7, face="bold",color = "black"),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -373,31 +403,31 @@ my_theme <-  theme(axis.text=element_text(size=6),
                    axis.line = element_line(colour = "black"),
                    # Legend
                    legend.key = element_blank(),
-                   legend.background = element_rect(fill=alpha('blue', 0)),
+                   #legend.background = element_rect(fill=alpha('blue', 0)),
                    legend.key.height = unit(1, "lines"), 
-                   legend.text = element_text(size = 6),
-                   legend.title = element_text(size = 7),
+                   legend.text = element_text(size = 6,color = "black"),
+                   legend.title = element_text(size = 7,color = "black"),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
-                   strip.text = element_text(size = 6 ,face="bold"),
+                   strip.text = element_text(size = 6 ,face="bold",color = "black"),
 )
 
-kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp)) +
+kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp/60)) +
   geom_boxplot(fill = "#D8B166", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
                         tip_length = c(0.01, 0.01),
                         textsize=3)+
-  ylim(50,220)+
+ # ylim(50,220)+
   xlab("") +
-  ylab("Kelp baseline density \n(no stipes per m²)") +
-  ggtitle("Baseline kelp") +
+  ylab("Kelp baseline density \n(no. stipes per m²)") +
+  ggtitle("Baseline \nkelp") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #kelp
 
 sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
@@ -410,12 +440,12 @@ sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
                         textsize=3)+
   ylim(12,16)+
   xlab("") +
-  ylab("SST Mean") +
-  ggtitle("Sea surface temperature (°C)") +
+  ylab("Sea surface temperature \n(°C, annual mean)") +
+  ggtitle("Sea surface \ntemperature (°C)") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #sst
 
 npp <- ggplot(data = mod_dat, aes(x = resistance, y = npp_ann_mean)) +
@@ -426,14 +456,14 @@ npp <- ggplot(data = mod_dat, aes(x = resistance, y = npp_ann_mean)) +
                         y_position = 4000,
                         tip_length = c(0.01, 0.01),
                         textsize=3)+
-  #ylim(12,16)+
+  ylim(0,4200)+
   xlab("") +
-  ylab("NPP Mean") +
-  ggtitle("Net primary productivity") +
+  ylab("Net primary productivity \n(annual mean)") +
+  ggtitle("Net primary \nproductivity") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))
 #npp
 
 beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
@@ -446,16 +476,16 @@ beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
                         textsize=3)+
   ylim(2,13)+
   xlab("") +
-  ylab("BEUTI Mean") +
-  ggtitle("Upwelling (BEUTI)") +
+  ylab("BEUTI \n(annual mean") +
+  ggtitle("Upwelling \n(BEUTI)") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #beuti
 
 rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
-  geom_boxplot(fill = "#90CAF9", color = "black") +
+  geom_boxplot(fill = "#0D47A1", color = "black") +
   geom_jitter(width = 0.1, height = 0, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
@@ -463,13 +493,14 @@ rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
                         textsize=3)+
   #ylim(50,220)+
   xlab("") +
-  ylab("Vector ruggedness") +
+  ylim(1.0,1.12)+
+  ylab("Vector \nruggedness") +
   ggtitle("Rugosity") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
-#rugosity
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
+rugosity
 
 orb_v <- ggplot(data = mod_dat, aes(x = resistance, y = orb_vmax)) +
   geom_boxplot(fill = "#E0E0E0", color = "black") +
@@ -480,12 +511,13 @@ orb_v <- ggplot(data = mod_dat, aes(x = resistance, y = orb_vmax)) +
                         textsize=3)+
   #ylim(0,20)+
   xlab("") +
-  ylab("Orbital velocity") +
-  ggtitle("Orbital velocity") +
+  ylab("Orbital \nvelocity") +
+  ggtitle("Orbital \nvelocity") +
+  ylim(0,2500)+
   #labs(tag="B")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #orb_v
 
 bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
@@ -497,12 +529,12 @@ bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
                         textsize=3)+
   ylim(5,23)+
   xlab("") +
-  ylab("Depth (m) Mean") +
+  ylab("Depth") +
   ggtitle("Mean depth (m)") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #bat
 
 slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
@@ -514,12 +546,12 @@ slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
               textsize=3)+
   ylim(0,20)+
   xlab("") +
-  ylab("Slope Mean") +
-  ggtitle("Reef slope") +
+  ylab("Slope \n(mean per site)") +
+  ggtitle("Reef \nslope") +
   #labs(tag="B")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #slope
 
 wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
@@ -531,12 +563,13 @@ wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
                         textsize=3)+
   #ylim(0,20)+
   xlab("") +
-  ylab("Wave height (m)") +
-  ggtitle("Wave height (m)") +
+  ylim(0,13)+
+  ylab("Wave \nheight (m)") +
+  ggtitle("Wave \nheight (m)") +
   #labs(tag="B")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #wave_h
 
 
@@ -544,15 +577,20 @@ wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
 predictors1 <- ggpubr::ggarrange(kelp, sst, npp, beuti, rugosity, orb_v, bat, slope, wave_h, ncol=3, nrow=3, align = "v")  + labs(tag = "B") + theme(plot.tag = element_text(size=8)) 
 predictors <- annotate_figure(predictors1,
                                            bottom = text_grob("Site type", 
-                                                              hjust = 6, vjust = -1, x = 1, size = 12))
+                                                              hjust = 4.5, vjust = 0.1, x = 1, size = 10))
 #predictors
 
-full_plot <- ggarrange(g, predictors, nrow=1,  widths=c(1.3,2))
+full_plot <- ggarrange(g, predictors, nrow=1,  #widths=c(1.3,2)
+                       widths = c(0.3,0.7),
+                       heights = c(0.3,0.8)) + theme(plot.margin = margin(10, 1, 1, 1))
+                       #plot.margin = margin(10, 10, 10, 10, "pt")
+                       
 full_plot
 
 
 
 ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new2.png"), 
-       width=9, height=8, bg="white", units="in", dpi=600)
+       width=7.5, height=8, bg="white", units="in", dpi=600,
+       device = "png")
 
 
