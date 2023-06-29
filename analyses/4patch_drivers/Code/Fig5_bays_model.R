@@ -3,9 +3,8 @@
 #May 9, 2023
 
 rm(list=ls())
-librarian::shelf(tidyverse, here, vegan, cowplot, ggpubr, lme4)
+librarian::shelf(tidyverse, here, vegan, cowplot, ggpubr, lme4, rstan, brms)
 
-library(dplyr)
 
 ################################################################################
 #set directories and load data
@@ -102,85 +101,20 @@ mod_dat <- left_join(response_vars, mod_predict_build1, by=c("year","site")) %>%
 #mod_dat_build3$sst_norm <- scale(mod_dat_build3$sst_c_mean)
 
 ################################################################################
-#build full model
-
-# Standardize the predictor variables
-mod_dat_scaled <- mod_dat %>% mutate(resistance = factor(resistance))  # Create a new data frame to store the standardized variables
-mod_dat_scaled[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean", "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")] <- scale(mod_dat_scaled[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean", "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")])
-
-# Fit mixed model with random intercepts and slopes for site and year
-full_mod <- lme4::lmer(stipe_mean ~ vrm_sum + bat_mean + beuti_month_obs + 
-                         npp_ann_mean + wave_hs_max + orb_vmax + slope_mean + 
-                         sst_month_obs + year + baseline_kelp + (1|site), 
-                       data = mod_dat_scaled) 
-
-# Fit mixed model with random intercepts and slopes for site and year
-full_mod <- lmerTest::lmer(stipe_mean ~ vrm_sum + bat_mean + beuti_month_obs + 
-                         npp_ann_mean + wave_hs_max + orb_vmax + slope_mean + 
-                         sst_month_obs + year + baseline_kelp + (1|site), 
-                       data = mod_dat_scaled) 
-
-# Test binomial
-# Set the reference level
-mod_dat_scaled$resistance <- relevel(mod_dat_scaled$resistance, ref = "transitioned")
-full_mod <- glmer(resistance ~ #
-                    vrm_sum + 
-                    bat_mean + 
-                    #beuti_month_obs + 
-                    npp_ann_mean + 
-                    wave_hs_max + 
-                    orb_vmax + 
-                    slope_mean + 
-                    sst_month_obs + 
-                    baseline_kelp +
-                    (1 + year | site), #yyear nested within site to allow for variation in the intercept and the effect of year across different sites. 
-                  data = mod_dat_scaled, family = binomial,
-                  #na.action = na.exclude,
-                  #control = glmerControl(optCtrl = list(maxfun = 5000))
-                  control=glmerControl(optimizer="Nelder_Mead",optCtrl=list(maxfun=2e5))
-                  )
-
-# fit the model
-fit <- summary(full_mod)
-
-# Print model summary
-summary(full_mod)
-AIC(full_mod)
-
-#check optimization
-nrow(mod_dat_scaled)
-length(getME(full_mod, "theta"))
-length(fixef(full_mod))
-
-################################################################################
-#Troubleshooting convergence
-
-# Standardize the predictor variables
-mod_dat_scaled <- mod_dat %>% mutate(resistance = factor(resistance))  # Create a new data frame to store the standardized variables
-mod_dat_scaled[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean", "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")] <- scale(mod_dat_scaled[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean", "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")])
-
-#Check singularity
-tt <- getME(full_mod, "theta")
-ll <- getME(full_mod, "lower")
-min(tt[ll==0])
-
-afurl <- "https://raw.githubusercontent.com/lme4/lme4/master/misc/issues/allFit.R"
-result <- eval(RCurl::getURL(afurl))
-
-aa <- allFit(full_mod)
-
-################################################################################
-#Try bays
-
-library(rstan)
-library(brms)
+#build model
 
 # Specify the formula
-formula <- formula <- bf(stipe_mean ~ resistance + (1 | site) + year + vrm_sum + bat_mean + beuti_month_obs +
+formula <-  bf(stipe_mean ~ resistance + (1 | site) + year + vrm_sum + bat_mean + beuti_month_obs +
                            npp_ann_mean + wave_hs_max + orb_vmax +
                            slope_mean + sst_month_obs + baseline_kelp)
 
 
+# Standardize the predictors using z-scores
+mod_dat_std <- mod_dat
+mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
+                "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")] <- scale(mod_dat[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
+                                                                                                                 "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")])
+#
 # Define priors for regression coefficients
 prior_coeff <- prior(normal(0, 5), class = b)
 
@@ -190,10 +124,9 @@ prior_sd <- prior(cauchy(0, 2.5), class = sigma)
 # Combine priors
 priors <- c(prior_coeff, prior_sd)
 
-# Specify the model
 set.seed(1985)
 model <- brm(formula = formula,
-             data = mod_dat_scaled,
+             data = mod_dat_std,
              family = gaussian(),
              prior = priors,
              warmup = 1000,
@@ -207,58 +140,131 @@ samples <- posterior::as_draws(fit)
 
 #posterior check
 # Plot the posterior distributions for each parameter
-bayesplot::mcmc_areas(samples)
-
+#bayesplot::mcmc_areas(samples)
 
 # Plot the posterior distributions for each parameter excluding "Intercept"
-bayesplot::mcmc_areas(fit, pars = c("b_npp_ann_mean","b_baseline_kelp"))
+bayesplot::mcmc_areas(fit, pars = c("b_npp_ann_mean",
+                                    "b_baseline_kelp",
+                                    #"b_year",
+                                    "b_vrm_sum",
+                                    "b_bat_mean",
+                                    "b_beuti_month_obs",
+                                    #"b_npp_ann_mean",
+                                    "b_wave_hs_max",
+                                    "b_orb_vmax",
+                                    "b_slope_mean",
+                                    "b_sst_month_obs")) 
 
 ################################################################################
-#build sub models 
+#Sensitivity analysis
+# Remove rows with missing values
+mod_dat_std <- na.omit(mod_dat_std)
 
-sub_mod1 <- lme4::lmer(stipe_mean ~year +
-                         baseline_kelp +
-                         beuti_month_obs + 
-                         vrm_sum +
-                         (1 | site), data = mod_dat)
+# Perform sensitivity analysis
+sensitivity_results <- list()
 
+predictors <- c("resistance", "year", "vrm_sum", "bat_mean", "beuti_month_obs",
+                "npp_ann_mean", "wave_hs_max", "orb_vmax", "slope_mean",
+                "sst_month_obs", "baseline_kelp")
 
-# Compare the full model to the sub-models using an LRT
-anova(full_mod, sub_mod1)
+for (predictor in predictors) {
+  # Exclude the current predictor from the model
+  exclude_formula <- update(formula, . ~ . - eval(parse(text = predictor)))
+  
+  # Fit the updated model
+  exclude_fit <- brm(formula = exclude_formula,
+                     data = mod_dat_std,
+                     family = gaussian(),
+                     prior = priors,
+                     warmup = 1000,
+                     iter = 2000,
+                     chains = 4,
+                     cores = 4)
+  
+  # Extract posterior samples for the updated model
+  exclude_samples <- posterior::as_draws(exclude_fit)
+  
+  # Compute the change in estimates
+  estimate_change <- median(samples[[paste0("b_", predictor)]]) - median(exclude_samples[[paste0("b_", predictor)]])
+  
+  # Store the results
+  result_row <- data.frame(Predictor = predictor,
+                           Excluded = paste0("Excluding ", predictor),
+                           Change_in_Estimate = estimate_change,
+                           stringsAsFactors = FALSE)
+  
+  sensitivity_results <- c(sensitivity_results, list(result_row))
+}
 
+# Combine the sensitivity analysis results into a data frame
+sensitivity_results <- do.call(rbind, sensitivity_results)
+
+# Print the sensitivity analysis results
+print(sensitivity_results)
 
 
 
 ################################################################################
-#prep plotting
+#test separate model for transitioned and persistent sites
 
 
-# Extract the estimated effect size and confidence intervals for each predictor
-effect_sizes <- data.frame(coef(summary(full_mod))[,1:3])
-effect_sizes$predictor <- rownames(effect_sizes)
+# Specify the formula
+formula <- bf(stipe_mean ~ (1 | site) + year + vrm_sum + bat_mean + beuti_month_obs +
+                npp_ann_mean + wave_hs_max + orb_vmax +
+                slope_mean + sst_month_obs + baseline_kelp)
 
-# Calculate confidence intervals
-pred_ci <- confint(full_mod, level = 0.95) %>% data.frame() %>% rownames_to_column()
+# Standardize the predictors using z-scores
+mod_dat_std <- mod_dat
+mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
+                "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")] <- scale(mod_dat[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
+                                                                                                                 "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")])
 
+# Define priors for regression coefficients
+prior_coeff <- prior(normal(0, 5), class = b)
 
-mod_out <- left_join(effect_sizes, pred_ci, by=c("predictor"="rowname")) %>%
-              rename("ci_lower" = `X2.5..`,
-                     "ci_upper" = `X97.5..`)
+# Define prior for the standard deviation
+prior_sd <- prior(cauchy(0, 2.5), class = sigma)
 
+# Combine priors
+priors <- c(prior_coeff, prior_sd)
 
-# Calculate the upper and lower bounds of the error bars
-mod_out$lower_error <- effect_sizes$Estimate - 1.96 * effect_sizes$Std..Error
-mod_out$upper_error <- effect_sizes$Estimate + 1.96 * effect_sizes$Std..Error
+# Subset the data into 'transitioned' and 'persistent' groups
+data_transitioned <- subset(mod_dat_std, resistance == "transitioned")
+data_resist <- subset(mod_dat_std, resistance == "resistant")
 
-# Exclude the row corresponding to the intercept
-mod_out <- mod_out[mod_out$predictor != "(Intercept)",]
+# Fit the model separately for each subset
+set.seed(1985)
+fit_transitioned <- brm(formula = formula, data = data_transitioned, family = gaussian(),
+                        prior = priors, warmup = 1000, iter = 2000, chains = 4, cores = 4)
+
+set.seed(1985)
+fit_resist <- brm(formula = formula, data = data_resist, family = gaussian(),
+                      prior = priors, warmup = 1000, iter = 2000, chains = 4, cores = 4)
+
+# Run the model
+samples_resist <- posterior::as_draws(fit_resist)
+samples_transitioned <- posterior::as_draws(fit_transitioned)
+
+#posterior check
+
+# Plot the posterior distributions for each parameter excluding "Intercept"
+bayesplot::mcmc_areas(fit_resist, pars = c("b_npp_ann_mean","b_baseline_kelp","b_year",
+                                    "b_vrm_sum","b_bat_mean","b_beuti_month_obs",
+                                    "b_npp_ann_mean","b_wave_hs_max","b_orb_vmax",
+                                    "b_slope_mean","b_sst_month_obs"))
+
+bayesplot::mcmc_areas(fit_transitioned, pars = c("b_npp_ann_mean","b_baseline_kelp","b_year",
+                                           "b_vrm_sum","b_bat_mean","b_beuti_month_obs",
+                                           "b_npp_ann_mean","b_wave_hs_max","b_orb_vmax",
+                                           "b_slope_mean","b_sst_month_obs"))
+
 
 ################################################################################
 #Plot
 
 # Theme
 my_theme <-  theme(axis.text=element_text(size=6),
-                   axis.text.y = element_text(angle = 90, hjust = 0.5),
+                   axis.text.y = element_blank(),
                    axis.title=element_text(size=8),
                    plot.tag=element_text(size=8, face = "bold"),
                    plot.title =element_text(size=7, face="bold"),
@@ -279,36 +285,78 @@ my_theme <-  theme(axis.text=element_text(size=6),
                    strip.text = element_text(size = 6 ,face="bold"),
 )
 
-"#FF7F00"
 
 
-# Create a forest plot with points and error bars
-p1 <- ggplot(mod_out %>%
-               
-               mutate(predictor = ifelse(predictor == "sst_month_obs","SST",
-                                         ifelse(predictor == "npp_lag2","NPP",
-                                                ifelse(predictor == "beuti_month_obs","BEUTI",
-                                                       ifelse(predictor == "baseline_kelp","Kelp baseline \n(2007-2013",
-                                                              ifelse(predictor == "vrm_sum","Rugosity (m)",
-                                                                     ifelse(predictor == "slope_mean","Slope (m)",
-                                                                            ifelse(predictor == "bat_mean","Depth range (m)",
-                                                                                   ifelse(predictor == "year","Year",predictor)))))))))
-             
-             , aes(x = reorder(predictor, -Estimate), y = Estimate)) +
-  geom_point(#aes(color = Estimate), 
-             size = 2) +
-  #scale_color_gradient2(low = "navy", mid = "blue", high = "darkred", midpoint = 0) +
-  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2, size = 0.5) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  coord_flip() +
-  xlab("Predictor") +
-  ylab("Effect size") +
-  labs(color = "Effect size", tag = "A")+
-  ggtitle("Mixed model effect sizes") +
-  theme_classic() +
-  my_theme
+# Map predictor names
+predictor_names <- c("b_npp_ann_mean" = "Net primary productivity", 
+                                             "b_baseline_kelp" = "Baseline kelp", 
+                                             #"b_year",
+                                             "b_vrm_sum" = "Rugosity", 
+                                             "b_bat_mean" = "Mean depth (m)", 
+                                             "b_beuti_month_obs" = "Upwelling (BEUTI)",
+                                             # "b_npp_ann_mean" = "", 
+                                             "b_wave_hs_max" = "Wave height (m)", 
+                                             "b_orb_vmax" = "Orbital velocity",
+                                             "b_slope_mean" = "Reef slope", 
+                                             "b_sst_month_obs" = "Sea surface temperature (°C)")
 
-p1
+# Extract the posterior samples
+posterior_samples <- as.matrix(fit, pars = names(predictor_names))
+
+# Calculate the mean for each parameter
+means <- colMeans(posterior_samples)
+
+# Sort the parameter names based on mean values in descending order
+sorted_pars <- names(means)[order(-means)]
+
+# Define the number of color variations for each parameter
+num_variations <- 6 #9C27B0
+
+# Define the manually created color schemes
+color_scheme <- list(
+  scheme1 = c("#D8B166", "#FFECB3", "#E6A800", "#FFD633", "#FFD633", "#E6C300"),
+  scheme2 = c("#BA68C8", "#E1BEE7", "#9C27B0", "#8E24AA", "#8E24AA", "#CE93D8"),
+  scheme3 = c("#A5D6A7", "#C8E6C9", "#4CAF50", "#2E7D32", "#2E7D32", "#81C784"),
+  scheme4 = c("#E57373", "#FFCDD2", "#F44336", "#C62828", "#C62828", "#EF9A9A"),
+  scheme5 = c("#90CAF9", "#BBDEFB", "#2196F3", "#1976D2", "#1976D2", "#64B5F6"),
+  scheme6 = c("#EEEEEE", "#F5F5F5", "#9E9E9E", "#757575", "#757575", "#E0E0E0"),
+  scheme7 = c("#FFCC80", "#FFE0B2", "#FF9800", "#E65100", "#E65100", "#FFB74D"),
+  scheme8 = c("#81D4FA", "#B3E5FC", "#03A9F4", "#0288D1", "#0288D1", "#4FC3F7"),
+  scheme9 = c("#78909C", "#CFD8DC", "#607D8B", "#455A64", "#455A64", "#78909C"),
+  scheme10 = c("#F48FB1", "#F8BBD0", "#E91E63", "#C2185B", "#C2185B", "#F06292")
+)
+
+
+# Function to plot posterior distribution for each parameter
+plot_posterior <- function(parameter, color_scheme) {
+  bayesplot::color_scheme_set(color_scheme)
+  plot <- mcmc_areas(fit, pars = parameter) +
+    coord_cartesian(xlim = c(-20, 30)) +
+    theme(plot.margin = margin(10, 10, 10, 10)) +
+    labs(y = NULL) +
+    labs(title = predictor_names[parameter]) +
+    my_theme +
+    theme(axis.text.y = element_blank()) +
+    theme_bw() +
+    my_theme
+  
+  return(plot)
+}
+
+# Generate posterior plots for each parameter
+plot_list <- list()
+for (i in seq_along(sorted_pars)) {
+  color_scheme <- color_schemes[[paste0("scheme", i)]]
+  plot_list[[i]] <- plot_posterior(sorted_pars[i], color_scheme)
+}
+
+# Arrange the plots in a grid
+g1 <- ggpubr::ggarrange(plotlist = plot_list, ncol = 1) + labs(tag = "A") + theme(plot.tag = element_text(size = 8))
+g <- ggpubr::annotate_figure(g1, left = text_grob("Density", 
+                                                rot = 90, vjust = 1, hjust=0.3, size = 12),
+                             bottom = text_grob("", hjust=1, vjust=0, size = 12))
+g
+
 
 
 slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
@@ -322,11 +370,11 @@ slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
   xlab("") +
   ylab("Slope Mean") +
   ggtitle("Slope") +
-  labs(tag="B")+
+  #labs(tag="B")+
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
-slope
+#slope
 
 
 bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
@@ -344,7 +392,7 @@ bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
-bat
+#bat
 
 
 beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
@@ -363,7 +411,7 @@ beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
-beuti
+#beuti
 
 sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
   geom_boxplot(fill = "#E7298A", color = "black") +
@@ -381,7 +429,7 @@ sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
-sst
+#sst
 
 
 kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp)) +
@@ -399,7 +447,7 @@ kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp)) +
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
-kelp
+#kelp
 
 rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
   geom_boxplot(fill = "#66C2A5", color = "black") +
@@ -416,21 +464,22 @@ rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
-rugosity
-
-predictors <- ggpubr::ggarrange(slope, bat, kelp, beuti, sst,rugosity, ncol=3, nrow=2, align = "v") 
-predictors
+#rugosity
 
 
-full_plot <- ggarrange(p1, predictors, nrow=1,  widths=c(1.3,2))
 
-full_plot <- annotate_figure(full_plot,
-                             bottom = text_grob("Site type", 
-                                                hjust = 5.5, vjust = -2, x = 1, size = 8)
-)
+predictors1 <- ggpubr::ggarrange(slope, bat, kelp, beuti, sst,rugosity, ncol=3, nrow=2, align = "v")  + labs(tag = "B") + theme(plot.tag = element_text(size=8)) 
+predictors <- annotate_figure(predictors1,
+                                           bottom = text_grob("Site type", 
+                                                              hjust = 6, vjust = -1, x = 1, size = 12))
+#predictors
+
+full_plot <- ggarrange(g, predictors, nrow=1,  widths=c(1.3,2))
 full_plot
 
-ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new.png"), 
-       width=8, height=6, bg="white", units="in", dpi=600)
+
+
+#ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new.png"), 
+ #      width=8, height=6, bg="white", units="in", dpi=600)
 
 
