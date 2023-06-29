@@ -359,62 +359,49 @@ g
 
 
 
-slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
-  geom_boxplot(fill = "#1B9E77", color = "black") +
-  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
-  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
-              map_signif_level = TRUE,
-              tip_length = c(0.01, 0.01),
-              textsize=3)+
-  ylim(0,20)+
-  xlab("") +
-  ylab("Slope Mean") +
-  ggtitle("Slope") +
-  #labs(tag="B")+
-  theme_classic()+
-  my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
-#slope
 
+# Theme 2
+my_theme <-  theme(axis.text=element_text(size=6),
+                   #axis.text.y = element_blank(),
+                   axis.title=element_text(size=8),
+                   plot.tag=element_text(size=8, face = "bold"),
+                   plot.title =element_text(size=7, face="bold"),
+                   # Gridlines 
+                   panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   axis.line = element_line(colour = "black"),
+                   # Legend
+                   legend.key = element_blank(),
+                   legend.background = element_rect(fill=alpha('blue', 0)),
+                   legend.key.height = unit(1, "lines"), 
+                   legend.text = element_text(size = 6),
+                   legend.title = element_text(size = 7),
+                   #legend.spacing.y = unit(0.75, "cm"),
+                   #facets
+                   strip.background = element_blank(),
+                   strip.text = element_text(size = 6 ,face="bold"),
+)
 
-bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
-  geom_boxplot(fill = "#D95F02", color = "black") +
+kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp)) +
+  geom_boxplot(fill = "#D8B166", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
                         tip_length = c(0.01, 0.01),
                         textsize=3)+
-  ylim(5,23)+
+  ylim(50,220)+
   xlab("") +
-  ylab("Depth (m) Mean") +
-  ggtitle("Depth range") +
+  ylab("Kelp baseline density \n(no stipes per m²)") +
+  ggtitle("Baseline kelp") +
   labs(tag="")+
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
-#bat
-
-
-beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
-  geom_boxplot(fill = "#7570B3", color = "black") +
-  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
-  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
-                        map_signif_level = TRUE,
-                        y_position = 11,
-                        tip_length = c(0.01, 0.01),
-                        textsize=3)+
-  ylim(2,13)+
-  xlab("") +
-  ylab("BEUTI Mean") +
-  ggtitle("BEUTI") +
-  labs(tag="")+
-  theme_classic()+
-  my_theme+
-  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
-#beuti
+#kelp
 
 sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
-  geom_boxplot(fill = "#E7298A", color = "black") +
+  geom_boxplot(fill = "#BA68C8", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
@@ -424,33 +411,51 @@ sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
   ylim(12,16)+
   xlab("") +
   ylab("SST Mean") +
-  ggtitle("SST") +
+  ggtitle("Sea surface temperature (°C)") +
   labs(tag="")+
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
 #sst
 
-
-kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp)) +
-  geom_boxplot(fill = "#66A61E", color = "black") +
+npp <- ggplot(data = mod_dat, aes(x = resistance, y = npp_ann_mean)) +
+  geom_boxplot(fill = "#A5D6A7", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
+                        y_position = 4000,
                         tip_length = c(0.01, 0.01),
                         textsize=3)+
-  ylim(50,220)+
+  #ylim(12,16)+
   xlab("") +
-  ylab("Kelp baseline density \n(no stipes per m²)") +
-  ggtitle("Kelp baseline") +
+  ylab("NPP Mean") +
+  ggtitle("Net primary productivity") +
+  labs(tag="")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))
+#npp
+
+beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
+  geom_boxplot(fill = "#E57373", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        y_position = 11,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  ylim(2,13)+
+  xlab("") +
+  ylab("BEUTI Mean") +
+  ggtitle("Upwelling (BEUTI)") +
   labs(tag="")+
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
-#kelp
+#beuti
 
 rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
-  geom_boxplot(fill = "#66C2A5", color = "black") +
+  geom_boxplot(fill = "#90CAF9", color = "black") +
   geom_jitter(width = 0.1, height = 0, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
@@ -466,9 +471,77 @@ rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
   scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
 #rugosity
 
+orb_v <- ggplot(data = mod_dat, aes(x = resistance, y = orb_vmax)) +
+  geom_boxplot(fill = "#E0E0E0", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  #ylim(0,20)+
+  xlab("") +
+  ylab("Orbital velocity") +
+  ggtitle("Orbital velocity") +
+  #labs(tag="B")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
+#orb_v
+
+bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
+  geom_boxplot(fill = "#FFCC80", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  ylim(5,23)+
+  xlab("") +
+  ylab("Depth (m) Mean") +
+  ggtitle("Mean depth (m)") +
+  labs(tag="")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
+#bat
+
+slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
+  geom_boxplot(fill = "#81D4FA", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+              map_signif_level = TRUE,
+              tip_length = c(0.01, 0.01),
+              textsize=3)+
+  ylim(0,20)+
+  xlab("") +
+  ylab("Slope Mean") +
+  ggtitle("Reef slope") +
+  #labs(tag="B")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
+#slope
+
+wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
+  geom_boxplot(fill = "#78909C", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  #ylim(0,20)+
+  xlab("") +
+  ylab("Wave height (m)") +
+  ggtitle("Wave height (m)") +
+  #labs(tag="B")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent \nforests", "Forests \nturned barren"))  # Renaming levels
+#wave_h
 
 
-predictors1 <- ggpubr::ggarrange(slope, bat, kelp, beuti, sst,rugosity, ncol=3, nrow=2, align = "v")  + labs(tag = "B") + theme(plot.tag = element_text(size=8)) 
+
+predictors1 <- ggpubr::ggarrange(kelp, sst, npp, beuti, rugosity, orb_v, bat, slope, wave_h, ncol=3, nrow=3, align = "v")  + labs(tag = "B") + theme(plot.tag = element_text(size=8)) 
 predictors <- annotate_figure(predictors1,
                                            bottom = text_grob("Site type", 
                                                               hjust = 6, vjust = -1, x = 1, size = 12))
@@ -479,7 +552,7 @@ full_plot
 
 
 
-#ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new.png"), 
- #      width=8, height=6, bg="white", units="in", dpi=600)
+ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new2.png"), 
+       width=9, height=8, bg="white", units="in", dpi=600)
 
 
