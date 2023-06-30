@@ -137,11 +137,11 @@ plot_dat <- left_join(df_mean_kelp, dist_long1, by="site")
 #plot
 
 # Theme
-my_theme <-  theme(axis.text=element_text(size=8),
-                   axis.text.y = element_text(angle = 90, hjust = 0.5),
-                   axis.title=element_text(size=10),
-                   plot.tag=element_blank(), #element_text(size=8),
-                   plot.title =element_text(size=7, face="bold"),
+my_theme <-  theme(axis.text=element_text(size=8, color = "black"),
+                   axis.text.y = element_text(angle = 90, hjust = 0.5, color ="black"),
+                   axis.title=element_text(size=10, color = "black"),
+                   plot.tag= element_text(size=8, color = "black"),
+                   plot.title =element_text(size=10, face="italic", color = "black"),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -151,12 +151,12 @@ my_theme <-  theme(axis.text=element_text(size=8),
                    legend.key = element_blank(),
                    legend.background = element_rect(fill=alpha('blue', 0)),
                    legend.key.height = unit(1, "lines"), 
-                   legend.text = element_text(size = 6),
-                   legend.title = element_text(size = 7),
+                   legend.text = element_text(size = 6, color = "black"),
+                   legend.title = element_text(size = 7, color = "black"),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
-                   strip.text = element_text(size = 6 ,face="bold"),
+                   strip.text = element_text(size = 6 ,face="bold", color = "black", hjust =0),
 )
 
 
@@ -187,32 +187,69 @@ A <- ggplot(data = macro, aes(x = mean_count_after, y = mean_count_before)) +
   theme_classic()+
   ggrepel::geom_label_repel(data = macro, aes(x = strong$mean_count_after, y = macro$mean_count_before, label = site),size=2, box.padding = 1, force = 50,min.segment.length = 1)+
   my_theme
+A
 
 
-
-# Create the dumbbell plot with arrows and log scale for strongylocentrotus_purpuratus
-B <- ggplot(data = macro, aes(x = mean_count_after/60, y = mean_count_before/60)) +
-  geom_segment(aes(x = strong$mean_count_before/60, xend = strong$mean_count_after/60, y = macro$mean_count_before/60, yend = macro$mean_count_after/60, color = mean_sim), size = 1, arrow = arrow(length = unit(0.25, "cm"))) +
-  geom_point(aes(x = strong$mean_count_before/60, y = macro$mean_count_before/60, color = mean_sim), size = 3) +
+##build schematic
+# build schematic
+B <- ggplot() +
+  geom_segment(data = data.frame(x = c(0), y = c(2.7), xend = c(25), yend = c(2), facet_var = "i. no community structure change"),
+               aes(x = x, y = y, xend = xend, yend = yend), color = "#008080", arrow = arrow(length = unit(0.25, "cm"), ends = "last"), size = 1) +
+  geom_segment(data = data.frame(x = c(0), y = c(2.7), xend = c(25), yend = c(0.2), facet_var = "ii. kelp loss"),
+               aes(x = x, y = y, xend = xend, yend = yend), color = "#FF7F00", arrow = arrow(length = unit(0.25, "cm"), ends = "last"), size = 1) +
+  geom_point(data = data.frame(x = c(0), y = c(2.7), facet_var = "i. no community structure change"),
+             aes(x = x, y = y), color = "#008080", size = 3) +
+  geom_point(data = data.frame(x = c(0), y = c(2.7), facet_var = "ii. kelp loss"),
+             aes(x = x, y = y), color = "#FF7F00", size = 3) +
+  facet_wrap(~ facet_var, ncol = 2, labeller = labeller(facet_var = c("i. no community structure change" = "i. Kelp persistence \nsmall community structure change", "ii. kelp loss" = "ii. Kelp loss \nlarge community structure change"))) +
   xlab("Purple sea urchin density (per m²)") +
   ylab("Kelp stipe density (per m²)") +
-  labs(color = "Community similarity \n (2007-2013 vs. 2014-2020)")+
-  #scale_x_log10("Purple sea urchin density (log no. per 60 m²)") +
-  scale_color_viridis_c() +
-  theme_classic()+
-  ggrepel::geom_label_repel(data = macro, aes(x = strong$mean_count_before/60, y = macro$mean_count_before/60, label = site), size=2, box.padding = 1, force = 20,min.segment.length = 1)+
-  my_theme
+  labs(tag = "A",
+       title = "Hypothesized relationships")+
+  labs(color = "Community similarity \n (2007-2013 vs. 2014-2020)") +
+  scale_color_identity() +
+  scale_x_continuous(limits = c(0, 30), breaks = seq(0, 30, 10)) +
+  scale_y_continuous(limits = c(0, 3.5), breaks = seq(0, 3.5, 1)) +
+  theme_classic() +
+  my_theme + theme(aspect.ratio = 1.2,
+                   plot.margin = margin(0, 50, 0, 0, "pt")) # decrease margin to align with C
 
 B
 
 
-C <- ggpubr::ggarrange(A, B, ncol=1)
+
+
+# Create the dumbbell plot with arrows and log scale for strongylocentrotus_purpuratus
+C <- ggplot(data = macro, aes(x = mean_count_after/60, y = mean_count_before/60)) +
+  geom_segment(aes(x = strong$mean_count_before/60, xend = strong$mean_count_after/60, y = macro$mean_count_before/60, yend = macro$mean_count_after/60, color = mean_sim), size = 1, arrow = arrow(length = unit(0.25, "cm"))) +
+  geom_point(aes(x = strong$mean_count_before/60, y = macro$mean_count_before/60, color = mean_sim), size = 3) +
+  xlab("Purple sea urchin density (per m²)") +
+  ylab("Kelp stipe density (per m²)") +
+  labs(color = "Community similarity \n (2007-2013 vs. 2014-2020)",
+       title = "Observed relationships") +
+  scale_color_gradient2(low = "#FF7F00", high = "#008080", mid = "gray80", midpoint = 0.41) +  # Adjust the midpoint value
+  theme_classic() +
+  labs(tag = "B")+
+  ggrepel::geom_label_repel(data = macro, aes(x = strong$mean_count_before/60, y = macro$mean_count_before/60, label = site), size = 2, box.padding = 1, force = 20, min.segment.length = 1) +
+  my_theme
 C
 
+C_no_legend <- C + theme(legend.position = "none")
 
-ggsave(B, filename=file.path(figdir, "Fig3_dumbbell.png"), 
-       width=7, height=5, bg="white", units="in", dpi=600)
+# Get the legend from plot C
+legend_C <- cowplot::get_legend(C)
 
+
+D <- cowplot::plot_grid(B, C_no_legend, ncol = 1, nrow = 2, rel_heights = c(0.45,0.55), align = "hv",axis = 1) 
+
+E <- cowplot::plot_grid(D, legend_C, ncol = 2, nrow = 1, align = "hv",axis = 1, rel_widths = c(0.5,0.1)) 
+E
+
+
+
+# Save the combined plot
+ggsave(E, filename = file.path(figdir, "Fig3_dumbbell_new2.png"), 
+       width = 7, height = 8, bg = "white", units = "in", dpi = 600)
 
 
 
