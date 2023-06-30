@@ -581,7 +581,7 @@ wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
 predictors1 <- ggpubr::ggarrange(kelp, sst, npp, beuti, rugosity, orb_v, bat, slope, wave_h, ncol=3, nrow=3, align = "v")  + labs(tag = "B") + theme(plot.tag = element_text(size=8)) 
 predictors <- annotate_figure(predictors1,
                                            bottom = text_grob("Site type", 
-                                                              hjust = 4.5, vjust = 0.1, x = 1, size = 10))
+                                                              hjust = 4.8, vjust = 0.1, x = 1, size = 10))
 #predictors
 
 full_plot <- ggarrange(g, predictors, nrow=1,  #widths=c(1.3,2)
