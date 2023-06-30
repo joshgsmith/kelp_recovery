@@ -228,11 +228,11 @@ fish_alphadiv <- cbind(fish_groups, fish_richness, fish_shannon, fish_simpson, f
 #Step 4 - plot
 
 
-my_theme <-  theme(axis.text=element_text(size=6),
-                   axis.text.y = element_text(angle = 90, hjust = 0.5),
-                   axis.title=element_text(size=8),
-                   plot.tag=element_text(size=8, face="bold"),
-                   plot.title =element_text(size=7, face="bold"),
+my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
+                   axis.text.y = element_text(angle = 90, hjust = 0.5, color = "black"),
+                   axis.title=element_text(size=8, color = "black"),
+                   plot.tag=element_text(size=8, color = "black"),
+                   plot.title =element_text(size=7, face="bold", color = "black"),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -242,12 +242,12 @@ my_theme <-  theme(axis.text=element_text(size=6),
                    legend.key = element_blank(),
                    legend.background = element_rect(fill=alpha('blue', 0)),
                    legend.key.height = unit(1, "lines"), 
-                   legend.text = element_text(size = 6),
-                   legend.title = element_text(size = 7),
+                   legend.text = element_text(size = 6, color = "black"),
+                   legend.title = element_text(size = 7, color = "black"),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
-                   strip.text = element_text(size = 6 ,face="bold"),
+                   strip.text = element_text(size = 6 ,face="bold", color ="black"),
 )
 
 
@@ -387,10 +387,11 @@ evenness
 
 
 # Combine ggplots with ggarrange()
-combined_plot <- ggarrange(shannon, simpson, richness, evenness, ncol = 2, nrow=2, common.legend = TRUE, legend = "right") + 
-  labs(tag = "B") + theme(plot.tag=element_text(size=8)) 
+combined_plot <- ggarrange(shannon, simpson, richness, evenness, ncol = 2, nrow=2, common.legend = TRUE, legend = "right") 
+
 # Display the plot
-combined_plot <- combined_plot + theme(plot.margin = margin(5, 0, 5, 20, "pt"))  
+combined_plot <- combined_plot + theme(plot.margin = margin(5, 0, 5, 20, "pt")) + 
+  labs(tag = "B") + theme(plot.tag=element_text(size=8, color = "black", face = "plain")) 
 
 
 
