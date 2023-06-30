@@ -186,7 +186,7 @@ upc_mvabund <- rbind(upc_t_sig, upc_p_sig)
 
 
 ################################################################################
-#swath mvabund
+#fish mvabund
 
 
 fish_mod_dat <- fish_build1 %>% 
@@ -406,11 +406,11 @@ avg_perc_change <- plot_merge %>%
 ################################################################################
 #Plot
 
-my_theme <-  theme(axis.text=element_text(size=6),
-                   axis.text.y = element_text(angle = 90, hjust = 0.5),
-                   axis.title=element_text(size=8),
-                   plot.tag=element_text(size=8, face="bold"),
-                   plot.title =element_text(size=7, face="bold"),
+my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
+                   axis.text.y = element_text(angle = 90, hjust = 0.5, color = "black"),
+                   axis.title=element_text(size=8, color = "black"),
+                   plot.tag=element_text(size=8, face="plain", color = "black"),
+                   plot.title =element_text(size=7, face="bold", color = "black"),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -420,12 +420,12 @@ my_theme <-  theme(axis.text=element_text(size=6),
                    legend.key = element_blank(),
                    legend.background = element_rect(fill=alpha('blue', 0)),
                    legend.key.height = unit(1, "lines"), 
-                   legend.text = element_text(size = 6),
-                   legend.title = element_text(size = 7),
+                   legend.text = element_text(size = 6, color = "black"),
+                   legend.title = element_text(size = 7, color = "black"),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
-                   strip.text = element_text(size = 6 ,face="bold"),
+                   strip.text = element_text(size = 6 ,face="bold", color = "black", hjust=0),
 )
 
 # Create ggplot plot
@@ -481,61 +481,72 @@ dark2_palette <- c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB
 
 
 resist_dat <- plot_merge %>% filter(transition_site == "no")
+resist_dat$label <- with(resist_dat, ifelse(survey_method == "UPC", paste0("(", round(Before, 2), ", ", round(After, 2), ") *"), paste0("(", round(Before, 2), ", ", round(After, 2), ") \u2020")))
 
 p1 <- ggplot(resist_dat,
-       aes(x = perc_change, y = reorder(species, -perc_change))) +
+             aes(x = perc_change, y = reorder(species, -perc_change))) +
   geom_point(aes(color = trophic_ecology)) +
-  geom_segment(aes(x = 0, xend = perc_change, yend = species, color = trophic_ecology), linetype = "solid", size=1) +
+  geom_segment(aes(x = 0, xend = perc_change, yend = species, color = trophic_ecology), linetype = "solid", size = 1) +
   geom_vline(xintercept = 0, linetype = "dashed") +
-  #add genus species labels
+  # add genus species labels
   geom_text(
     aes(x = ifelse(resist_dat$perc_change >= 0, 0.1, -0.1), label = species, fontface = "italic"),
     hjust = ifelse(resist_dat$perc_change >= 0, 0, 1),
     color = "black",
     size = 2,
-    position = position_nudge(y = -0.1)
+    position = position_nudge(y = -0.1),
+    data = resist_dat
   ) +
-  #add common name labels
+  # add common name labels
   geom_text(
     aes(x = ifelse(resist_dat$perc_change >= 0, 0.1, -0.1), label = common_name),
     hjust = ifelse(resist_dat$perc_change >= 0, 0, 1),
     color = "black",
     size = 3,
-    position = position_nudge(y =0.1)
+    position = position_nudge(y = 0.1),
+    data = resist_dat
   ) +
-  #add pre-post densities
+  # add pre-post densities
   geom_text(
-    aes(x = ifelse(resist_dat$perc_change >= 0, -7, 7), label = paste0("(", round(Before, 2), ", ", round(After, 2), ")")),
+    aes(
+      x = ifelse(resist_dat$perc_change >= 0, -8, 8),
+      label = label
+    ),
     color = "black",
     size = 3,
-    # position = position_nudge(x = 0.15)
+    data = resist_dat
   ) +
   scale_x_continuous(
     trans = ggallin::pseudolog10_trans,
     breaks = c(-20000, -10000, -1000, -100, -10, -1, 1, 10, 100, 1000, 10000),
     labels = c(-20000, -10000, -1000, -100, -10, -1, 1, 10, 100, 1000, 10000)
   ) +
-  scale_color_manual(values = setNames(dark2_palette, unique(plot_merge$trophic_ecology)))+
-  #scale_color_brewer(palette = "Dark2")+
-  #facet_wrap(~ transition_site, ncol = 2, scales = "free_y") +
+  scale_color_manual(values = setNames(dark2_palette, unique(plot_merge$trophic_ecology))) +
   xlab("") +
   ylab("") +
-  labs(tag = "A", color = "Trophic function")+
-  ggtitle("Persistent forests")+
-  theme_bw() + my_theme + theme(axis.text.y = element_blank())
+  labs(tag = "A", color = "Trophic function") +
+  ggtitle("Persistent") +
+  theme_bw() +
+  my_theme +
+  theme(axis.text.y = element_blank())
+
 p1
 
 
 transition_dat <- plot_merge %>% filter(transition_site == "yes") %>% filter(!(species == "Leptasterias hexactis" | species == "Cirripidia")) %>%
                     #drop UPC macro
-                  filter(!(species == "Macrocystis pyrifera" & After <1))
+                   filter(!(survey_method == "UPC" & species == "Macrocystis pyrifera")) %>%
+                  filter(!(survey_method == "Swath" & species == "Macrocystis pyrifera" & Before < 2))
+
+# Create a new column for formatted labels
+transition_dat$label <- with(transition_dat, ifelse(survey_method == "UPC", paste0("(", round(Before, 2), ", ", round(After, 2), ") *"), paste0("(", round(Before, 2), ", ", round(After, 2), ") \u2020" )))
 
 p2 <- ggplot(transition_dat,
              aes(x = perc_change, y = reorder(species, -perc_change))) +
   geom_point(aes(color = trophic_ecology)) +
-  geom_segment(aes(x = 0, xend = perc_change, yend = species, color = trophic_ecology), linetype = "solid", size=1) +
+  geom_segment(aes(x = 0, xend = perc_change, yend = species, color = trophic_ecology), linetype = "solid", size = 1) +
   geom_vline(xintercept = 0, linetype = "dashed") +
-  #add genus species labels
+  # add genus species labels
   geom_text(
     aes(x = ifelse(transition_dat$perc_change >= 0, 0.1, -0.1), label = species, fontface = "italic"),
     hjust = ifelse(transition_dat$perc_change >= 0, 0, 1),
@@ -543,20 +554,22 @@ p2 <- ggplot(transition_dat,
     size = 2,
     position = position_nudge(y = -0.2)
   ) +
-  #add common name labels
+  # add common name labels
   geom_text(
     aes(x = ifelse(transition_dat$perc_change >= 0, 0.1, -0.1), label = common_name),
     hjust = ifelse(transition_dat$perc_change >= 0, 0, 1),
     color = "black",
     size = 3,
-    position = position_nudge(y =0.3)
+    position = position_nudge(y = 0.3)
   ) +
   # add pre-post densities
   geom_text(
-    aes(x = ifelse(transition_dat$perc_change >= 0, -7, 7), label = paste0("(", round(Before, 2), ", ", round(After, 2), ")")),
+    aes(
+      x = ifelse(transition_dat$perc_change >= 0, -10, 10),
+      label = label
+    ),
     color = "black",
-    size = 3,
-   # position = position_nudge(x = 0.15)
+    size = 3
   ) +
   scale_x_continuous(
     trans = ggallin::pseudolog10_trans,
@@ -564,27 +577,31 @@ p2 <- ggplot(transition_dat,
     labels = c(-10000, -1000, -100, -10, -1, 1, 10, 100, 1000, 10000),
     limits = c(-10000, 20000)
   ) +
-  scale_color_manual(values = setNames(dark2_palette, unique(plot_merge$trophic_ecology)))+
-  #facet_wrap(~ transition_site, ncol = 2, scales = "free_y") +
+  scale_color_manual(values = setNames(dark2_palette, unique(plot_merge$trophic_ecology))) +
   xlab("") +
   ylab("") +
-  labs(tag = "B", color = "Trophic function")+
-  ggtitle("Forests turned barren")+
-  theme_bw() + my_theme + theme(axis.text.y = element_blank())
+  labs(tag = "B", color = "Trophic function") +
+  ggtitle("Transitioned") +
+  theme_bw() +
+  my_theme +
+  theme(axis.text.y = element_blank())
+
 p2
+
 
 
 combined_plot <- ggpubr::ggarrange(p1, p2, common.legend = TRUE, align = "h") 
 
 combined_plot_annotated <- annotate_figure(combined_plot,
                 bottom = text_grob("Percent change", 
-                                   hjust = 4.5, x = 1, size = 10),
-                left = text_grob("Species", rot = 90, size = 10)
+                                   hjust = 4.8, x = 1, size = 10),
+                left = text_grob("Species", rot = 90, size = 10, vjust=2)
 )
 
+combined_plot
 
 ggsave(combined_plot_annotated, filename=file.path(figdir, "Fig4_mvabund.png"), bg = "white",
-       width=8, height=10, units="in", dpi=600) 
+       width=8.5, height=10, units="in", dpi=600) 
 
 
 
