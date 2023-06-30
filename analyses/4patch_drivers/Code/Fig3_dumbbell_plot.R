@@ -156,7 +156,7 @@ my_theme <-  theme(axis.text=element_text(size=8, color = "black"),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
-                   strip.text = element_text(size = 6 ,face="bold", color = "black", hjust =0),
+                   strip.text = element_text(size = 8 ,face="bold", color = "black", hjust =0),
 )
 
 
@@ -248,7 +248,7 @@ E
 
 
 # Save the combined plot
-ggsave(E, filename = file.path(figdir, "Fig3_dumbbell_new2.png"), 
+ggsave(E, filename = file.path(figdir, "Fig3_dumbbell_new3.png"), 
        width = 7, height = 8, bg = "white", units = "in", dpi = 600)
 
 
