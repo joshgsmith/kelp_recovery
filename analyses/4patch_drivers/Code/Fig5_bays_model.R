@@ -312,7 +312,7 @@ my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
-                   strip.text = element_text(size = 6 ,face="bold",color = "black"),
+                   strip.text = element_text(size = 6 ,face="plain",color = "black"),
 )
 
 
@@ -343,7 +343,7 @@ sorted_pars <- names(means)[order(-means)]
 num_variations <- 6 #9C27B0
 
 # Define the manually created color schemes
-color_scheme <- list(
+color_schemes <- list(
   scheme1 = c("#D8B166", "#FFECB3", "#E6A800", "#FFD633", "#FFD633", "#E6C300"),
   scheme2 = c("#BA68C8", "#E1BEE7", "#9C27B0", "#8E24AA", "#8E24AA", "#CE93D8"),
   scheme3 = c("#A5D6A7", "#C8E6C9", "#4CAF50", "#2E7D32", "#2E7D32", "#81C784"),
@@ -385,7 +385,7 @@ for (i in seq_along(sorted_pars)) {
 }
 
 # Arrange the plots in a grid
-g1 <- ggpubr::ggarrange(plotlist = plot_list, ncol = 1) + labs(tag = "A") + theme(plot.tag = element_text(size = 8))
+g1 <- ggpubr::ggarrange(plotlist = plot_list, ncol = 1) + labs(tag = "A") + theme(plot.tag = element_text(size = 8, face = "plain"))
 g <- ggpubr::annotate_figure(g1, left = text_grob("Density", 
                                                 rot = 90, vjust = 1, hjust=0.3, size = 10),
                              bottom = text_grob("Standardized beta coefficient", hjust=0.5, vjust=0, size = 10))
@@ -414,7 +414,7 @@ my_theme <-  theme(axis.text=element_text(size=6,color = "black"),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
-                   strip.text = element_text(size = 6 ,face="bold",color = "black"),
+                   strip.text = element_text(size = 6 ,face="plain",color = "black"),
 )
 
 kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp/60)) +
@@ -578,7 +578,7 @@ wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
 
 
 
-predictors1 <- ggpubr::ggarrange(kelp, sst, npp, beuti, rugosity, orb_v, bat, slope, wave_h, ncol=3, nrow=3, align = "v")  + labs(tag = "B") + theme(plot.tag = element_text(size=8)) 
+predictors1 <- ggpubr::ggarrange(kelp, sst, npp, beuti, rugosity, orb_v, bat, slope, wave_h, ncol=3, nrow=3, align = "v")  + labs(tag = "B") + theme(plot.tag = element_text(size=8, face="plain")) 
 predictors <- annotate_figure(predictors1,
                                            bottom = text_grob("Site type", 
                                                               hjust = 4.8, vjust = 0.1, x = 1, size = 10))
@@ -593,7 +593,7 @@ full_plot
 
 
 
-ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new2.png"), 
+ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new3.png"), 
        width=7.5, height=8, bg="white", units="in", dpi=600,
        device = "png")
 
