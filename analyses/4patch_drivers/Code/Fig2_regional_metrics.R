@@ -388,17 +388,17 @@ evenness
 
 # Combine ggplots with ggarrange()
 combined_plot <- ggarrange(shannon, simpson, richness, evenness, ncol = 2, nrow=2, common.legend = TRUE, legend = "right") + 
-  labs(tag = "B") + theme(plot.tag=element_text(size=8))
+  labs(tag = "B") + theme(plot.tag=element_text(size=8)) 
 # Display the plot
-combined_plot
+combined_plot <- combined_plot + theme(plot.margin = margin(5, 0, 5, 20, "pt"))  
 
 
 
 region_wide_plot <- ggpubr::ggarrange(stan_trajectory, combined_plot, ncol=1)
+region_wide_plot 
 
-
-#ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics_new2.png"), bg = "white",
- #     width=5.5, height=8, units="in", dpi=600) 
+ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics_new3.png"), bg = "white",
+      width=5.5, height=8, units="in", dpi=600) 
 
 
 
