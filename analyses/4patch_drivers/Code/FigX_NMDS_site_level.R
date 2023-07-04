@@ -12,6 +12,7 @@ basedir <- "/Volumes/seaotterdb$/kelp_recovery/"
 
 stan_dat <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_stan_CC.csv")) 
 
+figdir <- here::here("analyses","4patch_drivers","Figures")
 
 ################################################################################
 #pre-analysis processing
@@ -31,8 +32,7 @@ stan_dat <- stan_dat %>% mutate(across(where(is.numeric), ~replace_na(., 0))) %>
                     site == "PT_JOE" |
                     site == "SPANISH_BAY_DC" |
                     site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK"))
-
+                    site == "BIRD_ROCK")) 
 
 
 ################################################################################
@@ -73,7 +73,7 @@ stan_untrans_ord <- metaMDS(stan_untransformed_distmat, distance = "bray", paral
 
 scrs<- as.data.frame(scores(stan_ord, display="site"))
 scrs <- cbind(as.data.frame(scrs), year=stan_group_vars$year, site = stan_group_vars$site) #to facilitate computing centroids, add group var
-cent <- aggregate(cbind(NMDS1, NMDS2) ~ year + site, data = scrs, FUN = mean) #computes centroids by MHW and region
+cent <- aggregate(cbind(NMDS1, NMDS2) ~ year + site, data = scrs, FUN = mean) 
 
 
 #Sort cent by site and year to ensure clusters are assigned correctly
@@ -151,24 +151,48 @@ library(scales)
 
 year_breaks <- as.numeric(c("2008","2011","2014","2017","2020"))
 
-stan_trajectory <- ggplot(data = cent_new %>%
+stan_trajectory <- ggplot(data = cent_new %>% 
                             mutate(site = gsub("_", " ", site)),
-                          aes(NMDS1, NMDS2)) +
-  geom_segment(aes(x = NMDS1, y = NMDS2, xend = lead(NMDS1), yend = lead(NMDS2), color = year),
-               size = 1) +
+                          aes(NMDS1, NMDS2, color = year)) +
+  geom_path(size = 1, lineend = "round") +
   scale_color_gradient(low = "green", high = "purple", name = "Year", 
                        breaks = year_breaks, labels = year_breaks,
-                       guide = guide_colorbar(title.position = "top", title.hjust = 0.5, title.vjust = 1)) +
+                     guide = guide_colorbar(title.position = "top", title.hjust = 0.5, title.vjust = 1)) +
   stat_ellipse(aes(fill = factor(clust_new)), type = "norm", level = 0.8, geom = "polygon", alpha = 0.2) +
   scale_fill_manual(values = c("forestgreen", "purple")) +
   ggtitle("Kelp forest community structure") +
-  facet_wrap(~site, scales = "free") +
+  facet_wrap(~site, scales = "fixed") +
   theme_bw() +
   theme(plot.title = element_text(size = 16, face = "bold"),
         axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
-        legend.position = "right") + my_theme
+        legend.position = "right") + my_theme + coord_equal()
 stan_trajectory
+
+
+
+
+#ggsave(stan_trajectory, filename=file.path(figdir, "FigSX_site_level_trajectories.png"), bg = "white",
+ #      width=7, height=7, units="in", dpi=600) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
