@@ -118,11 +118,11 @@ cent_new <- cent %>%
 #Step 2 - plot
 
 # Theme
-my_theme <-  theme(axis.text=element_text(size=6),
-                   axis.text.y = element_text(angle = 90, hjust = 0.5),
-                   axis.title=element_text(size=8),
+my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
+                   axis.text.y = element_text(angle = 90, hjust = 0.5, color = "black"),
+                   axis.title=element_text(size=8, color = "black"),
                    plot.tag=element_blank(), #element_text(size=8),
-                   plot.title =element_text(size=7, face="bold"),
+                   plot.title =element_text(size=7, face="bold", color = "black"),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -132,12 +132,12 @@ my_theme <-  theme(axis.text=element_text(size=6),
                    legend.key = element_blank(),
                    legend.background = element_rect(fill=alpha('blue', 0)),
                    legend.key.height = unit(1, "lines"), 
-                   legend.text = element_text(size = 6),
-                   legend.title = element_text(size = 7),
+                   legend.text = element_text(size = 6, color = "black"),
+                   legend.title = element_text(size = 7, color = "black"),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
-                   strip.text = element_text(size = 6 ,face="bold"),
+                   strip.text = element_text(size = 6 ,face="bold", hjust=0, color = "black"),
 )
 
 
@@ -152,7 +152,9 @@ library(scales)
 year_breaks <- as.numeric(c("2008","2011","2014","2017","2020"))
 
 stan_trajectory <- ggplot(data = cent_new %>% 
-                            mutate(site = gsub("_", " ", site)),
+                            mutate(site = str_to_title(gsub("_", " ", site)),
+                                   site = str_replace(site, "Dc", "DC"),
+                                   site = str_replace(site, "Uc", "UC")),
                           aes(NMDS1, NMDS2, color = year)) +
   geom_path(size = 1, lineend = "round") +
   scale_color_gradient(low = "green", high = "purple", name = "Year", 
@@ -163,6 +165,7 @@ stan_trajectory <- ggplot(data = cent_new %>%
   ggtitle("Kelp forest community structure") +
   facet_wrap(~site, scales = "fixed") +
   theme_bw() +
+  labs(fill = "K-means \ncluster")+
   theme(plot.title = element_text(size = 16, face = "bold"),
         axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
@@ -172,8 +175,8 @@ stan_trajectory
 
 
 
-#ggsave(stan_trajectory, filename=file.path(figdir, "FigSX_site_level_trajectories.png"), bg = "white",
- #      width=7, height=7, units="in", dpi=600) 
+ggsave(stan_trajectory, filename=file.path(figdir, "FigSX_site_level_trajectories.png"), bg = "white",
+       width=7, height=7, units="in", dpi=600) 
 
 
 
