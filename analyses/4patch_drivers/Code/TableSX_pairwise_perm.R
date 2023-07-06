@@ -53,7 +53,10 @@ stan_dat <- stan_dat %>% mutate(across(where(is.numeric), ~replace_na(., 0))) %>
 #define group vars
 stan_group_vars <- stan_dat %>% 
                    dplyr::select(1:9) %>%
-                    mutate(site_period = paste(site, MHW))
+                    mutate(site_period = paste(site, MHW),
+                           outbreak_period = ifelse(year <2014, "before","after"),
+                           site_outbreak = paste(site, ifelse(year <2014, "before","after")))
+
 #define data for ordination
 stan_ord_dat <- stan_dat %>% dplyr::select(10:ncol(.))
 
@@ -65,13 +68,12 @@ stan_max_distmat <- vegdist(stan_rel, method = "bray", na.rm = T)
 
 
 ################################################################################
-#build pairwise PERMANOVA
+#build pairwise PERMANOVA for regional comparison
 
-
-#pariwise permanova
+#pariwise permanova for regional
 set.seed(1985)
 
-pair_perm <- pairwise.adonis2(stan_max_distmat ~ site_period, 
+pair_perm <- pairwise.adonis2(stan_max_distmat ~ outbreak_period, 
                                     data = stan_group_vars, 
                                     permutations = 999,
                                     num_cores = 20)
@@ -81,8 +83,28 @@ pair_perm <- pairwise.adonis2(stan_max_distmat ~ site_period,
 pair_perm$parent_call <- NULL
 
 # make it a data frame
-result_tab <- pair_perm %>% map_dfr(~tidy(.x), .id="name")%>%
-  filter(term == "site_period") %>%
+regional_result_tab <- pair_perm %>% map_dfr(~tidy(.x), .id="name")%>%
+  filter(term == "outbreak_period")
+
+
+################################################################################
+#build pairwise PERMANOVA for site-level comparison
+
+#pariwise permanova for regional
+set.seed(1985)
+
+pair_perm <- pairwise.adonis2(stan_max_distmat ~ site_outbreak, 
+                              data = stan_group_vars, 
+                              permutations = 999,
+                              num_cores = 20)
+
+##### EXTRACT OUTPUT
+# Remove the different list item
+pair_perm$parent_call <- NULL
+
+# make it a data frame
+site_result_tab <- pair_perm %>% map_dfr(~tidy(.x), .id="name")%>%
+  filter(term == "site_outbreak") %>%
   mutate(group_1 = str_extract(name, ".*(?=_vs)"), #extract everything before "_vs"
          group_2 = str_extract(name, "(?<=vs_).*"), #extract everything after "vs_"
          site_1 = str_extract(group_1, "^[^ ]+"), #extract everything before " "
@@ -97,6 +119,6 @@ result_tab <- pair_perm %>% map_dfr(~tidy(.x), .id="name")%>%
 
 
 
-#write.csv(result_tab, file.path(tab_dir, "TableSX_pairwise_permanova.csv"), row.names = FALSE)
+write.csv(site_result_tab, file.path(tab_dir, "TableS2_pairwise_permanova.csv"), row.names = FALSE)
 
 
