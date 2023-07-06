@@ -258,6 +258,7 @@ stan_trajectory <- ggplot(data = cent %>% mutate(basin = ifelse(year < 2012, "be
                arrow = arrow(length = unit(0.25, "cm"), type = "closed"),
                size = 0.5, color = "black",
                data = cent, size=4) +
+  #geom_path(size = 1, lineend = "round") + #use geom_path to validate the segment
   stat_ellipse(aes(fill = factor(cluster)), type = "norm", level = 0.8, geom = "polygon", alpha = 0.2) +
   scale_fill_manual(values = c("forestgreen", "purple")) +
   #labs(shape="Heatwave period",color='Site type')+
@@ -272,6 +273,7 @@ stan_trajectory <- ggplot(data = cent %>% mutate(basin = ifelse(year < 2012, "be
   theme_bw() + my_theme
 
 stan_trajectory
+
 
 ymax <- max(swath_alphadiv$swath_shannon, na.rm=TRUE)
 shannon <- ggplot()+
