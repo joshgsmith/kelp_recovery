@@ -60,6 +60,14 @@ kelp_baseline <- swath_raw %>% dplyr::select(year, site, zone, transect, macrocy
                   summarize(baseline_kelp = mean(macrocystis_pyrifera, na.rm=TRUE))
 
 ################################################################################
+#calculate mean urchin densities
+
+urchin_density <- swath_raw %>% dplyr::select(year, site, zone, transect, strongylocentrotus_purpuratus)%>%
+  group_by(year, site)%>%
+  summarize(urchin_density = mean(strongylocentrotus_purpuratus, na.rm=TRUE))
+
+
+################################################################################
 #process response variable
 
 response_vars <- swath_raw %>% dplyr::select(year, site, zone, transect,
@@ -83,7 +91,8 @@ mod_dat <- left_join(response_vars, mod_predict_build1, by=c("year","site")) %>%
                                               #site == "BUTTERFLY_DC",
                                             "resistant","transitioned")
                   ) %>%
-          left_join(kelp_baseline, by="site")
+          left_join(kelp_baseline, by="site") %>% 
+          left_join(urchin_density, by = c("year","site"))
 
 
 ################################################################################
@@ -108,14 +117,17 @@ mod_dat <- left_join(response_vars, mod_predict_build1, by=c("year","site")) %>%
 formula <-  bf(stipe_mean ~ #resistance + 
                  (1 | site) + year + vrm_sum + bat_mean + beuti_month_obs +
                            npp_ann_mean + wave_hs_max + orb_vmax +
-                           slope_mean + sst_month_obs + baseline_kelp)
+                           slope_mean + sst_month_obs + baseline_kelp + urchin_density)
 
 
 # Standardize the predictors using z-scores
 mod_dat_std <- mod_dat
 mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
-                "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")] <- scale(mod_dat[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
-                                                                                                             "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp")])
+                "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", 
+                "baseline_kelp","urchin_density")] <- 
+  scale(mod_dat[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
+       "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp",
+       "urchin_density")])
 
 ################################################################################
 #toy with informed priors
@@ -177,7 +189,7 @@ samples <- posterior::as_draws(fit)
 table_output <- capture.output(print(fit))
 
 
-writeLines(table_output, file.path(tab_dir, "TableS2_fit_output_table.txt"))
+#writeLines(table_output, file.path(tab_dir, "TableS2_fit_output_table.txt"))
 
 
 
@@ -199,6 +211,14 @@ bayesplot::mcmc_areas(fit, pars = c("b_npp_ann_mean",
                                     "b_sst_month_obs")) 
 
 bayesplot::pp_check(fit, ndraws = 1000)
+
+library(bayesplot)
+
+
+y <- mod_dat_std$stipe_mean
+yrep <- posterior_predict(fit, newdata = mod_dat_std, draws = 500, na.rm = TRUE)
+
+ppc_stat(y, yrep, stat = "median")
 
 
 
@@ -337,6 +357,7 @@ my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
 # Map predictor names
 predictor_names <- c("b_npp_ann_mean" = "Net primary productivity", 
                                              "b_baseline_kelp" = "Baseline kelp", 
+                                            "b_urchin_density" = "Urchin density",
                                              #"b_year",
                                              "b_vrm_sum" = "Rugosity", 
                                              "b_bat_mean" = "Mean depth (m)", 
@@ -370,7 +391,8 @@ color_schemes <- list(
   scheme7 = c("#FFCC80", "#FFE0B2", "#FF9800", "#E65100", "#E65100", "#FFB74D"),
   scheme8 = c("#81D4FA", "#B3E5FC", "#03A9F4", "#0288D1", "#0288D1", "#4FC3F7"),
   scheme9 = c("#78909C", "#CFD8DC", "#607D8B", "#455A64", "#455A64", "#78909C"),
-  scheme10 = c("#F48FB1", "#F8BBD0", "#E91E63", "#C2185B", "#C2185B", "#F06292")
+  scheme10 = c("#F48FB1", "#F8BBD0", "#E91E63", "#C2185B", "#C2185B", "#F06292"),
+  scheme11 = c("#F48FB1", "#F8BBD0", "#E91E63", "#C2185B", "#C2185B", "#F06292")
 )
 
 
@@ -378,7 +400,7 @@ color_schemes <- list(
 plot_posterior <- function(parameter, color_scheme) {
   bayesplot::color_scheme_set(color_scheme)
   plot <- mcmc_areas(fit, pars = parameter) +
-    coord_cartesian(xlim = c(-1, 1)) +
+   coord_cartesian(xlim = c(-1.5, 1)) +
     theme(plot.margin = margin(1, 10, 5, 10)) +
     labs(y = NULL) +
     labs(title = predictor_names[parameter]) +
@@ -409,6 +431,7 @@ g <- ggpubr::annotate_figure(g1, left = text_grob("Density",
 g
 
 
+###############
 
 
 # Theme 2
@@ -432,6 +455,7 @@ my_theme <-  theme(axis.text=element_text(size=6,color = "black"),
                    #facets
                    strip.background = element_blank(),
                    strip.text = element_text(size = 6 ,face="plain",color = "black"),
+                   plot.margin = margin(0.2,1,0.2,1)
 )
 
 kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp/60)) +
@@ -441,14 +465,14 @@ kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp/60)) +
                         map_signif_level = TRUE,
                         tip_length = c(0.01, 0.01),
                         textsize=3)+
- # ylim(50,220)+
+  ylim(1,4)+
   xlab("") +
   ylab("Kelp baseline density \n(no. stipes per m²)") +
   ggtitle("Baseline \nkelp") +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))   # Renaming levels
 #kelp
 
 sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
@@ -466,7 +490,7 @@ sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent", "Transitioned")) # Renaming levels
 #sst
 
 npp <- ggplot(data = mod_dat, aes(x = resistance, y = npp_ann_mean)) +
@@ -502,7 +526,7 @@ beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
   labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
+  scale_x_discrete(labels = c("Persistent", "Transitioned")) # Renaming levels
 #beuti
 
 rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
@@ -521,7 +545,7 @@ rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
-rugosity
+#rugosity
 
 orb_v <- ggplot(data = mod_dat, aes(x = resistance, y = orb_vmax)) +
   geom_boxplot(fill = "#E0E0E0", color = "black") +
@@ -550,8 +574,8 @@ bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
                         textsize=3)+
   ylim(5,23)+
   xlab("") +
-  ylab("Depth") +
-  ggtitle("Mean depth (m)") +
+  ylab("Depth (m)") +
+  ggtitle("Mean \ndepth (m)") +
   labs(tag="")+
   theme_classic()+
   my_theme+
@@ -586,32 +610,50 @@ wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
   xlab("") +
   ylim(0,13)+
   ylab("Wave \nheight (m)") +
-  ggtitle("Wave \nheight (m)") +
+  ggtitle("Wave \nheight") +
   #labs(tag="B")+
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #wave_h
 
+urchin <- ggplot(data = mod_dat, aes(x = resistance, y = urchin_density/60)) +
+  geom_boxplot(fill = "#F48FB1", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  ylim(0,70)+
+  xlab("") +
+  ylab("Urchin density \n(no. per m²)") +
+  ggtitle("Urchin \ndensity") +
+  #labs(tag="B")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
+urchin
 
 
-predictors1 <- ggpubr::ggarrange(kelp, sst, npp, beuti, rugosity, orb_v, bat, slope, wave_h, ncol=3, nrow=3, align = "v")  + labs(tag = "B") + theme(plot.tag = element_text(size=8, face="plain")) 
+predictors1 <- ggpubr::ggarrange(kelp, sst, npp, beuti, rugosity, orb_v, bat, 
+                                 slope, wave_h,urchin, ncol=2, nrow=5, align = "v")  + 
+  labs(tag = "B") + theme(plot.tag = element_text(size=8, face="plain")) 
 predictors <- annotate_figure(predictors1,
                                            bottom = text_grob("Site type", 
                                                               hjust = 4.8, vjust = 0.1, x = 1, size = 10))
 #predictors
 
 full_plot <- ggarrange(g, predictors, nrow=1,  #widths=c(1.3,2)
-                       widths = c(0.3,0.7),
-                       heights = c(0.3,0.8)) + theme(plot.margin = margin(10, 1, 1, 1))
+                       widths = c(0.5,0.5),
+                       heights = c(0.1,0.9)) + theme(plot.margin = margin(10, 1, 1, 1))
                        #plot.margin = margin(10, 10, 10, 10, "pt")
                        
 full_plot
 
 
 
-ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new3.png"), 
-       width=7.5, height=8, bg="white", units="in", dpi=600,
+ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new4.png"), 
+       width=7.5, height=8.5, bg="white", units="in", dpi=600,
        device = "png")
 
 
