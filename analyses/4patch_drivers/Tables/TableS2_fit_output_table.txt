@@ -1,0 +1,34 @@
+ Family: gaussian 
+  Links: mu = identity; sigma = identity 
+Formula: stipe_mean ~ resistance + (1 | site) + year + vrm_sum + bat_mean + beuti_month_obs + npp_ann_mean + wave_hs_max + orb_vmax + slope_mean + sst_month_obs + baseline_kelp 
+   Data: mod_dat_std (Number of observations: 259) 
+  Draws: 4 chains, each with iter = 4000; warmup = 2000; thin = 1;
+         total post-warmup draws = 8000
+
+Group-Level Effects: 
+~site (Number of levels: 24) 
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)    19.05      7.33     3.76    34.01 1.00     1443     1203
+
+Population-Level Effects: 
+                       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept              16258.52   1962.88 12376.73 20154.80 1.00     8647     6601
+resistancetransitioned    -4.78      4.92   -14.47     4.91 1.00     7583     5887
+year                      -8.03      0.97    -9.96    -6.11 1.00     8639     6600
+vrm_sum                   -0.99      3.59    -7.94     6.06 1.00     6356     4966
+bat_mean                  -3.96      4.00   -11.82     3.89 1.00     7534     6151
+beuti_month_obs            0.58      3.56    -6.47     7.35 1.00     7908     6467
+npp_ann_mean               4.30      3.26    -2.21    10.67 1.00     8969     5553
+wave_hs_max               -7.01      3.96   -14.91     0.77 1.00     7046     5625
+orb_vmax                  -2.42      3.69    -9.55     4.87 1.00     7634     6013
+slope_mean                -5.33      3.92   -13.03     2.42 1.00     7052     5635
+sst_month_obs              5.49      3.55    -1.44    12.40 1.00     8211     6382
+baseline_kelp             13.69      4.83     3.80    22.96 1.00     3097     4640
+
+Family Specific Parameters: 
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma    50.69      2.33    46.37    55.57 1.00     9116     6098
+
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).

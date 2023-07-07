@@ -10,6 +10,7 @@ librarian::shelf(tidyverse, here, vegan, cowplot, ggpubr, lme4, rstan, brms)
 #set directories and load data
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/"
 figdir <- here::here("analyses","4patch_drivers","Figures")
+tab_dir <- here::here("analyses","4patch_drivers","Tables")
 
 #load sampling data
 swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv")) %>%
@@ -104,7 +105,8 @@ mod_dat <- left_join(response_vars, mod_predict_build1, by=c("year","site")) %>%
 #build model
 
 # Specify the formula
-formula <-  bf(stipe_mean ~ resistance + (1 | site) + year + vrm_sum + bat_mean + beuti_month_obs +
+formula <-  bf(stipe_mean ~ #resistance + 
+                 (1 | site) + year + vrm_sum + bat_mean + beuti_month_obs +
                            npp_ann_mean + wave_hs_max + orb_vmax +
                            slope_mean + sst_month_obs + baseline_kelp)
 
@@ -157,7 +159,8 @@ priors <- c(prior_coeff, prior_sd)
 set.seed(1985)
 model <- brm(formula = formula,
              data = mod_dat_std,
-             family = gaussian(),
+             #family = gaussian(),
+             family = gaussian(link = "log"), # to ensure non negative predictions
              prior = priors,
              warmup = 1000,
              iter = 2000,
@@ -167,6 +170,16 @@ model <- brm(formula = formula,
 # Run the model
 fit <- update(model, iter = 4000)
 samples <- posterior::as_draws(fit)
+
+# Get the population-level effects for table
+
+
+table_output <- capture.output(print(fit))
+
+
+writeLines(table_output, file.path(tab_dir, "TableS2_fit_output_table.txt"))
+
+
 
 #posterior check
 # Plot the posterior distributions for each parameter
@@ -184,6 +197,10 @@ bayesplot::mcmc_areas(fit, pars = c("b_npp_ann_mean",
                                     "b_orb_vmax",
                                     "b_slope_mean",
                                     "b_sst_month_obs")) 
+
+bayesplot::pp_check(fit, ndraws = 1000)
+
+
 
 ################################################################################
 #Sensitivity analysis
@@ -361,7 +378,7 @@ color_schemes <- list(
 plot_posterior <- function(parameter, color_scheme) {
   bayesplot::color_scheme_set(color_scheme)
   plot <- mcmc_areas(fit, pars = parameter) +
-    coord_cartesian(xlim = c(-20, 30)) +
+    coord_cartesian(xlim = c(-1, 1)) +
     theme(plot.margin = margin(1, 10, 5, 10)) +
     labs(y = NULL) +
     labs(title = predictor_names[parameter]) +
