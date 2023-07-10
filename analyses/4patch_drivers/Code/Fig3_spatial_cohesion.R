@@ -195,7 +195,8 @@ heatmap <- ggplot(df %>% mutate(Var1 = str_to_title(gsub("_", " ", Var1)),
     axis.text.y = element_text(hjust = 0.5),
     legend.position = "right",
     panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank()) + theme_1 + theme(aspect.ratio = 0.55)
+    panel.grid.minor = element_blank()) + theme_1 + theme(aspect.ratio = 0.55,
+                                                          plot.margin = margin(0,5,5,5))
   
 
 # Display the heatmap
@@ -298,7 +299,8 @@ stan_trajectory <- ggplot(data = cent_new %>%
   theme(axis.title.y = element_text(vjust = 0)) +
   scale_x_continuous(labels = function(x) round(x, 1), breaks = pretty_breaks(n = 4)) +  # Round x-axis ticks to one decimal place and limit to 4 ticks
   scale_y_continuous(labels = function(y) round(y, 1), breaks = pretty_breaks(n = 4))+    # Round y-axis ticks to one decimal place and limit to 4 ticks
-  coord_equal() + theme(plot.margin = margin(5,5,0,5))
+  coord_equal() + theme(plot.margin = margin(5,5,0,5),
+                        plot.tag = element_text(vjust = -35)) 
 stan_trajectory
 
 
@@ -307,16 +309,19 @@ stan_trajectory
 library(patchwork)
 
 # Arrange the plots side by side with equal heights and specified widths
-arranged_plots <- stan_trajectory / heatmap +
-  plot_layout(widths = c(4,2),
-              heights = c(2,1))
+arranged_plots <- stan_trajectory / plot_spacer() / heatmap +
+  plot_layout(widths = c(4,-1.1,2),
+              heights = c(2,-0.39,1)
+              #heights = c(2,-0.1,1)
+              )
 
 arranged_plots
 
+
 # Save the plot
-ggsave(filename = file.path(figdir, "FigX_cohesion_new2.png"), plot = arranged_plots, 
+ggsave(filename = file.path(figdir, "FigX_cohesion_new3.png"), plot = arranged_plots, 
        width = 6, height = 9, bg = "white", units = "in", dpi = 600)
 
-
+#change height back to 9 potentially
 
 
