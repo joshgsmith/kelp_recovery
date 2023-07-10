@@ -204,13 +204,13 @@ print(heatmap)
 
 ####plots trajectories
 
-scrs<- as.data.frame(scores(stan_ord, display="site"))
-scrs <- cbind(as.data.frame(scrs), year=stan_group_vars$year, site = stan_group_vars$site) #to facilitate computing centroids, add group var
-cent <- aggregate(cbind(NMDS1, NMDS2) ~ year + site, data = scrs, FUN = mean) 
+#scrs<- as.data.frame(scores(stan_ord, display="site"))
+#scrs <- cbind(as.data.frame(scrs), year=stan_group_vars$year, site = stan_group_vars$site) #to facilitate computing centroids, add group var
+#cent <- aggregate(cbind(NMDS1, NMDS2) ~ year + site, data = scrs, FUN = mean) 
 
 
 #Sort cent by site and year to ensure clusters are assigned correctly
-cent <- cent[order(cent$site, cent$year),] %>% mutate(site = as.factor(site))
+#cent <- cent[order(cent$site, cent$year),] %>% mutate(site = as.factor(site))
 
 # choose number of clusters based on elbow in plot
 k <- 2
@@ -287,7 +287,7 @@ stan_trajectory <- ggplot(data = cent_new %>%
                        guide = guide_colorbar(title.position = "top", title.hjust = 0.5, title.vjust = 1)) +
   stat_ellipse(aes(fill = factor(clust_new)), type = "norm", level = 0.8, geom = "polygon", alpha = 0.2) +
   scale_fill_manual(values = c("forestgreen", "purple")) +
-  facet_wrap(~site, scales = "free") +
+  facet_wrap(~site) +
   theme_bw() +
   labs(fill = "K-means \ncluster", tag = "A") +
   theme(plot.title = element_text(size = 16, face = "bold"),
@@ -295,10 +295,10 @@ stan_trajectory <- ggplot(data = cent_new %>%
         axis.text = element_text(size = 12),
         legend.position = "right") + 
   my_theme + 
-  theme(axis.title.y = element_text(vjust = -15)) +
+  theme(axis.title.y = element_text(vjust = 0)) +
   scale_x_continuous(labels = function(x) round(x, 1), breaks = pretty_breaks(n = 4)) +  # Round x-axis ticks to one decimal place and limit to 4 ticks
-  scale_y_continuous(labels = function(y) round(y, 1), breaks = pretty_breaks(n = 4))    # Round y-axis ticks to one decimal place and limit to 4 ticks
-
+  scale_y_continuous(labels = function(y) round(y, 1), breaks = pretty_breaks(n = 4))+    # Round y-axis ticks to one decimal place and limit to 4 ticks
+  coord_equal() + theme(plot.margin = margin(5,5,0,5))
 stan_trajectory
 
 
@@ -308,14 +308,14 @@ library(patchwork)
 
 # Arrange the plots side by side with equal heights and specified widths
 arranged_plots <- stan_trajectory / heatmap +
-  plot_layout(widths = c(3,2),
-              heights = c(3,1))
+  plot_layout(widths = c(4,2),
+              heights = c(2,1))
 
 arranged_plots
 
 # Save the plot
-ggsave(filename = file.path(figdir, "FigX_cohesion_new.png"), plot = arranged_plots, 
-       width = 7, height = 10, bg = "white", units = "in", dpi = 600)
+ggsave(filename = file.path(figdir, "FigX_cohesion_new2.png"), plot = arranged_plots, 
+       width = 6, height = 9, bg = "white", units = "in", dpi = 600)
 
 
 
