@@ -10,6 +10,7 @@ librarian::shelf(tidyverse, here, vegan, ggplot2, cluster, ggforce)
 #set directories and load data
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/"
 figdir <- here::here("analyses","4patch_drivers","Figures")
+outdir <- here::here("analyses","4patch_drivers","Output")
 
 #load standardized dat
 stan_dat <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_stan_CC.csv")) 
@@ -122,6 +123,8 @@ stan_ord <- metaMDS(stan_max_distmat, distance = "bray", parallel = num_cores, t
 stan_untrans_ord <- metaMDS(stan_untransformed_distmat, distance = "bray", parallel = num_cores, trymax=300)
 
 
+#save(file = paste(file.path(outdir,"multivariate_data.Rdata")),stan_dat, stan_group_vars, stan_ord,
+  #   stan_ord_dat, stan_rel)
 
 ################################################################################
 #Step 2 - determine optimal centroid clustering
