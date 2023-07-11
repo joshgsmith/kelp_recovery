@@ -9,64 +9,13 @@ librarian::shelf(tidyverse, here, vegan, ggplot2, cluster, ggforce)
 ################################################################################
 #set directories and load data
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/"
+outdir <- here::here("analyses","4patch_drivers","Output")
 
-stan_dat <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_stan_CC.csv")) 
-
-figdir <- here::here("analyses","4patch_drivers","Figures")
-
-################################################################################
-#pre-analysis processing
-
-#replace any NAs with 0
-stan_dat <- stan_dat %>% mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
-  #select sites in Carmel and Monterey Bay only
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK")) 
+load(file.path(outdir,"multivariate_data.Rdata"))
 
 
 ################################################################################
-#prepare data for ordination
-
-#----------------process standardized data--------------------------------------
-
-#define group vars
-stan_group_vars <- stan_dat %>% dplyr::select(1:9)
-
-#define data for ordination
-stan_ord_dat <- stan_dat %>% dplyr::select(10:ncol(.))
-
-#standardize to max 
-stan_rel <- decostand(stan_ord_dat, method = "hellinger")
-
-#generate a BC mat with stan dat
-stan_max_distmat <- vegdist(stan_rel, method = "bray", na.rm = T)
-
-
-################################################################################
-#ordinate data
-
-set.seed(1985)
-num_cores = 8
-
-#ordinate stan dat
-stan_ord <- metaMDS(stan_max_distmat, distance = "bray", parallel = num_cores, trymax=300)
-
-
-################################################################################
-#compute centroids for years within each site. 
-
-#Step 2 - determine optimal centroid clustering
+#determine optimal centroid clustering
 
 scrs<- as.data.frame(scores(stan_ord, display="site"))
 scrs <- cbind(as.data.frame(scrs), year=stan_group_vars$year, site = stan_group_vars$site) #to facilitate computing centroids, add group var
