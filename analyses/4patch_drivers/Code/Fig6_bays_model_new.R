@@ -10,6 +10,7 @@ librarian::shelf(tidyverse, here, vegan, cowplot, ggpubr, lme4, rstan, brms)
 #set directories and load data
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/"
 figdir <- here::here("analyses","4patch_drivers","Figures")
+outdir <- here::here("analyses","4patch_drivers","Output")
 tab_dir <- here::here("analyses","4patch_drivers","Tables")
 
 #load sampling data
@@ -30,8 +31,6 @@ swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kel
                     site == "BIRD_ROCK"))
 
 #load model predictors
-
-#mod_predict <- readRDS(file.path(basedir, "data/environmental_data/predictors_at_pisco_sites.Rds")) #old
 mod_predict <- readRDS(file.path(basedir, "data/environmental_data/predictors_at_pisco_sites_v2.Rds"))
 
 
@@ -57,7 +56,9 @@ mod_predict_build1 <- mod_predict %>%
 kelp_baseline <- swath_raw %>% dplyr::select(year, site, zone, transect, macrocystis_pyrifera)%>%
                   filter(year <= 2013)%>%
                   group_by(site)%>%
-                  summarize(baseline_kelp = mean(macrocystis_pyrifera, na.rm=TRUE))
+                  summarize(baseline_kelp = mean(macrocystis_pyrifera, na.rm=TRUE),
+                            baseline_kelp_cv = (sd(macrocystis_pyrifera, na.rm = TRUE) / mean(macrocystis_pyrifera, na.rm = TRUE)) * 100
+                            )
 
 ################################################################################
 #calculate mean urchin densities
@@ -117,17 +118,18 @@ mod_dat <- left_join(response_vars, mod_predict_build1, by=c("year","site")) %>%
 formula <-  bf(stipe_mean ~ #resistance + 
                  (1 | site) + year + vrm_sum + bat_mean + beuti_month_obs +
                            npp_ann_mean + wave_hs_max + orb_vmax +
-                           slope_mean + sst_month_obs + baseline_kelp + urchin_density)
+                           slope_mean + sst_month_obs + baseline_kelp + baseline_kelp_cv +
+                           urchin_density)
 
 
 # Standardize the predictors using z-scores
 mod_dat_std <- mod_dat
 mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
                 "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", 
-                "baseline_kelp","urchin_density")] <- 
+                "baseline_kelp","urchin_density", "baseline_kelp_cv")] <- 
   scale(mod_dat[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
        "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp",
-       "urchin_density")])
+       "urchin_density","baseline_kelp_cv")])
 
 
 ################################################################################
@@ -173,6 +175,7 @@ table_output <- capture.output(print(fit))
 # Plot the posterior distributions for each parameter excluding "Intercept"
 bayesplot::mcmc_areas(fit, pars = c("b_npp_ann_mean",
                                     "b_baseline_kelp",
+                                    "b_baseline_kelp_cv",
                                     #"b_year",
                                     "b_vrm_sum",
                                     "b_bat_mean",
@@ -225,7 +228,8 @@ my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
 
 # Map predictor names
 predictor_names <- c("b_npp_ann_mean" = "Net primary productivity", 
-                                             "b_baseline_kelp" = "Baseline kelp", 
+                                             "b_baseline_kelp" = "Baseline kelp density", 
+                                            "b_baseline_kelp_cv" = "Baseline kelp coefficient of variation",
                                             "b_urchin_density" = "Urchin density",
                                              #"b_year",
                                              "b_vrm_sum" = "Rugosity", 
@@ -261,7 +265,7 @@ color_schemes <- list(
   scheme8 = c("#81D4FA", "#B3E5FC", "#03A9F4", "#0288D1", "#0288D1", "#4FC3F7"),
   scheme9 = c("#78909C", "#CFD8DC", "#607D8B", "#455A64", "#455A64", "#78909C"),
   scheme10 = c("#F48FB1", "#F8BBD0", "#E91E63", "#C2185B", "#C2185B", "#F06292"),
-  scheme11 = c("#F48FB1", "#F8BBD0", "#E91E63", "#C2185B", "#C2185B", "#F06292")
+  scheme11 = c("#FF4081", "#F8BBD0", "#E91E63", "#FF80AB", "#FF80AB", "#EC407A")
 )
 
 
@@ -337,7 +341,7 @@ kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp/60)) +
   ylim(1,4)+
   xlab("") +
   ylab("Kelp baseline density \n(no. stipes per m²)") +
-  ggtitle("Baseline \nkelp") +
+  ggtitle("Baseline kelp \ndensity") +
   labs(tag="")+
   theme_classic()+
   my_theme+
@@ -468,8 +472,26 @@ slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
   scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #slope
 
-wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
+kelp_cv <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp_cv)) +
   geom_boxplot(fill = "#78909C", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  #ylim(0,20)+
+  xlab("") +
+  ylim(40,175)+
+  ylab("Coefficient of var.") +
+  ggtitle("Baseline kelp \ncoefficient of var.") +
+  #labs(tag="B")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
+#kelp_cv
+
+wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
+  geom_boxplot(fill = "#F48FB1", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
@@ -487,7 +509,7 @@ wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
 #wave_h
 
 urchin <- ggplot(data = mod_dat, aes(x = resistance, y = urchin_density/60)) +
-  geom_boxplot(fill = "#F48FB1", color = "black") +
+  geom_boxplot(fill = "#FF4081", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
@@ -501,11 +523,11 @@ urchin <- ggplot(data = mod_dat, aes(x = resistance, y = urchin_density/60)) +
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
-urchin
+#urchin
 
 
 predictors1 <- ggpubr::ggarrange(kelp, sst, npp, beuti, rugosity, orb_v, bat, 
-                                 slope, wave_h,urchin, ncol=2, nrow=5, align = "v")  + 
+                                 slope, kelp_cv, wave_h, urchin, ncol=2, nrow=6, align = "v")  + 
   labs(tag = "B") + theme(plot.tag = element_text(size=8, face="plain")) 
 predictors <- annotate_figure(predictors1,
                                            bottom = text_grob("Site type", 
@@ -521,8 +543,8 @@ full_plot
 
 
 
-ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new4.png"), 
-       width=7.5, height=8.5, bg="white", units="in", dpi=600,
+ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new6.png"), 
+       width=7, height=9, bg="white", units="in", dpi=600,
        device = "png")
 
 
