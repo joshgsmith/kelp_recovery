@@ -272,7 +272,7 @@ color_schemes <- list(
 # Function to plot posterior distribution for each parameter
 plot_posterior <- function(parameter, color_scheme) {
   bayesplot::color_scheme_set(color_scheme)
-  plot <- mcmc_areas(fit, pars = parameter) +
+  plot <- bayesplot::mcmc_areas(fit, pars = parameter) +
    coord_cartesian(xlim = c(-1.5, 1)) +
     theme(plot.margin = margin(1, 10, 5, 10)) +
     labs(y = NULL) +
@@ -366,26 +366,8 @@ sst <- ggplot(data = mod_dat, aes(x = resistance, y = sst_month_obs)) +
   scale_x_discrete(labels = c("Persistent", "Transitioned")) # Renaming levels
 #sst
 
-npp <- ggplot(data = mod_dat, aes(x = resistance, y = npp_ann_mean)) +
-  geom_boxplot(fill = "#A5D6A7", color = "black") +
-  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
-  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
-                        map_signif_level = TRUE,
-                        y_position = 4000,
-                        tip_length = c(0.01, 0.01),
-                        textsize=3)+
-  ylim(0,4500)+
-  xlab("") +
-  ylab("Net primary productivity \n(annual mean)") +
-  ggtitle("Net primary \nproductivity") +
-  labs(tag="")+
-  theme_classic()+
-  my_theme+
-  scale_x_discrete(labels = c("Persistent", "Transitioned"))
-#npp
-
 beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
-  geom_boxplot(fill = "#E57373", color = "black") +
+  geom_boxplot(fill = "#A5D6A7", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
@@ -401,6 +383,23 @@ beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
   my_theme+
   scale_x_discrete(labels = c("Persistent", "Transitioned")) # Renaming levels
 #beuti
+
+slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
+  geom_boxplot(fill = "#E57373", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  ylim(0,20)+
+  xlab("") +
+  ylab("Slope \n(mean per site)") +
+  ggtitle("Reef \nslope") +
+  #labs(tag="B")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
+#slope
 
 rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
   geom_boxplot(fill = "#0D47A1", color = "black") +
@@ -455,22 +454,24 @@ bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
   scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #bat
 
-slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
+npp <- ggplot(data = mod_dat, aes(x = resistance, y = npp_ann_mean)) +
   geom_boxplot(fill = "#81D4FA", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
-              map_signif_level = TRUE,
-              tip_length = c(0.01, 0.01),
-              textsize=3)+
-  ylim(0,20)+
+                        map_signif_level = TRUE,
+                        y_position = 4000,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  ylim(0,4500)+
   xlab("") +
-  ylab("Slope \n(mean per site)") +
-  ggtitle("Reef \nslope") +
-  #labs(tag="B")+
+  ylab("Net primary productivity \n(annual mean)") +
+  ggtitle("Net primary \nproductivity") +
+  labs(tag="")+
   theme_classic()+
   my_theme+
-  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
-#slope
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))
+#npp
+
 
 kelp_cv <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp_cv)) +
   geom_boxplot(fill = "#78909C", color = "black") +
@@ -526,8 +527,8 @@ urchin <- ggplot(data = mod_dat, aes(x = resistance, y = urchin_density/60)) +
 #urchin
 
 
-predictors1 <- ggpubr::ggarrange(kelp, sst, npp, beuti, rugosity, orb_v, bat, 
-                                 slope, kelp_cv, wave_h, urchin, ncol=2, nrow=6, align = "v")  + 
+predictors1 <- ggpubr::ggarrange(kelp, sst, beuti,slope,rugosity,  orb_v, bat, npp, 
+                                  kelp_cv, wave_h, urchin, ncol=2, nrow=6, align = "v")  + 
   labs(tag = "B") + theme(plot.tag = element_text(size=8, face="plain")) 
 predictors <- annotate_figure(predictors1,
                                            bottom = text_grob("Site type", 
