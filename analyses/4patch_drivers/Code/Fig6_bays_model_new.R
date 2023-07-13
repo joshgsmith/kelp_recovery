@@ -140,14 +140,15 @@ prior_coeff <- prior(normal(0, 5), class = b)
 # Define prior for the standard deviation
 prior_sd <- prior(cauchy(0, 2.5), class = sigma)
 
+
 # Combine priors
 priors <- c(prior_coeff, prior_sd)
 
 set.seed(1985)
 model <- brm(formula = formula,
              data = mod_dat_std,
-             #family = gaussian(),
-             family = gaussian(link = "log"), # to ensure non negative predictions
+             family = skew_normal(alpha = ~1),
+             #family = gaussian(link = "log"), # to ensure non negative predictions
              prior = priors,
              warmup = 1000,
              iter = 2000,
@@ -195,6 +196,131 @@ y <- mod_dat_std$stipe_mean
 yrep <- posterior_predict(fit, newdata = mod_dat_std, draws = 500, na.rm = TRUE)
 
 ppc_stat(y, yrep, stat = "median")
+
+################################################################################
+#test rescale with beta 
+
+library(brms)
+library(scales)
+
+mod_dat_std <- mod_dat
+mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
+                "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", 
+                "baseline_kelp","urchin_density", "baseline_kelp_cv")] <- 
+  scale(mod_dat[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
+                    "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp",
+                    "urchin_density","baseline_kelp_cv")])
+
+mod_dat_std$stipe_mean <- scales::rescale(mod_dat$stipe_mean, to = c(0.001, 0.99999))
+
+# Specify the formula with rescaled stipe_mean
+formula <- bf(stipe_mean ~ #resistance + 
+                (1 | site) + year + 
+                #(year | site) +
+                vrm_sum + bat_mean + beuti_month_obs +
+                npp_ann_mean + wave_hs_max + orb_vmax +
+                slope_mean + sst_month_obs + baseline_kelp + baseline_kelp_cv +
+                urchin_density)
+
+
+# Define priors for regression coefficients
+prior_coeff <- prior(student_t(40, 0.5, 2.5), class = "Intercept")
+prior_b <- prior(normal(0, 5), class = "b")
+prior_phi <- prior(gamma(0.01, 0.01), class = "phi") #toy with this. Default is 0.1, 0.1
+
+# Combine priors
+priors <- c(prior_coeff, prior_b, prior_phi)
+
+# Set the seed
+set.seed(1985)
+
+# Run the model
+model <- brm(formula = formula,
+             data = mod_dat_std,
+             family = "beta",
+             prior = priors,
+             warmup = 1000,
+             iter = 2000,
+             chains = 4,
+             cores = 4
+             #control = list(adapt_delta = 0.8)
+             )
+
+# Update the model
+fit <- update(model, iter = 8000)
+samples <- posterior::as_draws(fit)
+
+# Get the population-level effects for table
+#summary(fit)
+
+bayesplot::pp_check(fit, ndraws = 1000)
+bayesplot::pp_check(fit, type = 'stat',stat='mean')
+
+summary(fit)
+
+################################################################################
+#test lognormal
+
+library(brms)
+library(scales)
+
+mod_dat_std <- mod_dat
+mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
+                "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", 
+                "baseline_kelp","urchin_density", "baseline_kelp_cv")] <- 
+  scale(mod_dat[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
+                    "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp",
+                    "urchin_density","baseline_kelp_cv")])
+
+# Specify the formula with rescaled stipe_mean
+formula <- bf(stipe_mean + 1 | trunc(lb=1, ub = 340) ~ #resistance + 
+                (1 | site) + (1|year) + 
+                #(year | site) +
+                vrm_sum + bat_mean + beuti_month_obs +
+                npp_ann_mean + wave_hs_max + orb_vmax +
+                slope_mean + sst_month_obs + baseline_kelp + baseline_kelp_cv +
+                urchin_density)
+
+
+
+# Define priors for regression coefficients
+prior_coeff <- prior(normal(0, 5), class = b)
+
+# Define prior for the standard deviation
+prior_sd <- prior(cauchy(0, 2.5), class = sigma)
+
+
+# Combine priors
+priors <- c(prior_coeff, prior_sd)
+
+
+# Set the seed
+set.seed(1985)
+
+# Run the model
+model <- brm(formula = formula,
+             data = mod_dat_std,
+             #family = hurdle_poisson(),
+             #family = zero_inflated_poisson(),
+             #family = hurdle_lognormal,
+            # prior = prior,
+            family = exgaussian(),
+             warmup = 1000,
+             iter = 2000,
+             chains = 4,
+             cores = 4
+             #control = list(adapt_delta = 0.8)
+)
+
+# Update the model
+fit <- update(model, iter = 4000)
+samples <- posterior::as_draws(fit)
+
+# Get the population-level effects for table
+#summary(fit)
+
+bayesplot::pp_check(fit, ndraws = 1000)
+bayesplot::pp_check(fit, type = 'stat',stat='mean')
 
 
 
