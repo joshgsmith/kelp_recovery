@@ -222,11 +222,17 @@ formula <- bf(stipe_mean ~ #resistance +
                 slope_mean + sst_month_obs + baseline_kelp + baseline_kelp_cv +
                 urchin_density)
 
+# Calculate summary statistics from the data
+
+b_mean <- mean(mod_dat_std$vrm_sum)
+b_sd <- sd(mod_dat_std$vrm_sum)
+
 
 # Define priors for regression coefficients
-prior_coeff <- prior(student_t(40, 0.5, 2.5), class = "Intercept")
+#prior_coeff <- prior(student_t(40, 0.5, 2.5), class = "Intercept")
+prior_coeff <- prior(student_t(10, 0.24, 0.21), class = "Intercept")
 prior_b <- prior(normal(0, 5), class = "b")
-prior_phi <- prior(gamma(0.01, 0.01), class = "phi") #toy with this. Default is 0.1, 0.1
+prior_phi <- prior(gamma(0.1, 0.1), class = "phi") #toy with this. Default is 0.1, 0.1
 
 # Combine priors
 priors <- c(prior_coeff, prior_b, prior_phi)
@@ -258,8 +264,13 @@ bayesplot::pp_check(fit, type = 'stat',stat='mean')
 
 summary(fit)
 
+
 ################################################################################
-#test lognormal
+########BEST FIT #1
+
+###THE BEST THE BEST
+
+
 
 library(brms)
 library(scales)
@@ -272,8 +283,14 @@ mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
                     "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp",
                     "urchin_density","baseline_kelp_cv")])
 
+mod_dat_std <- mod_dat_std %>% filter(stipe_mean > 0)
+
+#mod_dat_std$stipe_mean <- scales::rescale(mod_dat$stipe_mean, to = c(0, 0.9999))
+hist(sqrt(mod_dat_std$stipe_mean))
+
+
 # Specify the formula with rescaled stipe_mean
-formula <- bf(stipe_mean + 1 | trunc(lb=1, ub = 340) ~ #resistance + 
+formula <- bf(sqrt(stipe_mean)  ~ #resistance + 
                 (1 | site) + (1|year) + 
                 #(year | site) +
                 vrm_sum + bat_mean + beuti_month_obs +
@@ -282,17 +299,17 @@ formula <- bf(stipe_mean + 1 | trunc(lb=1, ub = 340) ~ #resistance +
                 urchin_density)
 
 
+i_mean <- mean(sqrt(mod_dat_std$stipe_mean))
+i_sd <- sd(sqrt(mod_dat_std$stipe_mean))
 
 # Define priors for regression coefficients
-prior_coeff <- prior(normal(0, 5), class = b)
-
-# Define prior for the standard deviation
-prior_sd <- prior(cauchy(0, 2.5), class = sigma)
-
+#prior_coeff <- prior(student_t(40, 0.5, 2.5), class = "Intercept")
+prior_coeff <- prior(student_t(5, 9, 4), class = "Intercept")
+prior_b <- prior(normal(0, 5), class = "b")
+#prior_phi <- prior(gamma(0.1, 0.1), class = "phi") #toy with this. Default is 0.1, 0.1
 
 # Combine priors
-priors <- c(prior_coeff, prior_sd)
-
+priors <- c(prior_coeff, prior_b)
 
 # Set the seed
 set.seed(1985)
@@ -300,20 +317,19 @@ set.seed(1985)
 # Run the model
 model <- brm(formula = formula,
              data = mod_dat_std,
-             #family = hurdle_poisson(),
-             #family = zero_inflated_poisson(),
-             #family = hurdle_lognormal,
-            # prior = prior,
-            family = exgaussian(),
+             prior = priors,
+            family = skew_normal(),
+            #family = Beta(link = "logit", link_phi = "log")
+           # negbinomial(link = "log", link_shape = "log"),
              warmup = 1000,
-             iter = 2000,
+             iter = 10000,
              chains = 4,
              cores = 4
              #control = list(adapt_delta = 0.8)
 )
 
 # Update the model
-fit <- update(model, iter = 4000)
+fit <- update(model, iter = 5000)
 samples <- posterior::as_draws(fit)
 
 # Get the population-level effects for table
@@ -321,7 +337,6 @@ samples <- posterior::as_draws(fit)
 
 bayesplot::pp_check(fit, ndraws = 1000)
 bayesplot::pp_check(fit, type = 'stat',stat='mean')
-
 
 
 ################################################################################
@@ -399,7 +414,8 @@ color_schemes <- list(
 plot_posterior <- function(parameter, color_scheme) {
   bayesplot::color_scheme_set(color_scheme)
   plot <- bayesplot::mcmc_areas(fit, pars = parameter) +
-   coord_cartesian(xlim = c(-1.5, 1)) +
+   #coord_cartesian(xlim = c(-1.5, 1)) +
+    coord_cartesian(xlim = c(-4, 4)) +
     theme(plot.margin = margin(1, 10, 5, 10)) +
     labs(y = NULL) +
     labs(title = predictor_names[parameter]) +
