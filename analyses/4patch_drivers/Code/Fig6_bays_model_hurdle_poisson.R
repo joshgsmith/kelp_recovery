@@ -38,27 +38,27 @@ mod_predict <- readRDS(file.path(basedir, "data/environmental_data/predictors_at
 #process environmental data
 
 mod_predict_build1 <- mod_predict %>%
-                        dplyr::filter(year>=2007 & year <= 2020)%>%
-                        #calculate annual means
-                        group_by(site, year)%>%
-                        summarize(across(8:46,mean, na.rm=TRUE)) %>%
-                        #drop monthly statistics
-                        dplyr::select(!(c(cuti_month_baseline, cuti_month_sd,
-                                          beuti_month_baseline, beuti_month_baseline_sd,
-                                          sst_month_baseline,
-                                          sst_month_baseline_sd, sst_month_anom, 
-                                          ))) %>% #these are calculated at monthly intervals so irrelevant here. 
-                        dplyr::mutate_all(~ ifelse(is.nan(.), NA, .))
+  dplyr::filter(year>=2007 & year <= 2020)%>%
+  #calculate annual means
+  group_by(site, year)%>%
+  summarize(across(8:46,mean, na.rm=TRUE)) %>%
+  #drop monthly statistics
+  dplyr::select(!(c(cuti_month_baseline, cuti_month_sd,
+                    beuti_month_baseline, beuti_month_baseline_sd,
+                    sst_month_baseline,
+                    sst_month_baseline_sd, sst_month_anom, 
+  ))) %>% #these are calculated at monthly intervals so irrelevant here. 
+  dplyr::mutate_all(~ ifelse(is.nan(.), NA, .))
 
 ################################################################################
 #calculate baseline kelp density
 
 kelp_baseline <- swath_raw %>% dplyr::select(year, site, zone, transect, macrocystis_pyrifera)%>%
-                  filter(year <= 2013)%>%
-                  group_by(site)%>%
-                  summarize(baseline_kelp = mean(macrocystis_pyrifera, na.rm=TRUE),
-                            baseline_kelp_cv = (sd(macrocystis_pyrifera, na.rm = TRUE) / mean(macrocystis_pyrifera, na.rm = TRUE)) * 100
-                            )
+  filter(year <= 2013)%>%
+  group_by(site)%>%
+  summarize(baseline_kelp = mean(macrocystis_pyrifera, na.rm=TRUE),
+            baseline_kelp_cv = (sd(macrocystis_pyrifera, na.rm = TRUE) / mean(macrocystis_pyrifera, na.rm = TRUE)) * 100
+  )
 
 ################################################################################
 #calculate mean urchin densities
@@ -73,137 +73,53 @@ urchin_density <- swath_raw %>% dplyr::select(year, site, zone, transect, strong
 
 response_vars <- swath_raw %>% dplyr::select(year, site, zone, transect,
                                              macrocystis_pyrifera) %>%
-                  group_by(year, site) %>%
-                  summarize(stipe_mean = mean(macrocystis_pyrifera, na.rm = TRUE))
+  group_by(year, site) %>%
+  summarize(stipe_mean = mean(macrocystis_pyrifera, na.rm = TRUE))
 
 
 ################################################################################
 #join sampling data with environmental
 
 mod_dat <- left_join(response_vars, mod_predict_build1, by=c("year","site")) %>%
-                  #create lagged variables
-                  mutate(#npp_lag1 = lag(npp,1),
-                         #npp_lag2 = lag(npp,2),
-                  #designate resistant site
-                        resistance = ifelse(site == "HOPKINS_UC" |
-                                              site == "CANNERY_UC" |
-                                              site == "SIREN" |
-                                              site == "CANNERY_DC",
-                                              #site == "BUTTERFLY_DC",
-                                            "resistant","transitioned")
-                  ) %>%
-          left_join(kelp_baseline, by="site") %>% 
-          left_join(urchin_density, by = c("year","site"))
+  #create lagged variables
+  mutate(#npp_lag1 = lag(npp,1),
+    #npp_lag2 = lag(npp,2),
+    #designate resistant site
+    resistance = ifelse(site == "HOPKINS_UC" |
+                          site == "CANNERY_UC" |
+                          site == "SIREN" |
+                          site == "CANNERY_DC",
+                        #site == "BUTTERFLY_DC",
+                        "resistant","transitioned")
+  ) %>%
+  left_join(kelp_baseline, by="site") %>% 
+  left_join(urchin_density, by = c("year","site"))
+
+################################################################################
+#prep space
+
+# Use the cmdstanr backend for Stan 
+options(mc.cores = 8,
+        brms.backend = "cmdstanr")
+
+# Set some global Stan options
+CHAINS <- 4
+ITER <- 20000
+WARMUP <- 2000
+BAYES_SEED <- 1985
+
+# Use the Johnson color palette
+clrs <- MetBrewer::met.brewer("Hokusai3")
+
+# Tell bayesplot to use the Johnson palette (for things like pp_check())
+bayesplot::color_scheme_set(c(clrs[1], clrs[2], clrs[3], clrs[4], clrs[5],clrs[6]))
 
 
 ################################################################################
-#check for collinearity and normalize where needed
-
-# Select the predictor variables to check for collinearity
-#predictors <- c("beuti_avg", "cuti_avg", "sst_c_mean")
-
-# Calculate the correlation matrix between the predictor variables
-#cor_matrix <- cor(mod_dat_build3[predictors])
-
-# Print the correlation matrix
-#print(cor_matrix)
-
-#normalize predictors to account for collinearity
-#mod_dat_build3$sst_norm <- scale(mod_dat_build3$sst_c_mean)
-
-################################################################################
-#build model
-
-# Specify the formula
-formula <-  bf(stipe_mean ~ #resistance + 
-                 (1 | site) + year + vrm_sum + bat_mean + beuti_month_obs +
-                           npp_ann_mean + wave_hs_max + orb_vmax +
-                           slope_mean + sst_month_obs + baseline_kelp + baseline_kelp_cv +
-                           urchin_density)
+#Build model
 
 
-# Standardize the predictors using z-scores
-mod_dat_std <- mod_dat
-mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
-                "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", 
-                "baseline_kelp","urchin_density", "baseline_kelp_cv")] <- 
-  scale(mod_dat[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
-       "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp",
-       "urchin_density","baseline_kelp_cv")])
-
-
-################################################################################
-
-# Define priors for regression coefficients
-prior_coeff <- prior(normal(0, 5), class = b)
-
-# Define prior for the standard deviation
-prior_sd <- prior(cauchy(0, 2.5), class = sigma)
-
-
-# Combine priors
-priors <- c(prior_coeff, prior_sd)
-
-set.seed(1985)
-model <- brm(formula = formula,
-             data = mod_dat_std,
-             family = skew_normal(alpha = ~1),
-             #family = gaussian(link = "log"), # to ensure non negative predictions
-             prior = priors,
-             warmup = 1000,
-             iter = 2000,
-             chains = 4,
-             cores = 4)
-
-# Run the model
-fit <- update(model, iter = 4000)
-samples <- posterior::as_draws(fit)
-
-# Get the population-level effects for table
-
-
-table_output <- capture.output(print(fit))
-
-
-#writeLines(table_output, file.path(tab_dir, "TableS2_fit_output_table.txt"))
-
-
-
-#posterior check
-# Plot the posterior distributions for each parameter
-#bayesplot::mcmc_areas(samples)
-
-# Plot the posterior distributions for each parameter excluding "Intercept"
-bayesplot::mcmc_areas(fit, pars = c("b_npp_ann_mean",
-                                    "b_baseline_kelp",
-                                    "b_baseline_kelp_cv",
-                                    #"b_year",
-                                    "b_vrm_sum",
-                                    "b_bat_mean",
-                                    "b_beuti_month_obs",
-                                    #"b_npp_ann_mean",
-                                    "b_wave_hs_max",
-                                    "b_orb_vmax",
-                                    "b_slope_mean",
-                                    "b_sst_month_obs")) 
-
-bayesplot::pp_check(fit, ndraws = 1000)
-
-library(bayesplot)
-
-
-y <- mod_dat_std$stipe_mean
-yrep <- posterior_predict(fit, newdata = mod_dat_std, draws = 500, na.rm = TRUE)
-
-ppc_stat(y, yrep, stat = "median")
-
-################################################################################
-#test rescale with beta 
-
-library(brms)
-library(scales)
-
-mod_dat_std <- mod_dat
+mod_dat_std <- mod_dat 
 mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
                 "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", 
                 "baseline_kelp","urchin_density", "baseline_kelp_cv")] <- 
@@ -211,136 +127,51 @@ mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
                     "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp",
                     "urchin_density","baseline_kelp_cv")])
 
-mod_dat_std$stipe_mean <- scales::rescale(mod_dat$stipe_mean, to = c(0.001, 0.99999))
+mod_dat_std$stipe_mean <-round(mod_dat_std$stipe_mean,0)
 
-# Specify the formula with rescaled stipe_mean
-formula <- bf(stipe_mean ~ #resistance + 
-                (1 | site) + year + 
-                #(year | site) +
-                vrm_sum + bat_mean + beuti_month_obs +
-                npp_ann_mean + wave_hs_max + orb_vmax +
-                slope_mean + sst_month_obs + baseline_kelp + baseline_kelp_cv +
-                urchin_density)
+hist(mod_dat_std$stipe_mean)
 
-# Calculate summary statistics from the data
-
-b_mean <- mean(mod_dat_std$vrm_sum)
-b_sd <- sd(mod_dat_std$vrm_sum)
-
-
-# Define priors for regression coefficients
-#prior_coeff <- prior(student_t(40, 0.5, 2.5), class = "Intercept")
-prior_coeff <- prior(student_t(10, 0.24, 0.21), class = "Intercept")
-prior_b <- prior(normal(0, 5), class = "b")
-prior_phi <- prior(gamma(0.1, 0.1), class = "phi") #toy with this. Default is 0.1, 0.1
-
-# Combine priors
-priors <- c(prior_coeff, prior_b, prior_phi)
-
-# Set the seed
-set.seed(1985)
-
-# Run the model
-model <- brm(formula = formula,
-             data = mod_dat_std,
-             family = "beta",
-             prior = priors,
-             warmup = 1000,
-             iter = 2000,
-             chains = 4,
-             cores = 4
-             #control = list(adapt_delta = 0.8)
-             )
-
-# Update the model
-fit <- update(model, iter = 8000)
-samples <- posterior::as_draws(fit)
-
-# Get the population-level effects for table
-#summary(fit)
-
-bayesplot::pp_check(fit, ndraws = 1000)
-bayesplot::pp_check(fit, type = 'stat',stat='mean')
-
-summary(fit)
-
-
-################################################################################
-########BEST FIT #1
-
-###THE BEST THE BEST
-
-
-
-library(brms)
-library(scales)
-
-mod_dat_std <- mod_dat
-mod_dat_std[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
-                "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", 
-                "baseline_kelp","urchin_density", "baseline_kelp_cv")] <- 
-  scale(mod_dat[, c("vrm_sum", "bat_mean", "beuti_month_obs", "npp_ann_mean",
-                    "wave_hs_max", "orb_vmax", "slope_mean", "sst_month_obs", "baseline_kelp",
-                    "urchin_density","baseline_kelp_cv")])
-
-mod_dat_std <- mod_dat_std %>% filter(stipe_mean > 0)
-
-#mod_dat_std$stipe_mean <- scales::rescale(mod_dat$stipe_mean, to = c(0, 0.9999))
-hist(sqrt(mod_dat_std$stipe_mean))
-
-
-# Specify the formula with rescaled stipe_mean
-formula <- bf(sqrt(stipe_mean)  ~ #resistance + 
-                (1 | site) + (1|year) + 
-                #(year | site) +
-                vrm_sum + bat_mean + beuti_month_obs +
-                npp_ann_mean + wave_hs_max + orb_vmax +
-                slope_mean + sst_month_obs + baseline_kelp + baseline_kelp_cv +
-                urchin_density)
-
-
-i_mean <- mean(sqrt(mod_dat_std$stipe_mean))
-i_sd <- sd(sqrt(mod_dat_std$stipe_mean))
-
-# Define priors for regression coefficients
-#prior_coeff <- prior(student_t(40, 0.5, 2.5), class = "Intercept")
-prior_coeff <- prior(student_t(5, 9, 4), class = "Intercept")
-prior_b <- prior(normal(0, 5), class = "b")
-#prior_phi <- prior(gamma(0.1, 0.1), class = "phi") #toy with this. Default is 0.1, 0.1
-
-# Combine priors
-priors <- c(prior_coeff, prior_b)
-
-# Set the seed
-set.seed(1985)
-
-# Run the model
-model <- brm(formula = formula,
-             data = mod_dat_std,
-             prior = priors,
-            family = skew_normal(),
-            #family = Beta(link = "logit", link_phi = "log")
-           # negbinomial(link = "log", link_shape = "log"),
-             warmup = 1000,
-             iter = 10000,
-             chains = 4,
-             cores = 4
-             #control = list(adapt_delta = 0.8)
+stipe_hurdle_mod <- brm(
+  bf(stipe_mean  ~ 
+       vrm_sum + #bat_mean + 
+       beuti_month_obs +
+       #npp_ann_mean + 
+       wave_hs_max + #orb_vmax +
+        slope_mean + sst_month_obs + baseline_kelp + #baseline_kelp_cv +
+       urchin_density + year + (1 | year / site), 
+     #hu ~ urchin_density + baseline_kelp + year + (1 | year / site)
+     hu ~ vrm_sum + #bat_mean + 
+       beuti_month_obs +
+       #npp_ann_mean + 
+       wave_hs_max + #orb_vmax +
+       slope_mean + sst_month_obs + baseline_kelp + #baseline_kelp_cv +
+       urchin_density + year + (1 | year / site)
+  ),
+  data = mod_dat_std,
+  family = hurdle_poisson(),
+  #control = list(adapt_delta = 0.9),
+  chains = CHAINS, iter = ITER, warmup = WARMUP, seed = BAYES_SEED
 )
 
-# Update the model
-fit <- update(model, iter = 5000)
-samples <- posterior::as_draws(fit)
 
-# Get the population-level effects for table
-#summary(fit)
 
-# Theme
+# posterior checks
+# Exponential
+pp_check(stipe_hurdle_mod, ndraws = 100)
+
+pred <- posterior_predict(stipe_hurdle_mod)
+bayesplot::ppc_dens_overlay(y = log1p(mod_dat_std$stipe_mean), 
+                            yrep = log1p(pred[1:100,]))
+
+bayesplot::ppc_dens_overlay(y = mod_dat_std$stipe_mean, 
+                            yrep = pred[1:100,])
+
+
 my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
-                  # axis.text.y = element_blank(),
+                   #axis.text.y = element_blank(),
                    axis.title=element_text(size=8,color = "black"),
-                   plot.tag=element_text(size=8, face = "bold",color = "black"),
-                   plot.title =element_text(size=7, face="bold",color = "black", vjust=-1),
+                   plot.tag=element_text(size=8, face = "plain",color = "black"),
+                   plot.title =element_text(size=7, face="plain",color = "black", vjust=-1),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -359,21 +190,31 @@ my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
 )
 
 bayesplot::color_scheme_set(scheme = "blue") 
-A <- bayesplot::pp_check(fit, ndraws = 1000) + 
+A <- bayesplot::pp_check(stipe_hurdle_mod, ndraws = 1000) + 
   theme_bw() + 
   labs(tag = "A",
        title = "Posterior distribution, observed vs out-of-sample predictions")+
+  xlab("Density of kelp stipes (per 60 m² transect)")+
+  ylab("Frequency")+
+  scale_x_continuous(limits = c(0, 400))+
   my_theme  
-A
 
-B <- bayesplot::pp_check(fit, type = 'stat',stat='mean') + 
+B <- bayesplot::pp_check(stipe_hurdle_mod, type = 'stat',stat='mean') + 
   labs(tag = "B",
        title = "Mean observed density vs. distribution of out-of-sample predictions")+
+  xlab("Density of kelp stipes (per 60 m² transect)")+
+  ylab("Frequency")+
   theme_bw() + my_theme
-B
+
+g <- ggpubr::ggarrange(A,B,ncol = 1)
+g
+
+
 
 ################################################################################
-#Plot
+#plot
+
+
 
 # Theme
 my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
@@ -402,18 +243,18 @@ my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
 
 # Map predictor names
 predictor_names <- c("b_npp_ann_mean" = "Net primary productivity", 
-                                             "b_baseline_kelp" = "Baseline kelp density", 
-                                            "b_baseline_kelp_cv" = "Baseline kelp coefficient of variation",
-                                            "b_urchin_density" = "Urchin density",
-                                             #"b_year",
-                                             "b_vrm_sum" = "Rugosity", 
-                                             "b_bat_mean" = "Mean depth (m)", 
-                                             "b_beuti_month_obs" = "Upwelling (BEUTI)",
-                                             # "b_npp_ann_mean" = "", 
-                                             "b_wave_hs_max" = "Wave height (m)", 
-                                             "b_orb_vmax" = "Orbital velocity",
-                                             "b_slope_mean" = "Reef slope", 
-                                             "b_sst_month_obs" = "Sea surface temperature (°C)")
+                     "b_baseline_kelp" = "Baseline kelp density", 
+                     "b_baseline_kelp_cv" = "Baseline kelp coefficient of variation",
+                     "b_urchin_density" = "Urchin density",
+                     #"b_year",
+                     "b_vrm_sum" = "Rugosity", 
+                     "b_bat_mean" = "Mean depth (m)", 
+                     "b_beuti_month_obs" = "Upwelling (BEUTI)",
+                     # "b_npp_ann_mean" = "", 
+                     "b_wave_hs_max" = "Wave height (m)", 
+                     "b_orb_vmax" = "Orbital velocity",
+                     "b_slope_mean" = "Reef slope", 
+                     "b_sst_month_obs" = "Sea surface temperature (°C)")
 
 # Extract the posterior samples
 posterior_samples <- as.matrix(fit, pars = names(predictor_names))
@@ -447,7 +288,7 @@ color_schemes <- list(
 plot_posterior <- function(parameter, color_scheme) {
   bayesplot::color_scheme_set(color_scheme)
   plot <- bayesplot::mcmc_areas(fit, pars = parameter) +
-   #coord_cartesian(xlim = c(-1.5, 1)) +
+    #coord_cartesian(xlim = c(-1.5, 1)) +
     coord_cartesian(xlim = c(-4, 4)) +
     theme(plot.margin = margin(1, 10, 5, 10)) +
     labs(y = NULL) +
@@ -474,7 +315,7 @@ for (i in seq_along(sorted_pars)) {
 # Arrange the plots in a grid
 g1 <- ggpubr::ggarrange(plotlist = plot_list, ncol = 1) + labs(tag = "A") + theme(plot.tag = element_text(size = 8, face = "plain"))
 g <- ggpubr::annotate_figure(g1, left = text_grob("Density", 
-                                                rot = 90, vjust = 1, hjust=0.3, size = 10),
+                                                  rot = 90, vjust = 1, hjust=0.3, size = 10),
                              bottom = text_grob("Standardized beta coefficient", hjust=0.5, vjust=0, size = 10))
 g
 
@@ -703,18 +544,18 @@ urchin <- ggplot(data = mod_dat, aes(x = resistance, y = urchin_density/60)) +
 
 
 predictors1 <- ggpubr::ggarrange(kelp, sst, beuti,slope,rugosity,  orb_v, bat, npp, 
-                                  kelp_cv, wave_h, urchin, ncol=2, nrow=6, align = "v")  + 
+                                 kelp_cv, wave_h, urchin, ncol=2, nrow=6, align = "v")  + 
   labs(tag = "B") + theme(plot.tag = element_text(size=8, face="plain")) 
 predictors <- annotate_figure(predictors1,
-                                           bottom = text_grob("Site type", 
-                                                              hjust = 4.8, vjust = 0.1, x = 1, size = 10))
+                              bottom = text_grob("Site type", 
+                                                 hjust = 4.8, vjust = 0.1, x = 1, size = 10))
 #predictors
 
 full_plot <- ggarrange(g, predictors, nrow=1,  #widths=c(1.3,2)
                        widths = c(0.5,0.5),
                        heights = c(0.1,0.9)) + theme(plot.margin = margin(10, 1, 1, 1))
-                       #plot.margin = margin(10, 10, 10, 10, "pt")
-                       
+#plot.margin = margin(10, 10, 10, 10, "pt")
+
 full_plot
 
 
@@ -722,5 +563,7 @@ full_plot
 ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new6.png"), 
        width=7, height=9, bg="white", units="in", dpi=600,
        device = "png")
+
+
 
 
