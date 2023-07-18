@@ -103,7 +103,7 @@ options(mc.cores = 8,
         brms.backend = "cmdstanr")
 
 # Set some global Stan options
-CHAINS <- 4
+CHAINS <- 6
 ITER <- 20000
 WARMUP <- 2000
 BAYES_SEED <- 1985
@@ -131,21 +131,26 @@ mod_dat_std$stipe_mean <-round(mod_dat_std$stipe_mean,0)
 
 hist(mod_dat_std$stipe_mean)
 
-stipe_hurdle_mod <- brm(
+hurdle_poisson_full <- brm(
   bf(stipe_mean  ~ 
        vrm_sum + #bat_mean + 
        beuti_month_obs +
        #npp_ann_mean + 
-       wave_hs_max + #orb_vmax +
-        slope_mean + sst_month_obs + baseline_kelp + #baseline_kelp_cv +
-       urchin_density + year + (1 | year / site), 
-     #hu ~ urchin_density + baseline_kelp + year + (1 | year / site)
-     hu ~ vrm_sum + #bat_mean + 
+       wave_hs_max + orb_vmax +
+        slope_mean + sst_month_obs + baseline_kelp + baseline_kelp_cv +
+       urchin_density + 
+       #year + (1 | year / site), 
+        year + (1|year / site),
+     hu ~  vrm_sum + #bat_mean + 
        beuti_month_obs +
        #npp_ann_mean + 
-       wave_hs_max + #orb_vmax +
-       slope_mean + sst_month_obs + baseline_kelp + #baseline_kelp_cv +
-       urchin_density + year + (1 | year / site)
+       wave_hs_max + orb_vmax +
+       slope_mean + 
+       sst_month_obs + 
+       baseline_kelp + baseline_kelp_cv +
+       urchin_density + 
+       #year + (1 | year / site)
+       year + (1|year / site)
   ),
   data = mod_dat_std,
   family = hurdle_poisson(),
@@ -153,13 +158,65 @@ stipe_hurdle_mod <- brm(
   chains = CHAINS, iter = ITER, warmup = WARMUP, seed = BAYES_SEED
 )
 
+hurdle_poisson_red1 <- brm(
+  bf(stipe_mean  ~ 
+       vrm_sum + #bat_mean + 
+       beuti_month_obs +
+       #npp_ann_mean + 
+       wave_hs_max + #orb_vmax +
+       slope_mean + sst_month_obs + baseline_kelp + #baseline_kelp_cv +
+       urchin_density + 
+       #year + (1 | year / site), 
+       year + (1|year / site),
+     hu ~  vrm_sum + #bat_mean + 
+       beuti_month_obs +
+       #npp_ann_mean + 
+       wave_hs_max + #orb_vmax +
+       slope_mean + 
+       sst_month_obs + 
+       baseline_kelp + #baseline_kelp_cv +
+       urchin_density + 
+       #year + (1 | year / site)
+       year + (1|year / site)
+  ),
+  data = mod_dat_std,
+  family = hurdle_poisson(),
+  #control = list(adapt_delta = 0.9),
+  chains = CHAINS, iter = ITER, warmup = WARMUP, seed = BAYES_SEED
+)
+
+hurdle_poisson_red2 <- brm(
+  bf(stipe_mean  ~ 
+       vrm_sum + bat_mean + 
+       beuti_month_obs +
+       npp_ann_mean + 
+       wave_hs_max + orb_vmax +
+       slope_mean + sst_month_obs + baseline_kelp + baseline_kelp_cv +
+       urchin_density + 
+       year + (1|year / site),
+     hu ~  vrm_sum + #bat_mean + 
+       #beuti_month_obs +
+       #npp_ann_mean + 
+       #wave_hs_max + #orb_vmax +
+       #slope_mean + 
+       sst_month_obs + 
+       baseline_kelp + #baseline_kelp_cv +
+       urchin_density + 
+       year + (1|year / site)
+  ),
+  data = mod_dat_std,
+  family = hurdle_poisson(),
+  control = list(adapt_delta = 0.9),
+  chains = CHAINS, iter = ITER, warmup = WARMUP, seed = BAYES_SEED
+)
+
 
 
 # posterior checks
 # Exponential
-pp_check(stipe_hurdle_mod, ndraws = 100)
+pp_check(hurdle_poisson_red2, ndraws = 100)
 
-pred <- posterior_predict(stipe_hurdle_mod)
+pred <- posterior_predict(hurdle_poisson_red2)
 bayesplot::ppc_dens_overlay(y = log1p(mod_dat_std$stipe_mean), 
                             yrep = log1p(pred[1:100,]))
 
@@ -190,7 +247,7 @@ my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
 )
 
 bayesplot::color_scheme_set(scheme = "blue") 
-A <- bayesplot::pp_check(stipe_hurdle_mod, ndraws = 1000) + 
+A <- bayesplot::pp_check(hurdle_poisson_red2, ndraws = 1000) + 
   theme_bw() + 
   labs(tag = "A",
        title = "Posterior distribution, observed vs out-of-sample predictions")+
@@ -199,7 +256,7 @@ A <- bayesplot::pp_check(stipe_hurdle_mod, ndraws = 1000) +
   scale_x_continuous(limits = c(0, 400))+
   my_theme  
 
-B <- bayesplot::pp_check(stipe_hurdle_mod, type = 'stat',stat='mean') + 
+B <- bayesplot::pp_check(hurdle_poisson_red2, type = 'stat',stat='mean') + 
   labs(tag = "B",
        title = "Mean observed density vs. distribution of out-of-sample predictions")+
   xlab("Density of kelp stipes (per 60 m² transect)")+
@@ -209,12 +266,15 @@ B <- bayesplot::pp_check(stipe_hurdle_mod, type = 'stat',stat='mean') +
 g <- ggpubr::ggarrange(A,B,ncol = 1)
 g
 
+ggsave(g, filename=file.path(figdir, "FigS4_pp_checks.png"), 
+       width=7, height=9, bg="white", units="in", dpi=600,
+       device = "png")
 
 
 ################################################################################
 #plot
 
-
+fit <- hurdle_poisson_red2
 
 # Theme
 my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
@@ -289,7 +349,7 @@ plot_posterior <- function(parameter, color_scheme) {
   bayesplot::color_scheme_set(color_scheme)
   plot <- bayesplot::mcmc_areas(fit, pars = parameter) +
     #coord_cartesian(xlim = c(-1.5, 1)) +
-    coord_cartesian(xlim = c(-4, 4)) +
+    coord_cartesian(xlim = c(-1, 1)) +
     theme(plot.margin = margin(1, 10, 5, 10)) +
     labs(y = NULL) +
     labs(title = predictor_names[parameter]) +
@@ -347,7 +407,10 @@ my_theme <-  theme(axis.text=element_text(size=6,color = "black"),
                    plot.margin = margin(0.2,1,0.2,1)
 )
 
-kelp <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp/60)) +
+kelp <- ggplot(data = mod_dat %>% 
+                 #take mean across since, since this is static
+                 group_by(site, resistance) %>% summarise(baseline_kelp = mean(baseline_kelp)), 
+               aes(x = resistance, y = baseline_kelp/60)) +
   geom_boxplot(fill = "#D8B166", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
@@ -400,25 +463,12 @@ beuti <- ggplot(data = mod_dat, aes(x = resistance, y = beuti_month_obs)) +
   scale_x_discrete(labels = c("Persistent", "Transitioned")) # Renaming levels
 #beuti
 
-slope <- ggplot(data = mod_dat, aes(x = resistance, y = slope_mean)) +
-  geom_boxplot(fill = "#E57373", color = "black") +
-  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
-  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
-                        map_signif_level = TRUE,
-                        tip_length = c(0.01, 0.01),
-                        textsize=3)+
-  ylim(0,20)+
-  xlab("") +
-  ylab("Slope \n(mean per site)") +
-  ggtitle("Reef \nslope") +
-  #labs(tag="B")+
-  theme_classic()+
-  my_theme+
-  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
-#slope
 
-rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
-  geom_boxplot(fill = "#0D47A1", color = "black") +
+rugosity <- ggplot(data = mod_dat %>%
+                     #take mean across since, since this is static
+                     group_by(site, resistance) %>% summarise(vrm_mean = mean(vrm_mean)), 
+                   aes(x = resistance, y = vrm_mean)) +
+  geom_boxplot(fill = "#E57373", color = "black") +
   geom_jitter(width = 0.1, height = 0, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
@@ -436,7 +486,7 @@ rugosity <- ggplot(data = mod_dat, aes(x = resistance, y = vrm_mean)) +
 #rugosity
 
 orb_v <- ggplot(data = mod_dat, aes(x = resistance, y = orb_vmax)) +
-  geom_boxplot(fill = "#E0E0E0", color = "black") +
+  geom_boxplot(fill = "#0D47A1", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
@@ -453,44 +503,28 @@ orb_v <- ggplot(data = mod_dat, aes(x = resistance, y = orb_vmax)) +
   scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #orb_v
 
-bat <- ggplot(data = mod_dat, aes(x = resistance, y = bat_mean)) +
-  geom_boxplot(fill = "#FFCC80", color = "black") +
+urchin <- ggplot(data = mod_dat, aes(x = resistance, y = urchin_density/60)) +
+  geom_boxplot(fill = "#EEEEEE", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
                         tip_length = c(0.01, 0.01),
                         textsize=3)+
-  ylim(5,23)+
+  ylim(0,70)+
   xlab("") +
-  ylab("Depth (m)") +
-  ggtitle("Mean \ndepth (m)") +
-  labs(tag="")+
+  ylab("Urchin density \n(no. per m²)") +
+  ggtitle("Urchin \ndensity") +
+  #labs(tag="B")+
   theme_classic()+
   my_theme+
   scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
-#bat
+#urchin
 
-npp <- ggplot(data = mod_dat, aes(x = resistance, y = npp_ann_mean)) +
-  geom_boxplot(fill = "#81D4FA", color = "black") +
-  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
-  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
-                        map_signif_level = TRUE,
-                        y_position = 4000,
-                        tip_length = c(0.01, 0.01),
-                        textsize=3)+
-  ylim(0,4500)+
-  xlab("") +
-  ylab("Net primary productivity \n(annual mean)") +
-  ggtitle("Net primary \nproductivity") +
-  labs(tag="")+
-  theme_classic()+
-  my_theme+
-  scale_x_discrete(labels = c("Persistent", "Transitioned"))
-#npp
-
-
-kelp_cv <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp_cv)) +
-  geom_boxplot(fill = "#78909C", color = "black") +
+kelp_cv <- ggplot(data = mod_dat %>%
+                    #take mean across since, since this is static
+                    group_by(site, resistance) %>% summarise(baseline_kelp_cv = mean(baseline_kelp_cv)), 
+                  aes(x = resistance, y = baseline_kelp_cv)) +
+  geom_boxplot(fill = "#FFCC80", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
@@ -507,8 +541,68 @@ kelp_cv <- ggplot(data = mod_dat, aes(x = resistance, y = baseline_kelp_cv)) +
   scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #kelp_cv
 
-wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
+bat <- ggplot(data = mod_dat %>%
+                #take mean across since, since this is static
+                group_by(site, resistance) %>% summarise(bat_mean = mean(bat_mean)), 
+              aes(x = resistance, y = bat_mean)) +
+  geom_boxplot(fill = "#81D4FA", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  ylim(5,23)+
+  xlab("") +
+  ylab("Depth (m)") +
+  ggtitle("Mean \ndepth (m)") +
+  labs(tag="")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
+#bat
+
+npp <- ggplot(data = mod_dat, aes(x = resistance, y = npp_ann_mean)) +
+  geom_boxplot(fill = "#78909C", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        y_position = 4000,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  ylim(0,4500)+
+  xlab("") +
+  ylab("Net primary productivity \n(annual mean)") +
+  ggtitle("Net primary \nproductivity") +
+  labs(tag="")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))
+#npp
+
+slope <- ggplot(data = mod_dat %>%
+                  #take mean across since, since this is static
+                group_by(site, resistance) %>% summarise(slope_mean = mean(slope_mean)), 
+                aes(x = resistance, y = slope_mean)) +
   geom_boxplot(fill = "#F48FB1", color = "black") +
+  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
+  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
+                        map_signif_level = TRUE,
+                        tip_length = c(0.01, 0.01),
+                        textsize=3)+
+  ylim(0,20)+
+  xlab("") +
+  ylab("Slope \n(mean per site)") +
+  ggtitle("Reef \nslope") +
+  #labs(tag="B")+
+  theme_classic()+
+  my_theme+
+  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
+#slope
+
+
+
+wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
+  geom_boxplot(fill = "#FF4081", color = "black") +
   geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
   ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
                         map_signif_level = TRUE,
@@ -525,22 +619,7 @@ wave_h <- ggplot(data = mod_dat, aes(x = resistance, y = wave_hs_max)) +
   scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
 #wave_h
 
-urchin <- ggplot(data = mod_dat, aes(x = resistance, y = urchin_density/60)) +
-  geom_boxplot(fill = "#FF4081", color = "black") +
-  geom_jitter(width = 0.1, height = 0.3, alpha = 0.2, size=1) +
-  ggsignif::geom_signif(comparisons = list(c("resistant", "transitioned")),
-                        map_signif_level = TRUE,
-                        tip_length = c(0.01, 0.01),
-                        textsize=3)+
-  ylim(0,70)+
-  xlab("") +
-  ylab("Urchin density \n(no. per m²)") +
-  ggtitle("Urchin \ndensity") +
-  #labs(tag="B")+
-  theme_classic()+
-  my_theme+
-  scale_x_discrete(labels = c("Persistent", "Transitioned"))  # Renaming levels
-#urchin
+
 
 
 predictors1 <- ggpubr::ggarrange(kelp, sst, beuti,slope,rugosity,  orb_v, bat, npp, 
@@ -560,7 +639,7 @@ full_plot
 
 
 
-ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new6.png"), 
+ggsave(full_plot, filename=file.path(figdir, "Fig5_predictors_new7.png"), 
        width=7, height=9, bg="white", units="in", dpi=600,
        device = "png")
 
