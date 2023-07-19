@@ -48,6 +48,74 @@ kelp_mean <- swath_sub1 %>% filter(species == "macrocystis_pyrifera") %>% group_
 #join
 swath_sub <- left_join(swath_sub1, kelp_mean, by=c("year", "site", "outbreak_period"))
 
+################################################################################
+#plot distinct sites
+
+site_year <- swath_raw %>% dplyr::select(year, site) %>% distinct() %>%
+  mutate(
+  site_order = case_when(
+    site == "CANNERY_UC" ~ 1,
+    site == "CANNERY_DC" ~ 2,
+    site == "MACABEE_UC" ~ 3,
+    site == "MACABEE_DC" ~ 4,
+    site == "HOPKINS_UC" ~ 5,
+    site == "HOPKINS_DC" ~ 6,
+    site == "LOVERS_UC" ~ 7,
+    site == "LOVERS_DC" ~ 8,
+    site == "SIREN" ~ 9,
+    site == "OTTER_PT_UC" ~ 10,
+    site == "OTTER_PT_DC" ~ 11,
+    site == "LONE_TREE" ~ 12,
+    site == "PESCADERO_UC" ~ 13,
+    site == "PESCADERO_DC" ~ 14,
+    site == "STILLWATER_UC" ~ 15,
+    site == "STILLWATER_DC" ~ 16,
+    site == "BUTTERFLY_UC" ~ 17,
+    site == "BUTTERFLY_DC" ~ 18,
+    site == "MONASTERY_UC" ~ 19,
+    site == "MONASTERY_DC" ~ 20,
+    site == "BLUEFISH_UC" ~ 21,
+    site == "BLUEFISH_DC" ~ 22,
+    site == "WESTON_UC" ~ 23,
+    site == "WESTON_DC" ~ 24,
+    TRUE ~ NA)
+)
+
+# Theme
+my_theme <- theme(
+  axis.text = element_text(size = 6),
+  axis.text.x = element_text(angle = 45, hjust = 1),
+  axis.title = element_text(size = 8),
+  plot.tag = element_blank(),
+  plot.title = element_text(size = 7, face = "bold"),
+  panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.background = element_blank(),
+  axis.line = element_line(colour = "black"),
+  legend.key = element_blank(),
+  legend.background = element_rect(fill = alpha('blue', 0)),
+  legend.key.height = unit(1, "lines"),
+  legend.text = element_text(size = 6),
+  legend.title = element_text(size = 7),
+  strip.background = element_blank(),
+  strip.text = element_text(size = 6, face = "bold"),
+  # Adjust panel spacing
+  panel.spacing.y = unit(0.5, "lines")
+)
+
+g <- ggplot(site_year %>% mutate(site = str_to_title(gsub("_", " ", site)),
+                            site = str_replace(site, "Dc", "DC"),
+                            site = str_replace(site, "Uc", "UC")),
+       aes(x = year, y = reorder(site, site_order))) +
+  geom_tile(fill = "#8B5FBF", colour = "white", alpha=0.7) +
+  labs(x = "Year", y = "Site") +
+  scale_x_continuous(breaks = unique(site_year$year), labels = unique(site_year$year)) +
+  theme_bw()+
+  my_theme
+g
+
+ggsave(g, filename=file.path(figdir, "FigS1_site_frequency.png"), 
+       width=6, height=6, units="in", dpi=600)
 
 ################################################################################
 #plot
