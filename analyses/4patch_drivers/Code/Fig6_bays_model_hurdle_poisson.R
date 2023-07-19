@@ -325,6 +325,10 @@ ggsave(g, filename=file.path(figdir, "FigS4_pp_checks.png"),
        width=7, height=9, bg="white", units="in", dpi=600,
        device = "png")
 
+table_output <- capture.output(print(hurdle_poisson_red2))
+writeLines(table_output, file.path(tab_dir, "TableS2_fit_output_table.txt"))
+
+
 
 ################################################################################
 #plot

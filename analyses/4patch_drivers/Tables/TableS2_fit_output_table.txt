@@ -1,34 +1,43 @@
- Family: gaussian 
-  Links: mu = identity; sigma = identity 
-Formula: stipe_mean ~ resistance + (1 | site) + year + vrm_sum + bat_mean + beuti_month_obs + npp_ann_mean + wave_hs_max + orb_vmax + slope_mean + sst_month_obs + baseline_kelp 
+ Family: hurdle_poisson 
+  Links: mu = log; hu = logit 
+Formula: stipe_mean ~ prop_urch_exp + vrm_sum + bat_mean + beuti_month_obs + npp_ann_mean + wave_hs_max + orb_vmax + slope_mean + sst_month_obs + baseline_kelp + baseline_kelp_cv + urchin_density + year + (1 | year/site) 
+         hu ~ prop_urch_exp + urchin_density + year + (1 | year/site)
    Data: mod_dat_std (Number of observations: 259) 
-  Draws: 4 chains, each with iter = 4000; warmup = 2000; thin = 1;
-         total post-warmup draws = 8000
+  Draws: 4 chains, each with iter = 10000; warmup = 2000; thin = 1;
+         total post-warmup draws = 32000
 
 Group-Level Effects: 
-~site (Number of levels: 24) 
-              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)    19.05      7.33     3.76    34.01 1.00     1443     1203
+~year (Number of levels: 14) 
+                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)        0.14      0.07     0.02     0.30 1.00     2783     3226
+sd(hu_Intercept)     1.52      3.55     0.04     5.15 1.00     2684      894
+
+~year:site (Number of levels: 259) 
+                 Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)        0.41      0.02     0.36     0.46 1.00     6593    11031
+sd(hu_Intercept)     0.69      0.57     0.03     2.14 1.00    15185    15920
 
 Population-Level Effects: 
-                       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept              16258.52   1962.88 12376.73 20154.80 1.00     8647     6601
-resistancetransitioned    -4.78      4.92   -14.47     4.91 1.00     7583     5887
-year                      -8.03      0.97    -9.96    -6.11 1.00     8639     6600
-vrm_sum                   -0.99      3.59    -7.94     6.06 1.00     6356     4966
-bat_mean                  -3.96      4.00   -11.82     3.89 1.00     7534     6151
-beuti_month_obs            0.58      3.56    -6.47     7.35 1.00     7908     6467
-npp_ann_mean               4.30      3.26    -2.21    10.67 1.00     8969     5553
-wave_hs_max               -7.01      3.96   -14.91     0.77 1.00     7046     5625
-orb_vmax                  -2.42      3.69    -9.55     4.87 1.00     7634     6013
-slope_mean                -5.33      3.92   -13.03     2.42 1.00     7052     5635
-sst_month_obs              5.49      3.55    -1.44    12.40 1.00     8211     6382
-baseline_kelp             13.69      4.83     3.80    22.96 1.00     3097     4640
+                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept            69.96     43.86   -13.76   160.38 1.00     6936    12023
+hu_Intercept        538.09    931.29  -866.97  2252.28 1.00     5004     2123
+prop_urch_exp        -1.91      0.12    -2.14    -1.69 1.00    11029    16575
+vrm_sum               0.05      0.03    -0.01     0.12 1.00     5055     9900
+bat_mean              0.02      0.06    -0.10     0.13 1.00     4848     9611
+beuti_month_obs       0.05      0.11    -0.18     0.27 1.00     7168    10761
+npp_ann_mean          0.01      0.05    -0.08     0.10 1.00     4901     7428
+wave_hs_max          -0.14      0.11    -0.35     0.07 1.00     4217     8695
+orb_vmax              0.09      0.09    -0.09     0.27 1.00     4987    10190
+slope_mean            0.05      0.05    -0.05     0.15 1.00     4818    10409
+sst_month_obs         0.06      0.11    -0.16     0.28 1.00     7779    11464
+baseline_kelp         0.32      0.06     0.21     0.44 1.00     5244    10556
+baseline_kelp_cv      0.02      0.05    -0.08     0.12 1.00     5303    10275
+urchin_density       -0.01      0.07    -0.15     0.13 1.00     7845    14634
+year                 -0.03      0.02    -0.08     0.01 1.00     6938    12005
+hu_prop_urch_exp      6.49      2.21     3.50    10.91 1.00     3459     1467
+hu_urchin_density     1.71      0.92     0.24     3.70 1.00     9407     4535
+hu_year              -0.27      0.46    -1.12     0.42 1.00     5013     2124
 
-Family Specific Parameters: 
-      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma    50.69      2.33    46.37    55.57 1.00     9116     6098
-
-Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).
