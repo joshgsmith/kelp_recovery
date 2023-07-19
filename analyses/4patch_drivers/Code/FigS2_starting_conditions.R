@@ -151,7 +151,7 @@ panel_A <- ggplot(data = resist_sites, aes(x = year, y = kelp_mean)) +
   scale_color_manual(values = c("Within 1 SD" = "black", "Above 1 SD" = "forestgreen", "Below 1 SD" = "purple")) +
   facet_wrap(~reorder(site, -mean_kelp), scales = "fixed", nrow=1, ncol=5
              )+
-  scale_y_continuous(breaks = c(0, 100,200,300))+
+  scale_y_continuous(breaks = c(0, 100,200,300), limits = c(0,350))+
   labs(tag = "A") +
   theme_classic() +
   theme(plot.margin = unit(c(0, 1, 0.5, 0), "lines"),
@@ -173,14 +173,14 @@ panel_B <- ggplot(data = transition_sites, aes(x = year, y = kelp_mean)) +
   labs(x = "Year", y = "Kelp density \n(stipes per 60 m²)", color = "") +
   scale_color_manual(values = c("Within 1 SD" = "black", "Above 1 SD" = "forestgreen", "Below 1 SD" = "purple")) +
   facet_wrap(~reorder(site, -mean_kelp), scales = "fixed", ncol=5) +
-  scale_y_continuous(breaks = c(0, 100,200,300), limits = c(0,300))+
+  scale_y_continuous(breaks = c(0, 100,200,300), limits = c(0,350))+
   labs(tag = "B") +
   theme_classic() +
   theme(plot.margin = unit(c(0, 1, 0.5, 0), "lines"),
         aspect.ratio = 1.1) + my_theme+
   #add ttest p-val
   geom_text(data = transition_sites %>% filter(year == 2007), aes(label = paste("P[B,A]:", signif(p_value, digits = 2)), 
-                                                              x = 2014, y = 300, hjust = 1, vjust = 1), size=2)+
+                                                              x = 2014, y = 320, hjust = 1, vjust = 1), size=2)+
   # Heatwave
   annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) 
 panel_B
@@ -193,7 +193,7 @@ g <- ggpubr::ggarrange(panel_A, panel_B, ncol = 1, common.legend = TRUE, legend 
 
 g
 
-ggsave(g, filename=file.path(figdir, "FigX_starting_conditions_new2.png"), 
+ggsave(g, filename=file.path(figdir, "FigX_starting_conditions_new3.png"), 
        width=7, height=8, units="in", dpi=600, bg="white")
 
 
