@@ -46,6 +46,35 @@ mean_density <- swath_sub1 %>%
             one_sd_m = one_sd_60m/60
             ) 
 
+percent_loss <- mean_density %>%
+  filter(outbreak_period %in% c("before", "after") & species == "macrocystis_pyrifera") %>%
+  group_by(outbreak_period) %>%
+  summarise(mean_density = mean(mean_density_60m)) %>%
+  spread(outbreak_period, mean_density) %>%
+  mutate(percent_loss = ((before - after) / before) * 100) %>%
+  pull(percent_loss)
+
+#calculate mean transect density before vs. 2020
+mean_density <- swath_sub1 %>% 
+  mutate(final_year = ifelse(year < 2014, "before",
+                             ifelse(year == 2020,"after",NA)))%>%
+  dplyr::filter(!(is.na(final_year)))%>%
+  group_by(outbreak_period, species)%>%
+  summarise(mean_density_60m = mean(counts, na.rm=TRUE),
+            one_sd_60m = sd(counts, na.rm=TRUE),
+            mean_density_m2 = mean_density_60m/60,
+            one_sd_m = one_sd_60m/60
+  ) 
+
+
+percent_loss_2020 <- mean_density %>%
+  filter(outbreak_period %in% c("before", "after") & species == "macrocystis_pyrifera") %>%
+  group_by(outbreak_period) %>%
+  summarise(mean_density = mean(mean_density_60m)) %>%
+  spread(outbreak_period, mean_density) %>%
+  mutate(percent_loss = ((before - after) / before) * 100) %>%
+  pull(percent_loss)
+
 
 ################################################################################
 #test using ANOVA
