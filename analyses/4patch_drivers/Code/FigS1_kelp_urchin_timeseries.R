@@ -114,8 +114,8 @@ g <- ggplot(site_year %>% mutate(site = str_to_title(gsub("_", " ", site)),
   my_theme
 g
 
-ggsave(g, filename=file.path(figdir, "FigS1_site_frequency.png"), 
-       width=6, height=6, units="in", dpi=600)
+#ggsave(g, filename=file.path(figdir, "FigS1_site_frequency.png"), 
+ #      width=6, height=6, units="in", dpi=600)
 
 ################################################################################
 #plot

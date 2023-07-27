@@ -6,6 +6,7 @@ rm(list=ls())
 librarian::shelf(tidyverse, here, tidyverse, tidync, sf, raster, terra, ggtext, ggsn)
 
 
+
 ################################################################################
 #set directories and load data
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/"
@@ -123,6 +124,12 @@ g1_inset
 ###MUST RUN FigS1_kelp_urchin_timeseries
 g2_inset <- ggplotGrob(g1)
 
+# Create the "Monterey" text label
+monterey_label <- data.frame(
+  x = c(-121.9, -122.01), # x-coordinate for the upper right corner
+  y = c(36.657, 36.54),  # y-coordinate for the upper right corner
+  label = c("Monterey \nBay", "Carmel \nBay")
+)
 
 # Plot the county boundaries and site locations with non-overlapping labels
 map <- ggplot() +
@@ -176,13 +183,19 @@ map <- ggplot() +
   annotation_custom(grob = g2_inset, 
                     xmin = -122.093, 
                     xmax = -121.97,
-                    ymin = 36.59) 
+                    ymin = 36.59) +
+  #add labels
+  geom_text(data=monterey_label, mapping=aes(x=x, y=y, label=label),
+            size=4, fontface= "bold") +
+  #add arrow
+  annotate("segment", x = -122, y = 36.54, xend = -121.96, yend = 36.54,
+           arrow = arrow(type = "closed", length = unit(0.02, "npc")))
 
 map
 
 
 ggsave(map, filename=file.path(figdir, "Fig1_site_map_new.png"), bg = "white",
-       width=7, height=6, units="in", dpi=600) 
+       width=7.5, height=6, units="in", dpi=600) 
 
 
 
