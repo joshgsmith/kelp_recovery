@@ -392,7 +392,8 @@ plot_merge <- rbind(swath_pc, fish_pc, upc_pc) %>%
         #   TRUE ~ species
         # )
         # 
-        )
+        ) %>%
+  mutate(trophic_ecology = ifelse(trophic_ecology == "Autotroph","Primary producer",trophic_ecology))
 
 
 
@@ -480,7 +481,8 @@ ggplot(plot_merge %>% group_by(transition_site) %>%
 dark2_palette <- c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D", "#666666")
 
 
-resist_dat <- plot_merge %>% filter(transition_site == "no")
+resist_dat <- plot_merge %>% filter(transition_site == "no") %>%
+                mutate(trophic_ecology = ifelse(trophic_ecology == "Autotroph","Primary producer",trophic_ecology))
 resist_dat$label <- with(resist_dat, ifelse(survey_method == "UPC", paste0("(", round(Before, 2), ", ", round(After, 2), ") *"), paste0("(", round(Before, 2), ", ", round(After, 2), ") \u2020")))
 
 p1 <- ggplot(resist_dat,
@@ -536,7 +538,8 @@ p1
 transition_dat <- plot_merge %>% filter(transition_site == "yes") %>% filter(!(species == "Leptasterias hexactis" | species == "Cirripidia")) %>%
                     #drop UPC macro
                    filter(!(survey_method == "UPC" & species == "Macrocystis pyrifera")) %>%
-                  filter(!(survey_method == "Swath" & species == "Macrocystis pyrifera" & Before < 2))
+                  filter(!(survey_method == "Swath" & species == "Macrocystis pyrifera" & Before < 2)) %>%
+  mutate(trophic_ecology = ifelse(trophic_ecology == "Autotroph","Primary producer",trophic_ecology))
 
 # Create a new column for formatted labels
 transition_dat$label <- with(transition_dat, ifelse(survey_method == "UPC", paste0("(", round(Before, 2), ", ", round(After, 2), ") *"), paste0("(", round(Before, 2), ", ", round(After, 2), ") \u2020" )))
@@ -592,10 +595,10 @@ p2
 
 combined_plot <- ggpubr::ggarrange(p1, p2, common.legend = TRUE, align = "h") 
 
-combined_plot_annotated <- annotate_figure(combined_plot,
-                bottom = text_grob("Percent change", 
-                                   hjust = 4.8, x = 1, size = 10),
-                left = text_grob("Species", rot = 90, size = 10, vjust=2)
+combined_plot_annotated <- ggpubr::annotate_figure(combined_plot,
+                bottom = ggpubr::text_grob("Percent change", 
+                                   hjust = 4.6, x = 1, size = 10),
+                left = ggpubr::text_grob("Species", rot = 90, size = 10, vjust=2)
 )
 
 combined_plot
