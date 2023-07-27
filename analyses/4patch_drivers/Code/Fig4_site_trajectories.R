@@ -170,7 +170,7 @@ A <- ggplot(data = macro, aes(x = mean_count_after, y = mean_count_before)) +
   scale_color_gradient(name = "Mean Sim") +
   scale_color_viridis_c() +
   theme_classic()+
-  ggrepel::geom_label_repel(data = macro, aes(x = strong$mean_count_after, y = macro$mean_count_before, label = site),size=2, box.padding = 1, force = 50,min.segment.length = 1)+
+  #ggrepel::geom_label_repel(data = macro, aes(x = strong$mean_count_after, y = macro$mean_count_before, label = site),size=2, box.padding = 1, force = 50,min.segment.length = 1)+
   my_theme
 A
 
@@ -215,7 +215,7 @@ C <- ggplot(data = macro, aes(x = mean_count_after/60, y = mean_count_before/60)
   scale_color_gradient2(low = "#FF7F00", high = "#008080", mid = "gray80", midpoint = 0.41) +  # Adjust the midpoint value
   theme_classic() +
   labs(tag = "B")+
-  ggrepel::geom_label_repel(data = macro, aes(x = strong$mean_count_before/60, y = macro$mean_count_before/60, label = site), size = 2, box.padding = 1, force = 20, min.segment.length = 1) +
+  #ggrepel::geom_label_repel(data = macro, aes(x = strong$mean_count_before/60, y = macro$mean_count_before/60, label = site), size = 2, box.padding = 1, force = 20, min.segment.length = 1) +
   my_theme
 C
 
@@ -233,7 +233,7 @@ E
 
 
 # Save the combined plot
-ggsave(E, filename = file.path(figdir, "Fig3_dumbbell_new3.png"), 
+ggsave(E, filename = file.path(figdir, "Fig3_dumbbell_new4.png"), 
        width = 7, height = 8, bg = "white", units = "in", dpi = 600)
 
 
