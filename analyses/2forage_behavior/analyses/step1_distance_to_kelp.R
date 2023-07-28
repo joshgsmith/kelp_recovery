@@ -7,7 +7,7 @@ librarian::shelf(tidyverse, tidync, sf, rnaturalearth, usethis, raster, tidyterr
 
 #set directories 
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
-figdir <- here::here("analyses","figures")
+figdir <- here::here("analyses","2forage_behavior","figures")
 
 #read landsat dat
 landsat_dat <- st_read(file.path(basedir, "kelp_landsat/processed/monterey_peninsula/landsat_mpen_1984_2022_points.shp"))
@@ -76,10 +76,10 @@ forage_build2 <- left_join(forage_build1, focal_patch, by="bout")
 
 forage_build3 <- forage_build2 %>%
                     group_by(year, quarter, bout, focal_patch) %>%
-                    summarize(n_prey = sum(preynum),
-                              lat = mean(lat),
-                              long = mean(long)
-                              ) %>%
+                    #summarize(n_prey = sum(preynum),
+                     #         lat = mean(lat),
+                      #        long = mean(long)
+                       #       ) %>%
                   filter(!(is.na(lat)))%>%
                   #make spatial
                   st_as_sf(., coords = c("long","lat"), crs=4326)
@@ -92,124 +92,123 @@ forage_build4 <- st_transform(forage_build3, crs=3310)
 #Step 3 -- calculate distance to nearest point
 
 
-results <- data.frame(id1 = numeric(), id2 = numeric(), distance = numeric(), year = numeric(), quarter = numeric())
+# Calculate the distance matrix between forage_build4 and t_dat
+dist_matrix <- st_distance(forage_build4, t_dat)
 
+# Initialize an empty data frame to store the results
+result <- data.frame()
 
-# Loop through each year and quarter
-for (year in unique(forage_build4$year)) {
-  for (quarter in unique(forage_build4$quarter)) {
-    # Get subset of object1 for current year and quarter
-    forage_subset <- forage_build4[forage_build4$year == year & forage_build4$quarter == quarter, ]
-    # Get subset of object2 for current year and quarter
-    kelp_subset <- t_dat[t_dat$year == year & t_dat$quarter == quarter, ]
-    # Loop through each point in object1 and find nearest point in object2
-    for (i in 1:nrow(forage_subset)) {
-     nearest <- st_nearest_feature(forage_subset[i, ], kelp_subset, returnDist=TRUE, units="m")
-      
-     results <- rbind(results, data.frame( id1 = forage_subset[i, "bout"], id2 = nearest$biomass, 
-                                         distance = units::set_units(nearest$dist, m), 
-                                          year = year, quarter = quarter))
-      
-    }
+# Initialize a vector to store the distances
+distances <- c()
+
+# Loop through each unique combination of 'year' and 'quarter' in forage_build4
+for (unique_year in unique(forage_build4$year)) {
+  for (unique_quarter in unique(forage_build4$quarter)) {
+    # Filter for the specific 'year' and 'quarter' combination
+    forage_build4_subset <- forage_build4[forage_build4$year == unique_year & forage_build4$quarter == unique_quarter, ]
+    
+    # Find the corresponding rows in t_dat for the same 'year' and 'quarter' combination
+    t_dat_subset <- t_dat[t_dat$year == unique_year & t_dat$quarter == unique_quarter, ]
+    
+    # Calculate the distance matrix between the filtered forage_build4_subset and t_dat_subset
+    dist_matrix_subset <- st_distance(forage_build4_subset, t_dat_subset)
+    
+    # Find the indices of the closest points for this subset
+    closest_indices <- apply(dist_matrix_subset, 1, function(row) {
+      min_dist <- min(row, na.rm = TRUE)
+      closest_idx <- which(row == min_dist)
+      closest_idx[1]  # If multiple points have the same closest distance, take the first one
+    })
+    
+    # Create a new data frame with the closest points from t_dat_subset
+    closest_points <- t_dat_subset[closest_indices, ]
+    
+    # Calculate the distances between the points
+    distances_subset <- apply(dist_matrix_subset, 1, function(row) {
+      min_dist <- min(row, na.rm = TRUE)
+      min_dist
+    })
+    
+    # Append the distances to the overall distances vector
+    distances <- c(distances, distances_subset)
+    
+    # Merge the closest_points data frame with forage_build4_subset based on 'year' and 'quarter'
+    result_subset <- st_join(forage_build4_subset, closest_points, join = st_nearest_feature)
+    
+    # Append the subset result to the overall result
+    result <- rbind(result, result_subset)
   }
 }
 
-
+# Add the distances column to the result data frame
+result$distance_to_closest <- distances
 
 
 ################################################################################
-#Manual mode
-
-#create empty column 
-forage_dist <- forage_build4
-forage_dist$nearest_kelp <- NA
-
-dist_fun <- function(y, q) {
-  forage_subset <- forage_dist %>% filter(year==y & quarter == q)
-  kelp_subset <- t_dat %>% filter(year==y & quarter == q)
-  
-  #this returns the index (row number) of kelp_subset closest to forage_subset
-  out <- st_nearest_feature(forage_subset, kelp_subset)
-  #this returns the element-wise distances 
-  dist <- st_distance(forage_subset, kelp_subset[out,], by_element=TRUE) %>%
-    data.frame() %>% rename("dist" = ".")
-  
-  df_out <- dist %>% mutate(year = y, q=q,
-                                           dist = as.numeric(word(dist,1)),
-                                           dist_m = round(dist,2)) %>% dplyr::select(!(dist)) 
-  return(df_out)
-}
+#Step 4 -- plot
 
 
-for(yr in unique(forage_dist$year)){
-  for(qtr in unique(forage_dist$quarter)){
-    dist_out <- dist_fun(yr,qtr)
-    forage_dist$nearest_kelp[forage_dist$year==yr & forage_dist$quarter==qtr] <- dist_out$dist_m
-  }
-}
+plot_dat <- result %>% mutate(
+  observed_within_50 = ifelse(canopy == 1 | canopy == 0.5,"yes","no")
+)
 
 
-dist_fun(2019,4)
+my_theme <-  theme(axis.text=element_text(size=6, color = "black"),
+                   axis.text.y = element_text(angle = 90, hjust = 0.5, color = "black"),
+                   axis.title=element_text(size=8, color = "black"),
+                   plot.tag=element_text(size= 8, color = "black"), #element_text(size=8),
+                   plot.title =element_text(size=7, face="bold", color = "black"),
+                   # Gridlines 
+                   panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   axis.line = element_line(colour = "black"),
+                   # Legend
+                   legend.key = element_blank(),
+                   legend.background = element_rect(fill=alpha('blue', 0)),
+                   legend.key.height = unit(1, "lines"), 
+                   legend.text = element_text(size = 6, color = "black"),
+                   legend.title = element_text(size = 7, color = "black"),
+                   #legend.spacing.y = unit(0.75, "cm"),
+                   #facets
+                   strip.background = element_blank(),
+                   strip.text = element_text(size = 6 ,face="plain", hjust=0, color = "black"),
+)
+
+# Create a subset of the data with the "yes" and "no" points
+yes_points <- subset(plot_dat, observed_within_50 == "yes")
+no_points <- subset(plot_dat, observed_within_50 == "no")
 
 
-View(forage_dist)
+# Calculate the counts and proportions for "yes" points
+yes_counts <- table(yes_points$distance_to_closest <= 50)
+yes_proportions <- yes_counts / sum(yes_counts)
 
+# Calculate the counts and proportions for "no" points
+no_counts <- table(no_points$distance_to_closest > 50)
+no_proportions <- no_counts / sum(no_counts)
 
+# Create a data frame to use for plotting
+plot_data <- data.frame(
+  canopy = c("Inside (aligned)", "Inside (out of sample)", "Outside (out of sample)", "Outside (aligned)"),
+  count = c(yes_counts[TRUE], yes_counts[FALSE], no_counts[TRUE], no_counts[FALSE]),
+  proportion = c(yes_proportions[TRUE], yes_proportions[FALSE], no_proportions[TRUE], no_proportions[FALSE])
+)
 
-###trouble shooting
-dist_out <- dist_fun(2017,3)
+g <- ggplot(plot_data, aes(x = canopy, y = count, fill = factor(canopy))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = sprintf("%.2f", proportion)), position = position_stack(vjust = 0.5)) +
+  labs(x = "Location", y = "No. observations") +
+  scale_fill_manual(values = c("Inside (aligned)" = "#91bfdb", "Inside (out of sample)" = "#3182bd",
+                               "Outside (out of sample)" = "#c51b7d", "Outside (aligned)" = "#f768a1")) +
+  guides(fill = FALSE) +  # Remove the legend for the "fill" aesthetic
+  theme_bw() + my_theme
 
-forage_subset <- forage_build4 %>% filter(year==2016 & quarter == 3)
-kelp_subset <- t_dat %>% filter(year==2016 & quarter == 3)
+g
 
+ggsave(filename = file.path(figdir, "FigX_distance_to_kelp.png"), plot = g, 
+       width = 7, height = 6, bg = "white", units = "in", dpi = 600)
 
-dist <- st_distance(forage_subset, kelp_subset[out,], by_element=TRUE, units="m") %>%
-            data.frame() %>% rename("dist" = ".")
-df_out <- dist %>% mutate(year = 2016, q=3,
-                          dist = as.numeric(word(dist,1)),
-                          dist_m = round(dist,2)) %>% dplyr::select(!(dist))
-
-forage_dist$nearest_kelp[forage_dist$year==2016 & forage_dist$quarter==3] <- dist_out$dist_m
-
-
-#this returns the index (row number) of kelp_subset closest to forage_subset
-out <- st_nearest_feature(forage_subset, kelp_subset, units="m")
-#this returns the element-wise distances 
-dist <- st_distance(forage_subset, kelp_subset[out,], by_element=TRUE)
-
-df_out <- as.data.frame(dist) %>% mutate(year = 2016, q=3,
-                                         dist = as.numeric(word(dist,1)),
-                                         dist_m= round(dist, 2)) %>% select(!(dist))
-
-
-
-
-
-
-
-
-
-#######THIS WORKS!!!!!!!!
-
-#create empty column 
-forage_dist <- forage_build4
-
-
-for(yr in unique(forage_dist$year)){
-  for(qtr in unique(forage_dist$quarter)){
-    #this returns the index (row number) of kelp_subset closest to forage_subset
-    out <- st_nearest_feature(forage_dist, t_dat)
-    #this returns the element-wise distances 
-    dist <- st_distance(forage_dist, t_dat[out,], by_element=TRUE) 
-    
-    #forage_dist$nearest_kelp[forage_dist$year==yr & forage_dist$quarter==qtr] <- dist$dist_m
-    output_df <- cbind(forage_dist, dist)  %>% mutate(
-                                                      dist = as.numeric(word(dist,1)),
-                                                      dist_m = round(dist,2)) %>% dplyr::select(!(dist)) 
-    #join attributes from landsat data
-    output_df2 <- cbind(output_df, t_dat[out,])
-  }
-}
 
 
 
