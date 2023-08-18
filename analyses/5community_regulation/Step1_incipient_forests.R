@@ -10,10 +10,10 @@ librarian::shelf(tidyverse, sf, raster, shiny, tmap)
 
 #set directories 
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
-figdir <- here::here("analyses","figures")
+figdir <- here::here("analyses","2forage_behavior","figures")
 
 #read landsat dat
-landsat_dat <- st_read(file.path(basedir, "kelp_landsat/processed/monterey_peninsula/landsat_mpen_1984_2022_points_withNAs.shp"))
+landsat_dat <- st_read(file.path(basedir, "kelp_landsat/processed/monterey_peninsula/landsat_mpen_1984_2023_points_withNAs.shp"))
 
 #read state
 ca_counties <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7vc7n.shp")) 
@@ -21,146 +21,100 @@ ca_counties <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7v
 #read otter scan area
 scan_area <- st_read(file.path(basedir, "gis_data/raw/otter_scan_area/TrackingMaps_POLY.shp")) 
 
-################################################################################
-#Step 1 - build stacked raster
-
-rast_raw <- landsat_dat 
-
-# transform landsat data to Teale Albers
-rast_build1 <- st_transform(rast_raw, crs = 3310) %>% 
-  mutate(biomass = ifelse(biomass == 0, NA, biomass))  %>% filter (year >= 2007) #reduce years if memory issue
-
-#define blank raster
-r <- terra::rast(rast_build1, res=30)
-
-# Get unique quarters and years
-quarters <- unique(rast_build1$quarter)
-years <- unique(rast_build1$year)
-
-# Loop through each quarter and year
-raster_list <- list()
-for (y in years) {
-  for (q in quarters) {
-    # Subset rast_build1 for current quarter and year
-    subset <- rast_build1 %>% filter(year == y, quarter == q)
-    # Rasterize subset
-    rasterized <- rasterize(subset, r, field = "biomass", fun = mean)
-    # Add year and quarter as part of the SpatRaster object name
-    name <- paste0("year_", y, "_quarter_", q)
-    names(rasterized) <- name
-    # Add raster to list
-    raster_list <- append(raster_list, rasterized)
-  }
-}
-
-# Stack rasters in list
-stacked_raster <- stack(raster_list)
-
-#check names
-names(stacked_raster)
-
-str(stacked_raster)
 
 ################################################################################
 #Step 2 - scale biomass to scan area polygon extent 
 
-#glace at scan area
-plot(scan_area)
+scan_area <- scan_area %>% rename(site_name = Name) 
 
-scan_area <- scan_area %>% rename(site_name = Name) %>%  st_transform(crs = crs(stacked_raster))
+# Join the point data with the polygon data based on spatial location
+joined_data <- st_join(rast_build1, scan_area)
 
-# Get the bounding box of the transformed polygons
-polygon_bbox <- st_bbox(scan_area)
+# Group by year, quarter, and site_name, and summarize the biomass values
+summarized_data <- joined_data %>%
+  group_by(year, quarter, site_name) %>%
+  summarize(total_biomass = sum(biomass, na.rm = TRUE))
 
-# Set the extent of the raster to match the bounding box of polygons
-extent(stacked_raster) <- polygon_bbox
+# Print the summarized data
+print(summarized_data)
 
-# Initialize an empty list to store the sum values
-sum_values <- list()
-
-# Initialize an empty list to store the sum matrices
-sum_matrices <- list()
-
-# Loop through each layer in the raster stack
-for (i in 1:nlayers(stacked_raster)) {
-  layer <- stacked_raster[[i]]
   
-  # Initialize an empty matrix to store the sums for each polygon
-  polygon_sums <- matrix(0, nrow(scan_area), 1)
-  
-  # Loop through each polygon in scan_area
-  for (j in 1:nrow(scan_area)) {
-    polygon <- scan_area[j, ]
-    
-    # Crop the layer to the polygon extent
-    cropped_layer <- crop(layer, polygon)
-    
-    # Calculate the sum of values within the polygon extent
-    polygon_sum <- sum(values(cropped_layer), na.rm = TRUE)
-    
-    polygon_sums[j, 1] <- polygon_sum
-  }
-  
-  # Add the polygon sums matrix for the current layer to the sum_matrices list
-  sum_matrices[[i]] <- polygon_sums
-}
-
-# Construct the final sum matrix by binding the matrices horizontally
-final_sum_matrix <- do.call(cbind, sum_matrices)
-
-# Create the final data frame by combining site names and sum matrix
-sum_df <- data.frame(scan_area$site_name, final_sum_matrix)
-
-# Set column names
-colnames(sum_df) <- c("site_name", names(stacked_raster))
-
-
 ################################################################################
-#Step 3 - transpose data
+#prep for plot
 
-kelp_area_build1 <- sum_df %>%
-  pivot_longer(
-    cols = 2:ncol(.),
-    names_to = "Layer",
-    values_to = "kelp_biomass"
-  ) %>%
-  #bust apart the meta data
-  mutate(
-    year = sub("year_(\\d+)_quarter_\\d+", "\\1", Layer),
-    quarter = sub("year_\\d+_quarter_(\\d+)", "\\1", Layer)
-  ) %>%
-  dplyr::select(-Layer)
-  
-
-################################################################################
-#plot
-
-library(dplyr)
-library(ggplot2)
-
-
-baseline_average <- kelp_area_build1 %>%
+baseline_average <- summarized_data %>%
   #filter(year >= 2007 & year <= 2013) %>%
-  filter(year >= 2015 & year <= 2017) %>%
+  filter(year >= 2016 & year <= 2017) %>%
+  filter(quarter == 3)%>%
   group_by(site_name) %>%
-  summarize(baseline_avg = mean(kelp_biomass))
+  summarize(baseline_avg = mean(total_biomass))
 
-observed_means <- kelp_area_build1 %>%
-  filter(site_name %in% c("Point Pinos East", "Point Pinos West", "Pescadero Point West", "Pescadero Point East")) %>%
+observed_means <- summarized_data %>%
+  filter(quarter == 3)%>%
+  #filter(site_name %in% c("Point Pinos East", "Point Pinos West", "Pescadero Point West", "Pescadero Point East")) %>%
   group_by(site_name, year) %>%
-  summarize(observed_avg = mean(kelp_biomass))
+  summarize(observed_avg = mean(total_biomass))
 
+# Assuming baseline_average and observed_means are data frames
 final_data <- observed_means %>%
-  left_join(baseline_average, by = "site_name") %>%
-  mutate(deviation = (observed_avg - baseline_avg) / sd(observed_avg))
+  filter(year >= 2014)%>%
+  st_join(baseline_average, by = "site_name") %>%
+  mutate(deviation = (observed_avg - baseline_avg) / sd(observed_avg)) %>%
+  filter(!(is.na(site_name.x))) %>%
+  #set recovery category
+  mutate(Incipient = ifelse(site_name.x == "3200"|
+                              site_name.x == "Carmel River Beach"|
+                              site_name.x == "Coast Guard Pier" |
+                              site_name.x == "El Torito" |
+                              site_name.x == "Hopkins Marine Station East"|
+                              site_name.x == "Lone Cypress" |
+                              site_name.x =="Monastery" |
+                              site_name.x == "Monterey Bay Inn" |
+                              site_name.x == "Pescadero Point East" |
+                              site_name.x == "Pescadero Point West"|
+                              site_name.x == "Whaler's Cove","Yes","No"),
+         incipient = factor(Incipient, levels = c("Yes","No")))
 
-# Plotting
-ggplot(final_data, aes(x = year, y = deviation, group = site_name)) +
+
+################################################################################
+#prep for plot
+
+# Theme
+base_theme <-  theme(axis.text=element_text(size=7),
+                     axis.title=element_text(size=8),
+                     legend.text=element_text(size=7),
+                     legend.title=element_text(size=8),
+                     plot.tag=element_text(size=8),
+                     # Gridlines
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(),
+                     panel.background = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     # Legend
+                     legend.key = element_rect(fill=alpha('blue', 0)),
+                     legend.background = element_rect(fill=alpha('blue', 0)),
+                     #facets
+                     strip.text = element_text(size=7, face = "bold"),
+                     strip.background = element_blank())
+
+
+
+g1 <- ggplot(final_data, aes(x = year, y = deviation, group = site_name.x, color = Incipient, fill = Incipient)) +
   geom_line() +
   geom_point() +
-  facet_wrap(~site_name, ncol = 1, scales = "free_y") +
-  labs(x = "Year", y = "Deviation (Standard Deviations from Baseline)", title = "Observed Annual Mean vs. Baseline Deviation by Site") +
-  theme_minimal()
+  facet_wrap(~site_name.x, ncol = 5, scales = "fixed") +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +  # Add this line for the dotted line
+  labs(x = "Year", y = "Deviation (Standard Deviations from 2016-17)", title = "Observed Annual Mean vs. Baseline Deviation by Site") +
+  theme_bw() + base_theme +
+  scale_fill_manual(values = c("navyblue","indianred"))+
+  scale_color_manual(values = c("navyblue","indianred"))
+g1
 
-####to do: try setting the reference (baseline) period as 2015-2017ish so
-#that we can better track recovery
+
+
+# Export figure
+ggsave(g1, filename=file.path(figdir, "FigX_landsat_sd_trend.png"), 
+       width=9.5, height=10, units="in", dpi=600)
+
+
+
