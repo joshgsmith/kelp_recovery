@@ -167,7 +167,7 @@ final_data <- observed_means %>%
   filter(!(site_name %in% c("Condos", "Naval Post Graduate School", "Del Monte")))
 
 ################################################################################
-#prep for plot
+#plot kelp forest trends by scan area
 
 # Theme
 base_theme <-  theme(axis.text=element_text(size=7),
