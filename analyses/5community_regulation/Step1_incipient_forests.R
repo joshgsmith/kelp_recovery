@@ -221,7 +221,7 @@ base_theme <-  theme(axis.text=element_text(size=7),
                      legend.key = element_rect(fill=alpha('blue', 0)),
                      legend.background = element_rect(fill=alpha('blue', 0)),
                      #facets
-                     strip.text = element_text(size=7, face = "bold"),
+                     strip.text = element_text(size=6, face = "bold"),
                      strip.background = element_blank())
 
 # Sort the dataframe by site_order
@@ -294,11 +294,11 @@ g3 <- ggplot(joined_data, aes(x = year)) +
   facet_wrap(~reorder(site_name, site_order), ncol = 4, scales = "free_y") +
   # Heatwave
   annotate(geom = "rect", xmin = 2013.5, xmax = 2016.5, ymin = -Inf, ymax = Inf, fill = "red", alpha = 0.2) +
-  labs(x = "Year", title = "Comparison of Kelp Deviation and Urchin Density") +
+  labs(x = "Year") +
   theme_bw() + base_theme +
   scale_color_manual(values = c("navyblue", "indianred")) +
   scale_size_continuous(range = c(1, 6), name = "Relative dive \nfrequency") +
-  scale_y_continuous(name = "Kelp Deviation") +
+  scale_y_continuous(name = "Kelp biomass (standard deviations from 2000-2013)") +
   scale_x_continuous(breaks = seq(2014, 2022, by = 2))  # Adjust breaks for rounded years
 
 g3
@@ -306,5 +306,5 @@ g3
 
 # Export figure
 ggsave(g3, filename=file.path(figdir, "FigX_landsat_foraging_trend_2014-2022.png"), 
-       width=8, height=8, units="in", dpi=600)
+       width=7.5, height=8, units="in", dpi=600)
 
