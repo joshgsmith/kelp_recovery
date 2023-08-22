@@ -1,0 +1,14 @@
+name: sea_otter_foraging_shiny
+title: sea_otter_foraging_shiny
+username:
+account: joshuagsmith
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 9231377
+bundleId: 7294336
+url: https://joshuagsmith.shinyapps.io/sea_otter_foraging_shiny/
+when: 1685660760.43843
+lastSyncTime: 1685660760.43845
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: landsat_mpen_1984_2022_points_withNAs.dbf|landsat_mpen_1984_2022_points_withNAs.prj|landsat_mpen_1984_2022_points_withNAs.shp|landsat_mpen_1984_2022_points_withNAs.shx|stacked_raster.tif
