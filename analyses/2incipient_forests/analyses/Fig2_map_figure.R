@@ -275,6 +275,35 @@ ggsave(p, filename=file.path(figdir, "Fig2_map_figure.png"),
 
 
 
+###plot time series
+
+##aiming for a barplot of standard deviations by year with regression lines
+
+# Calculate overall baseline average mean from 2000-2013
+baseline_avg <- scan_orig %>%
+  filter(year >= 2000 & year <= 2013) %>%
+  summarise(baseline_avg = mean(observed_avg, na.rm = TRUE)) %>%
+  pull(baseline_avg)
+
+# Calculate means for each year and Incipient category
+plot_data <- scan_orig %>%
+  mutate(std_dev_from_baseline = (observed_avg - baseline_avg) / baseline_avg) %>%
+  filter(year >= 2000) %>%
+  group_by(year, Incipient) %>%
+  summarise(mean_std_dev = mean(std_dev_from_baseline, na.rm = TRUE))
+
+# Create the plot
+p <- ggplot(plot_data, aes(x = year, y = mean_std_dev, color = Incipient, group = Incipient)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    x = "Year",
+    y = "Mean Standard Deviation from Baseline",
+    title = "Mean Standard Deviation from Baseline by Year and Incipient",
+    color = "Incipient"
+  ) +
+  theme_minimal()
+p
 
 
 
