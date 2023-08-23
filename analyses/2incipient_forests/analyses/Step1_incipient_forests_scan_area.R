@@ -10,8 +10,8 @@ librarian::shelf(tidyverse, sf, raster, shiny, tmap)
 
 #set directories 
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
-figdir <- here::here("analyses","5community_regulation","figures")
-output <- here::here("analyses","5community_regulation","output")
+figdir <- here::here("analyses","2incipient_forests","figures")
+output <- here::here("analyses","2incipient_forests","output")
 
 #read landsat dat
 landsat_dat <- st_read(file.path(basedir, "kelp_landsat/processed/monterey_peninsula/landsat_mpen_1984_2023_points_withNAs.shp"))%>%
