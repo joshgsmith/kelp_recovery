@@ -1,13 +1,5 @@
 
 
-########
-########
-
-#FIGURE OF SINGLE MAP OF SITES WITH INCIPIENT FORESTS IDENTIFIED
-
-########
-########
-
 #Joshua G. Smith; jossmith@mbayaq.org
 
 rm(list=ls())
@@ -36,6 +28,10 @@ landsat_orig <- st_read(file.path(basedir, "kelp_landsat/processed/monterey_peni
 
 #read foraging data
 forage_orig <- read.csv(file.path(basedir, "foraging_data/processed/foraging_data_2016_2023.csv")) 
+
+# Get land
+usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
+foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclass = "sf")
 
 
 ################################################################################
@@ -128,6 +124,41 @@ base_theme <-  theme(axis.text=element_text(size=6, color = "black"),
                      strip.text = element_text(size=6, face = "bold",color = "black", hjust=0),
                      strip.background = element_blank())
 
+# Build inset
+g1_inset <-  ggplotGrob(
+  ggplot() +
+    # Plot land
+    geom_sf(data=foreign, fill="grey80", color="white", lwd=0.3) +
+    geom_sf(data=usa, fill="grey80", color="white", lwd=0.3) +
+    # Plot box
+    annotate("rect", xmin=-122.6, xmax=-121, ymin=36.2, ymax=37.1, color="black", fill=NA, lwd=0.6) +
+    # Label regions
+    #geom_text(data=region_labels, mapping=aes(y=lat_dd, label=region), x= -124.4, hjust=0, size=2) +
+    # Labels
+    labs(x="", y="") +
+    # Crop
+    coord_sf(xlim = c(-124.5, -117), ylim = c(32.5, 42)) +
+    # Theme
+    theme_bw() + base_theme +
+    theme( plot.margin = unit(rep(0, 4), "null"),
+           panel.margin = unit(rep(0, 4), "null"),
+           panel.background = element_rect(fill='transparent'), #transparent panel bg
+           # plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
+           axis.ticks = element_blank(),
+           axis.ticks.length = unit(0, "null"),
+           axis.ticks.margin = unit(0, "null"),
+           axis.text = element_blank(),
+           axis.title=element_blank(),
+           axis.text.y = element_blank())
+)
+g1_inset
+
+# Create the "Monterey" text label
+monterey_label <- data.frame(
+  x = c(-121.9, -121.98), # x-coordinate for the upper right corner
+  y = c(36.64, 36.54),  # y-coordinate for the upper right corner
+  label = c("Monterey \nBay", "Carmel \nBay")
+)
 
  
 p1 <- ggplot() +
@@ -168,8 +199,13 @@ p1 <- ggplot() +
     fill = guide_legend(order = 2),  
     fill_new_scale = guide_legend(order = 3),  
     fill_new_scale1 = guide_legend(order = 1)  
-  ) +  theme_bw() + base_theme +theme(axis.text.y = element_blank(),
-                                      plot.tag.position = c(-0.03, 1))
+  ) +  
+  #add landmarks
+  geom_text(data=monterey_label, mapping=aes(x=x, y=y, label=label),
+            size=3, fontface= "bold") +
+  theme_bw() + base_theme +theme(axis.text.y = element_blank(),
+                                      plot.tag.position = c(-0.03, 1),
+                                 axis.title=element_blank())
 p1
 
 
@@ -196,9 +232,37 @@ p2 <- ggplot() +
   geom_sf(data = scan_plot_area, fill = NA, color = "gray20") +
   #add land
   geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") +
+  #add inset
+  # Add CA inset
+  annotation_custom(grob = g1_inset, 
+                    xmin = -122.01, 
+                    xmax = -121.96,
+                    ymin = 36.625) +
+  #add scale bar
+  ggsn::scalebar(x.min = -121.99, x.max = -121.88, 
+                y.min = 36.519, y.max = 36.645,
+               #anchor=c(x=-124.7,y=41),
+              location="bottomright",
+             dist = 2.5, dist_unit = "km",
+            transform=TRUE, 
+           model = "WGS84",
+          st.dist=0.02,
+         st.size=2,
+        border.size=.5,
+     height=.02
+ )+
+  #add north arrow
+  ggsn::north(x.min = -121.99, x.max = -121.88, 
+              y.min = 36.519, y.max = 36.65,
+              location = "topright", 
+              scale = 0.05, 
+              symbol = 10)+
+  #add landmarks
+  geom_text(data=monterey_label, mapping=aes(x=x, y=y, label=label),
+            size=3, fontface= "bold") +
   coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs = 4326)+
   labs(title = "2017", tag = "A")+
-  theme_bw() + base_theme + theme(legend.position = "none", plot.tag.position = c(0.05, 1))
+  theme_bw() + base_theme + theme(legend.position = "none", plot.tag.position = c(0.05, 1), axis.title=element_blank())
 p2
 
 
@@ -210,26 +274,6 @@ ggsave(p, filename=file.path(figdir, "Fig2_map_figure.png"),
        width=7, height=5, units="in", dpi=600)
 
 
-
-
-
-
-
-# Calculate mean of deviation for each year and Incipient category
-plot_data <- scan_orig %>%
-  group_by(year, Incipient) %>%
-  summarise(mean_deviation = mean(deviation))
-
-# Create the plot
-p3 <- ggplot(scan_orig, aes(x = year, y = deviation, color = Incipient)) +
-  geom_line(data = plot_data, aes(x = year, y = mean_deviation, color = Incipient), size = 1.5, show.legend = FALSE) +
-  geom_point(alpha=0.2) +
-  labs(x = "Year", y = "Mean Standard Deviation from Baseline",
-       title = "Mean Standard Deviation from Baseline by Year and Incipient",
-       color = "Incipient") +
-  theme_minimal()
-
-p3
 
 
 
