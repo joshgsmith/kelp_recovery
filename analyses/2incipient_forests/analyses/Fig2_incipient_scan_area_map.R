@@ -1,4 +1,13 @@
 
+
+########
+########
+
+#FIGURE OF SINGLE MAP OF SITES WITH INCIPIENT FORESTS IDENTIFIED
+
+########
+########
+
 #Joshua G. Smith; jossmith@mbayaq.org
 
 rm(list=ls())
