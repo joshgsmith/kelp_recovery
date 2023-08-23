@@ -18,7 +18,7 @@ library(terra)
 
 
 #set directories 
-#setwd(here::here("analyses","2forage_behavior","analyses","foraging_shiny"))
+#setwd(here::here("analyses","2incipient_forests","analyses","foraging_shiny"))
 
 #read landsat dat
 #landsat_dat <- st_read("landsat_short.shp") #old
