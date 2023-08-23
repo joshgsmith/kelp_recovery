@@ -10,8 +10,8 @@ librarian::shelf(tidyverse, sf, raster, shiny, tmap)
 
 #set directories 
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
-figdir <- here::here("analyses","5community_regulation","figures")
-output <- here::here("analyses","5community_regulation","output")
+figdir <- here::here("analyses","2incipient_forests","figures")
+output <- here::here("analyses","2incipient_forests","output")
 
 #read landsat 
 final_data <- st_read(file.path(output, "landsat_scan_area.geojson"))
@@ -25,11 +25,11 @@ ca_counties <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7v
 #plot kelp forest trends by scan area
 
 # Theme
-base_theme <-  theme(axis.text=element_text(size=7),
-                     axis.title=element_text(size=8),
-                     legend.text=element_text(size=7),
-                     legend.title=element_text(size=8),
-                     plot.tag=element_text(size=8),
+base_theme <-  theme(axis.text=element_text(size=7, color = "black"),
+                     axis.title=element_text(size=8,color = "black"),
+                     legend.text=element_text(size=7,color = "black"),
+                     legend.title=element_text(size=8,color = "black"),
+                     plot.tag=element_text(size=8,color = "black"),
                      # Gridlines
                      panel.grid.major = element_blank(), 
                      panel.grid.minor = element_blank(),
@@ -39,7 +39,7 @@ base_theme <-  theme(axis.text=element_text(size=7),
                      legend.key = element_rect(fill=alpha('blue', 0)),
                      legend.background = element_rect(fill=alpha('blue', 0)),
                      #facets
-                     strip.text = element_text(size=6, face = "bold"),
+                     strip.text = element_text(size=6, face = "bold",color = "black", hjust=0),
                      strip.background = element_blank())
 
 # Sort the dataframe by site_order
@@ -48,22 +48,21 @@ final_data <- final_data[order(final_data$site_order), ]
 g1 <- ggplot(final_data, aes(x = year, y = deviation, group = site_name, color = Incipient, fill = Incipient)) +
   geom_line() +
   geom_point() +
-  facet_wrap(~reorder(site_name, site_order), ncol = 4, scales = "free_y") +
+  facet_wrap(~reorder(site_name, site_order), ncol = 4, scales = "fixed") +
   # Heatwave
   annotate(geom="rect", xmin=2013.5, xmax=2016.5, ymin=-Inf, ymax=Inf, fill="red", alpha=0.2) +
   geom_segment(aes(x = 2000, xend = 2013.5, y = 0, yend = 0), linetype = "solid", color = "black") +
   geom_hline(yintercept = 0, linetype = "dotted", color = "black") +  # Add this line for the dotted line
-  labs(x = "Year", y = "Standard deviations from baseline (2000-2013)", title = "Kelp canopy deviations from 2000-2013 baseline") +
+  labs(x = "Year", y = "Standard deviations from baseline (2000-2013)") +
   theme_bw() + base_theme +
   scale_fill_manual(values = c("navyblue","indianred"))+
   scale_color_manual(values = c("navyblue","indianred"))
 g1
 
 
-
 # Export figure
 ggsave(g1, filename=file.path(figdir, "FigX_landsat_sd_trend_2000-2022.png"), 
-       width=7, height=10, units="in", dpi=600)
+       width=7, height=8, units="in", dpi=600)
 
 
 
