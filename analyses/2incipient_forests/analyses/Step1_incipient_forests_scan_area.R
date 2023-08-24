@@ -162,7 +162,7 @@ forage_build5 <- forage_build4 %>%
 #determine baseline average kelp biomass
 baseline_average <- summarized_data %>%
   #filter(year >= 2007 & year <= 2013) %>%
-  filter(year >= 2000 & year <= 2014) %>% #this sets the baseline period. #use year >= 2016 & year <= 2017
+  filter(year >= 2000 & year < 2014) %>% #this sets the baseline period. #use year >= 2016 & year <= 2017
   filter(quarter == 3)%>% #filter to quarter 3 for max kelp extent
   group_by(site_name, site_order) %>%
   summarize(baseline_avg = mean(total_biomass, na.rm=TRUE),
@@ -206,5 +206,5 @@ final_data <- observed_means %>%
   mutate(site_name = factor(site_name))%>%
   filter(!(site_name %in% c("Condos", "Naval Post Graduate School", "Del Monte"))) 
 
-st_write(final_data, file.path(output, "landsat_scan_areav2.geojson"))
+st_write(final_data, file.path(output, "landsat_scan_area.geojson"))
 

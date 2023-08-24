@@ -21,6 +21,7 @@ ca_counties <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7v
 
 
 
+
 ################################################################################
 #plot kelp forest trends by scan area
 
@@ -54,9 +55,9 @@ g1 <- ggplot(final_data, aes(x = year, y = deviation, group = site_name, color =
   geom_segment(aes(x = 2000, xend = 2013.5, y = 0, yend = 0), linetype = "solid", color = "black") +
   geom_hline(yintercept = 0, linetype = "dotted", color = "black") +  # Add this line for the dotted line
   labs(x = "Year", y = "Standard deviations from baseline (2000-2013)") +
-  theme_bw() + base_theme +
   scale_fill_manual(values = c("navyblue","indianred"))+
-  scale_color_manual(values = c("navyblue","indianred"))
+  scale_color_manual(values = c("navyblue","indianred")) +
+  theme_bw() + base_theme 
 g1
 
 
@@ -74,12 +75,13 @@ g2 <- ggplot(final_data %>% filter(year>2013), aes(x = year, y = deviation, grou
   facet_wrap(~reorder(site_name, site_order), ncol = 4, scales = "free_y") +
   # Heatwave
   annotate(geom="rect", xmin=2013.5, xmax=2016.5, ymin=-Inf, ymax=Inf, fill="red", alpha=0.2) +
-  labs(x = "Year", y = "Standard deviations from baseline (2000-2013)", title = "Kelp canopy deviations from 2000-2013 baseline") +
-  theme_bw() + base_theme +
+  labs(x = "Year", y = "Standard deviations from baseline (2000-2013)") +
   scale_fill_manual(values = c("navyblue","indianred"))+
   scale_color_manual(values = c("navyblue","indianred"))+
-  scale_x_continuous(breaks = seq(2014, 2022, by = 2))  # Adjust breaks for rounded years
+  scale_x_continuous(breaks = seq(2014, 2022, by = 2))+  # Adjust breaks for rounded years
+  theme_bw() + base_theme 
 g2
+
 
 # Export figure
 ggsave(g2, filename=file.path(figdir, "FigX_landsat_sd_trend_2014-2022.png"), 
@@ -87,10 +89,11 @@ ggsave(g2, filename=file.path(figdir, "FigX_landsat_sd_trend_2014-2022.png"),
 
 
 
+################################################################################
+#misc code
 
 
-###attempt to plot forage dives
-
+#######attempt to plot forage dives
 
 # Drop geometry and select relevant columns from forage_build6
 forage_build6_nonspatial <- forage_build5 %>%
