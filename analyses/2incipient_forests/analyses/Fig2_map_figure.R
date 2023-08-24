@@ -46,7 +46,6 @@ r <- rast(rast_build1, res=30)
 
 landsat_rast_2022 <- rasterize(rast_build1, r, field = "biomass", fun = mean)
 
-plot(landsat_rast)
 
 
 rast_build2 <- st_transform(landsat_orig, crs = 3310) %>% 
@@ -77,7 +76,7 @@ vr <- rasterize(t_dat, r,"biomass", resolution = 30)
 
 kelp_na <- rasterize(kelp_historic, r,"biomass", resolution = 30) 
 
-plot(kelp_na)
+
 
 ################################################################################
 #Step 3 - process scan area
@@ -266,44 +265,121 @@ p2 <- ggplot() +
 p2
 
 
-p <- gridExtra::grid.arrange(p2, p1, nrow=1, widths = c(0.436,0.574))
+#make tile plot
 
+tile_theme <-  theme(axis.text=element_text(size=6, color = "black"),
+                     axis.title=element_text(size=7,color = "black"),
+                     plot.tag=element_text(size=7,color = "black"),
+                     plot.title=element_text(size=7,color = "black", face = "bold"),
+                     # Gridlines
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(),
+                     panel.background = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     # Legend
+                     #legend.key.size = unit(0.3, "cm"), 
+                     #legend.key = element_rect(fill=alpha('blue', 0)),
+                     #legend.spacing.y = unit(0.1, "cm"),  
+                     legend.text=element_text(size=5,color = "black"),
+                     legend.title=element_text(size=6,color = "black"),
+                     #legend.key.height = unit(0.1, "cm"),
+                     legend.background = element_rect(fill=alpha('blue', 0)),
+                     #facets
+                     strip.text = element_text(size=6, face = "bold",color = "black"),
+                     strip.background = element_blank())
+
+
+# Convert 'year' to numeric
+scan_orig$year <- as.numeric(as.character(scan_orig$year))
+
+#set Incipient order
+
+scan_orig$Incipient <- factor(scan_orig$Incipient, levels = c("Yes","No"))
+
+# Create a tile plot
+p3 <- ggplot(scan_orig, aes(x = year, y = reorder(site_order,-site_order), fill = deviation)) +
+  geom_tile(width=1) +
+  facet_grid(Incipient~., scales = "free_y",space="free_y") +
+  scale_fill_gradient2(low = "navyblue",mid="gray80",high="indianred")+ 
+  labs(x = "Year", y = "Site", fill = "Deviation", tag = "C") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotate x-axis labels for better readability
+  theme_bw() + base_theme + theme(axis.text.y = element_blank()) +
+  theme(aspect.ratio = 0.55,
+     plot.margin = margin(3,5,5,5))
+p3
+
+
+p <- gridExtra::grid.arrange(p2, p1, nrow=1, widths = c(0.436,0.574))
+p
 
 # Export figure
-ggsave(p, filename=file.path(figdir, "Fig2_map_figure.png"), 
-       width=7, height=5, units="in", dpi=600)
+#ggsave(p, filename=file.path(figdir, "Fig2_map_figure.png"), 
+ #      width=7, height=5, units="in", dpi=600)
+
+
+p_final <- gridExtra::grid.arrange(p, p3, nrow=2, heights = c(0.6, 0.4))
+
+ggsave(p_final, filename=file.path(figdir, "Fig2_map_figure_new.png"), 
+      width=7, height=9, units="in", dpi=600)
+
+
 
 
 
 ###plot time series
 
-##aiming for a barplot of standard deviations by year with regression lines
 
-# Calculate overall baseline average mean from 2000-2013
-baseline_avg <- scan_orig %>%
-  filter(year >= 2000 & year <= 2013) %>%
-  summarise(baseline_avg = mean(observed_avg, na.rm = TRUE)) %>%
-  pull(baseline_avg)
+#####test
 
-# Calculate means for each year and Incipient category
-plot_data <- scan_orig %>%
-  mutate(std_dev_from_baseline = (observed_avg - baseline_avg) / baseline_avg) %>%
-  filter(year >= 2000) %>%
+
+# Convert 'year' to numeric
+scan_orig$year <- as.numeric(as.character(scan_orig$year))
+
+# Calculate the mean deviation for each year and Incipient group
+mean_deviations_post <- scan_orig %>%
+  filter(year >= 2018) %>%
   group_by(year, Incipient) %>%
-  summarise(mean_std_dev = mean(std_dev_from_baseline, na.rm = TRUE))
+  summarize(mean_deviation = median(deviation, na.rm = TRUE)) %>%
+  st_drop_geometry()
 
-# Create the plot
-p <- ggplot(plot_data, aes(x = year, y = mean_std_dev, color = Incipient, group = Incipient)) +
-  geom_line() +
-  geom_point() +
-  labs(
-    x = "Year",
-    y = "Mean Standard Deviation from Baseline",
-    title = "Mean Standard Deviation from Baseline by Year and Incipient",
-    color = "Incipient"
-  ) +
+mean_deviations_pre <- scan_orig %>%
+  filter(year < 2018) %>%
+  group_by(year) %>%
+  summarize(mean_deviation = median(deviation, na.rm = TRUE))%>%
+  st_drop_geometry()
+
+# Get the last year in mean_deviations_pre
+last_year_pre <- max(mean_deviations_pre$year)
+
+# Get the 2017 deviation value
+deviation_2017 <- mean_deviations_pre %>% filter(year == 2017) %>% pull(mean_deviation)
+
+# Add rows to mean_deviations_post for 2017 with both Incipient values
+mean_deviations_post <- rbind(
+  mean_deviations_post,
+  data.frame(year = 2017, Incipient = "Yes", mean_deviation = deviation_2017),
+  data.frame(year = 2017, Incipient = "No", mean_deviation = deviation_2017)
+)
+
+# Create a plot
+plot <- ggplot() +
+  geom_point(data = scan_orig, aes(x = year, y = deviation), color = "black") +
+  #plot pre 2017
+  geom_line(data = mean_deviations_pre, aes(x = year, y = mean_deviation), size = 1) +
+  # Add a point for the last year in mean_deviations_pre
+  geom_point(data = mean_deviations_pre %>% filter(year == last_year_pre), aes(x = year, y = mean_deviation), color = "black") +
+  #plot 2017 and beyond
+  geom_line(data = mean_deviations_post, aes(x = year, y = mean_deviation, color = Incipient, group = Incipient), size = 1) +
+  scale_color_manual(values = c("Yes" = "red", "No" = "blue")) +
+  labs(x = "Year", y = "Deviation") +
   theme_minimal()
-p
+
+print(plot)
+
+
+###make tile plot
+
+
 
 
 
