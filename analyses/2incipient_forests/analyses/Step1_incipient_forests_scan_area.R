@@ -165,14 +165,17 @@ baseline_average <- summarized_data %>%
   filter(year >= 2000 & year <= 2014) %>% #this sets the baseline period. #use year >= 2016 & year <= 2017
   filter(quarter == 3)%>% #filter to quarter 3 for max kelp extent
   group_by(site_name, site_order) %>%
-  summarize(baseline_avg = mean(total_biomass))
+  summarize(baseline_avg = mean(total_biomass, na.rm=TRUE),
+            baseline_sd = sd(total_biomass, na.rm=TRUE)) %>%
+  #drop landsat obs not within a site
+  filter(!(is.na(site_name)))
 
 
 observed_means <- summarized_data %>%
   filter(quarter == 3)%>%
   #filter(site_name %in% c("Point Pinos East", "Point Pinos West", "Pescadero Point West", "Pescadero Point East")) %>%
   group_by(site_name,site_order, year) %>%
-  summarize(observed_avg = mean(total_biomass)) 
+  summarize(observed_avg = mean(total_biomass, na.rm=TRUE)) 
 
 
 # Assuming baseline_average and observed_means are data frames
@@ -182,8 +185,10 @@ final_data <- observed_means %>%
   rename(site_name = site_name.x,
          site_order = site_order.x) %>%
   dplyr::select(-site_name.y, -site_order.y) %>%
-  mutate(deviation = (observed_avg - baseline_avg) / sd(observed_avg)) %>%
+  mutate(deviation = (observed_avg - baseline_avg) / baseline_sd) %>%
   filter(!(is.na(site_name))) %>%
+  #clean up
+  mutate(deviation = ifelse(deviation %in% c("NaN","Inf"), NA,deviation))%>%
   #set recovery category
   mutate(Incipient = ifelse(site_name == "3200"|
                               site_name == "Carmel River Beach"|
@@ -201,5 +206,5 @@ final_data <- observed_means %>%
   mutate(site_name = factor(site_name))%>%
   filter(!(site_name %in% c("Condos", "Naval Post Graduate School", "Del Monte"))) 
 
-st_write(final_data, file.path(output, "landsat_scan_area.geojson"))
+st_write(final_data, file.path(output, "landsat_scan_areav2.geojson"))
 
