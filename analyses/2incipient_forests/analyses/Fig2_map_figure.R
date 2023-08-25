@@ -277,9 +277,9 @@ tile_theme <-  theme(axis.text=element_text(size=6, color = "black"),
                      panel.background = element_blank(), 
                      axis.line = element_line(colour = "black"),
                      # Legend
-                     #legend.key.size = unit(0.3, "cm"), 
-                     #legend.key = element_rect(fill=alpha('blue', 0)),
-                     #legend.spacing.y = unit(0.1, "cm"),  
+                     legend.key.size = unit(0.3, "cm"), 
+                     legend.key = element_rect(fill=alpha('blue', 0)),
+                     legend.spacing.y = unit(0.1, "cm"),  
                      legend.text=element_text(size=5,color = "black"),
                      legend.title=element_text(size=6,color = "black"),
                      #legend.key.height = unit(0.1, "cm"),
@@ -290,22 +290,30 @@ tile_theme <-  theme(axis.text=element_text(size=6, color = "black"),
 
 
 # Convert 'year' to numeric
-scan_orig$year <- as.numeric(as.character(scan_orig$year))
+scan_orig$year <- as.factor(as.character(scan_orig$year))
 
 #set Incipient order
 
-scan_orig$Incipient <- factor(scan_orig$Incipient, levels = c("Yes","No"))
+scan_orig$Incipient <- factor(scan_orig$Incipient, levels = c("Yes","No")) 
+
 
 # Create a tile plot
-p3 <- ggplot(scan_orig, aes(x = year, y = reorder(site_order,-site_order), fill = deviation)) +
-  geom_tile(width=1) +
+p3 <- ggplot(scan_orig %>% mutate(Incipient = ifelse(
+                                Incipient == "Yes", "Incipient","Nonincipient")), aes(x = year, y = reorder(site_order,-site_order), fill = deviation)) +
+  geom_tile() +
   facet_grid(Incipient~., scales = "free_y",space="free_y") +
-  scale_fill_gradient2(low = "navyblue",mid="gray80",high="indianred")+ 
+  #scale_fill_gradient2(low = "navyblue",mid="gray80",high="gray80")+ 
+  #scale_fill_gradientn(colors = custom_colors, values = scales::rescale(c(0, 1))) +
+  scale_fill_gradientn(colors = c("forestgreen", "#FFCC80", "#FFCC80"),
+                        values = scales::rescale(c(-2.4, 0, 0.1, 3.1))) +
   labs(x = "Year", y = "Site", fill = "Deviation", tag = "C") +
+  #plot marine heatwave
+  geom_vline(xintercept = which(levels(factor(scan_orig$year)) %in% c("2014", "2016")), 
+             linetype = "dashed", color = "black") +
+  #geom_vline(xintercept = 2017.5, linetype = "solid", color = "black")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotate x-axis labels for better readability
-  theme_bw() + base_theme + theme(axis.text.y = element_blank()) +
-  theme(aspect.ratio = 0.55,
-     plot.margin = margin(3,5,5,5))
+  theme_bw() + tile_theme + theme(axis.text.y = element_blank())+
+  scale_x_discrete(breaks=seq(2000, 2022, 3)) 
 p3
 
 
@@ -317,10 +325,18 @@ p
  #      width=7, height=5, units="in", dpi=600)
 
 
-p_final <- gridExtra::grid.arrange(p, p3, nrow=2, heights = c(0.6, 0.4))
+# Adjust the width of p3
+p3_adjusted <- gridExtra::arrangeGrob(p3, widths = unit(0.6, "npc"))
 
-ggsave(p_final, filename=file.path(figdir, "Fig2_map_figure_new.png"), 
-      width=7, height=9, units="in", dpi=600)
+# Arrange p and the adjusted p3 in two rows
+p_final <- gridExtra::arrangeGrob(p, p3_adjusted, ncol = 1, heights = c(0.6, 0.4))
+
+# Save the final figure
+ggsave(p_final, filename = file.path(figdir, "Fig2_map_figure_new.png"), 
+       width = 7, height = 7, units = "in", dpi = 600)
+
+
+
 
 
 
