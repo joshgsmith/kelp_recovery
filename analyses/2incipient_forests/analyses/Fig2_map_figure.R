@@ -296,20 +296,23 @@ scan_orig$year <- as.factor(as.character(scan_orig$year))
 
 scan_orig$Incipient <- factor(scan_orig$Incipient, levels = c("Yes","No")) 
 
+# Manually calculate xintercept positions
+year_levels <- levels(factor(scan_orig$year))
+x_intercepts <- c(
+  which(year_levels == "2013") + 0.5,
+  which(year_levels == "2016") + 0.5
+)
 
 # Create a tile plot
 p3 <- ggplot(scan_orig %>% mutate(Incipient = ifelse(
                                 Incipient == "Yes", "Incipient","Nonincipient")), aes(x = year, y = reorder(site_order,-site_order), fill = deviation)) +
   geom_tile() +
   facet_grid(Incipient~., scales = "free_y",space="free_y") +
-  #scale_fill_gradient2(low = "navyblue",mid="gray80",high="gray80")+ 
-  #scale_fill_gradientn(colors = custom_colors, values = scales::rescale(c(0, 1))) +
   scale_fill_gradientn(colors = c("forestgreen", "#FFCC80", "#FFCC80"),
-                        values = scales::rescale(c(-2.4, 0, 0.1, 3.1))) +
+                       values = scales::rescale(c(-1, 0, 1))) +
   labs(x = "Year", y = "Site", fill = "Deviation", tag = "C") +
   #plot marine heatwave
-  geom_vline(xintercept = which(levels(factor(scan_orig$year)) %in% c("2014", "2016")), 
-             linetype = "dashed", color = "black") +
+  geom_vline(xintercept = x_intercepts, linetype = "dashed", color = "black") +
   #geom_vline(xintercept = 2017.5, linetype = "solid", color = "black")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # Rotate x-axis labels for better readability
   theme_bw() + tile_theme + theme(axis.text.y = element_blank())+
