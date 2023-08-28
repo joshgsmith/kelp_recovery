@@ -23,4 +23,5 @@ Project contributors are internal at this point in time. We ask that contributor
 
 * Joshua G. Smith, Ocean Conservation Research Scientist (please direct questions about this repository to jossmith@mbayaq.org)
 * Leilani Konrad, Sea Otter Program Research Biologist
+* Teri Nicholson, Senior Research Biologist
 * Jessica Fujii, Sea Otter Program Manager
