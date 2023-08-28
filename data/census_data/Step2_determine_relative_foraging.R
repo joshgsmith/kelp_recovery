@@ -13,11 +13,12 @@ librarian::shelf(tidyverse, sf, raster, shiny, tmap, terra, tidyterra, ggnewscal
 #set directories 
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
 
+
 #read otter scan area
 scan_area <- st_read(file.path(basedir, "gis_data/raw/otter_scan_area/TrackingMaps_POLY.shp")) 
 
 # read census data from Step1
-census_orig <- st_read(file.path("/Volumes/seaotterdb$/RESEARCH FORMS AND FILES/Monterey monthly census/QuarterlyCensus/qc_processed/merged_test_JGS.shp"))
+census_orig <- st_read(file.path("/Volumes/seaotterdb$/RESEARCH FORMS AND FILES/Monterey monthly census/QuarterlyCensus/qc_processed/merged_test_JGSv2.shp"))
 
 ################################################################################
 # format scan area
@@ -100,10 +101,12 @@ census_build5 <- scan_plot_area %>% st_join(census_build4) %>%
                   #clean up
                   dplyr::select(site_name = site_name.x,
                                 incipient:behavior,
-                                n_independ_site:geometry) %>%
-                  #drop missing year and quarter
-                  filter(!(is.na(year) | is.na(quarter)))
+                                n_independ_site:geometry)
 
+
+output_path <- file.path("/Volumes/seaotterdb$/RESEARCH FORMS AND FILES/Monterey monthly census/QuarterlyCensus/qc_processed/quarterly_census_cleaned_JS.shp")
+
+st_write(census_build5, output_path, driver = "GeoJSON", append = TRUE)
 
 
 

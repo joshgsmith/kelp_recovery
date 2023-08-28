@@ -19,8 +19,28 @@ census_dir <- "RESEARCH FORMS AND FILES/Monterey monthly census/QuarterlyCensus/
 # Get a list of all shapefile paths
 shapefile_paths <- dir_ls(file.path(basedir, census_dir), recurse = TRUE, glob = "*.shp")
 
-# Read shapefiles into a list of sf objects and clean names
-shapefile_list <- map(shapefile_paths, ~ st_read(.x) %>% janitor::clean_names())
+# Function to extract date from file name 
+# some shapefiles do not have a date as an attribute, so we'll use the 
+# date listed in the file name as add it as 'file_dt'
+# Function to extract date from file path
+extract_date <- function(path) {
+  date_str <- sub('.*(\\d{8}).*', '\\1', path)
+  as.Date(date_str, format = "%m%d%Y")
+}
+
+#inspect function to make sure it worked
+extracted_dates <- lapply(shapefile_paths, extract_date)
+print(extracted_dates)
+
+# Read shapefiles into a list of sf objects and add 'file_dt' column
+shapefile_list <- lapply(shapefile_paths, function(path) {
+  sf_object <- st_read(path) %>% clean_names()
+  sf_object$file_dt <- extract_date(path)
+  sf_object
+})
+
+#inspect
+View(shapefile_list[[14]])
 
 #save geometry for later
 save_crs <- st_crs(shapefile_list[[1]])
@@ -120,7 +140,7 @@ combined_dataframe <- combined_dataframe %>%
 census_dat_build1 <- combined_dataframe %>%
                       dplyr::select(-point_x, -point_y) %>%
                       #arrange
-                      dplyr::select(long, lat, map_areas, date_time,
+                      dplyr::select(long, lat, map_areas, date_time_orig = date_time, date_time = file_dt,
                                     observer1, observer2, num_indepen, num_pups_lar,
                                     num_pups_sma, everything()) %>%
                       #drop errors
@@ -135,7 +155,7 @@ plot(census_dat_build1)
 ################################################################################
 #save
 
-output_path <- file.path("/Volumes/seaotterdb$/RESEARCH FORMS AND FILES/Monterey monthly census/QuarterlyCensus/qc_processed/merged_test_JGS.shp")
+output_path <- file.path("/Volumes/seaotterdb$/RESEARCH FORMS AND FILES/Monterey monthly census/QuarterlyCensus/qc_processed/merged_test_JGSv2.shp")
 
 st_write(census_dat_build1, output_path, driver = "GeoJSON", append = TRUE)
 
