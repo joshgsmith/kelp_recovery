@@ -22,7 +22,6 @@ shapefile_paths <- dir_ls(file.path(basedir, census_dir), recurse = TRUE, glob =
 # Function to extract date from file name 
 # some shapefiles do not have a date as an attribute, so we'll use the 
 # date listed in the file name as add it as 'file_dt'
-# Function to extract date from file path
 extract_date <- function(path) {
   date_str <- sub('.*(\\d{8}).*', '\\1', path)
   as.Date(date_str, format = "%m%d%Y")
