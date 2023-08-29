@@ -1,5 +1,5 @@
 # Mechanisms of kelp forest recovery
-This is the GitHub repository for a project led by the Monterey Bay Aquarium's Sea Otter Research and Conservation Team. The purpose of this project is to evaluate mechansisms of kelp forest recovery, including sea otter population responses to changing kelp forest ecosystem dynamics. 
+This is the GitHub repository for a project led by the Monterey Bay Aquarium. The purpose of this project is to evaluate mechansisms of kelp forest recovery, including sea otter population responses to changing kelp forest ecosystem dynamics. 
 
 ## Respository structure 
 
@@ -23,4 +23,5 @@ Project contributors are internal at this point in time. We ask that contributor
 
 * Joshua G. Smith, Ocean Conservation Research Scientist (please direct questions about this repository to jossmith@mbayaq.org)
 * Leilani Konrad, Sea Otter Program Research Biologist
+* Teri Nicholson, Senior Research Biologist
 * Jessica Fujii, Sea Otter Program Manager
