@@ -15,7 +15,7 @@ figdir <- here::here("analyses","2incipient_forests","figures")
 output <- here::here("analyses","2incipient_forests","output")
 
 #read USGS Atos
-atos_orig <- st_read(file.path(basedir, "gis_data/raw/ATOS/ATOS_mpen_60msw_1500m/ATOS_mpen_60msw_1500m.shp"))
+atos_orig <- st_read(file.path(basedir, "gis_data/raw/ATOS/ATOS_mpen_60msw_1000m/ATOS_mpen_60msw_1000m.shp"))
 
 #read state
 ca_counties_orig <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7vc7n.shp")) 
@@ -60,7 +60,7 @@ ggplot() +
   theme_bw()
 
 
-st_write(atos_build1, file.path(basedir, "gis_data/processed/ATOS/ATOS_mpen_60msw_1500m.shp"))
+st_write(atos_build1, file.path(basedir, "gis_data/processed/ATOS/ATOS_mpen_60msw_1000m.shp"))
 
 
 
