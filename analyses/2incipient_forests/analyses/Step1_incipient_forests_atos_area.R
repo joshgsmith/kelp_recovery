@@ -135,23 +135,8 @@ final_data <- observed_means %>%
   mutate(deviation = (observed_avg - baseline_avg) / baseline_sd) %>%
   filter(!(is.na(site_name))) %>%
   #clean up
-  mutate(deviation = ifelse(deviation %in% c("NaN","Inf"), NA,deviation))%>%
-  #set recovery category
-  mutate(Incipient = ifelse(site_name == "3200"|
-                              site_name == "Carmel River Beach"|
-                              site_name == "Coast Guard Pier" |
-                              site_name == "El Torito" |
-                              site_name == "Hopkins Marine Station East"|
-                              site_name == "Lone Cypress" |
-                              site_name =="Monastery" |
-                              site_name == "Monterey Bay Inn" |
-                              site_name == "Pescadero Point East" |
-                              site_name == "Pescadero Point West"|
-                              site_name == "Whaler's Cove","Yes","No"),
-         incipient = factor(Incipient, levels = c("Yes","No"))) %>%
-  #drop sandy sites
-  mutate(site_name = factor(site_name))%>%
-  filter(!(site_name %in% c("Condos", "Naval Post Graduate School", "Del Monte"))) 
+  mutate(deviation = ifelse(deviation %in% c("NaN","Inf"), NA,deviation))
+
 
 
 st_write(final_data, file.path(output, "landsat_atos_area_60_1000.geojson"))
