@@ -15,11 +15,29 @@ output <- here::here("analyses","2incipient_forests","output")
 
 #read landsat 
 final_data <- st_read(file.path(output, "landsat_atos_area_60_1000.geojson")) %>%
-                mutate(site_numeric = as.numeric(site_name))
+                mutate(site_numeric = as.numeric(site_num))
 
 #read state
 ca_counties <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7vc7n.shp")) 
 
+
+################################################################################
+#set incipient forests
+final_data <- final_data %>%
+  #set recovery category
+  mutate(Incipient = ifelse(site_name == "Butterfly House"|
+                              site_name == "Cannery Row"|
+                              site_name == "Carmel River Beach" |
+                              site_name == "Coast Guard Pier" |
+                              site_name == "Lone Cypress"|
+                              site_name =="Mono-Lobo" |
+                              site_name == "Pescadero East" |
+                              site_name == "Pescadero West" |
+                              site_name == "Sea Lion Point"|
+                              site_name == "Whaler's Cove","Yes","No"),
+         incipient = factor(Incipient, levels = c("Yes","No"))) %>%
+  #drop sandy sites
+  mutate(site_name = factor(site_name))
 
 
 
@@ -47,10 +65,29 @@ base_theme <-  theme(axis.text=element_text(size=7, color = "black"),
 # Sort the dataframe by site_order
 final_data <- final_data[order(final_data$site_numeric), ]
 
+g0 <- ggplot(final_data %>% filter(year > 1999), aes(x = year, y = deviation, group = site_name)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~reorder(site_name, site_num), ncol = 4, scales = "fixed") +
+  # Heatwave
+  annotate(geom="rect", xmin=2013.5, xmax=2016.5, ymin=-Inf, ymax=Inf, fill="red", alpha=0.2) +
+  geom_segment(aes(x = -Inf, xend = 2013.5, y = 0, yend = 0), linetype = "solid", color = "black") +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "black") +  # Add this line for the dotted line
+  labs(x = "Year", y = "Standard deviations from baseline (2000-2013)") +
+  scale_x_continuous(limits = c(2000, 2022), breaks = seq(2000, 2022, 5)) +  
+  #scale_fill_manual(values = c("navyblue","indianred"))+
+  #scale_color_manual(values = c("navyblue","indianred")) +
+  theme_bw() + base_theme 
+g0
+
+ggsave(g0, filename=file.path(figdir, "FigX_landsat_atos_trend_2000-2022.png"), 
+       width=7, height=8, units="in", dpi=600)
+
+
 g1 <- ggplot(final_data, aes(x = year, y = deviation, group = site_name)) +
   geom_line() +
   geom_point() +
-  facet_wrap(~site_name, ncol = 4, scales = "free_y") +
+  facet_wrap(~reorder(site_name, site_num), ncol = 4, scales = "fixed") +
   # Heatwave
   annotate(geom="rect", xmin=2013.5, xmax=2016.5, ymin=-Inf, ymax=Inf, fill="red", alpha=0.2) +
   geom_segment(aes(x = 1984, xend = 2013.5, y = 0, yend = 0), linetype = "solid", color = "black") +
@@ -63,17 +100,15 @@ g1
 
 
 # Export figure
-ggsave(g1, filename=file.path(figdir, "FigX_landsat_sd_trend_2000-2022.png"), 
+ggsave(g1, filename=file.path(figdir, "FigX_landsat_atos_trend_1984-2022.png"), 
        width=7, height=8, units="in", dpi=600)
-
-
 
 
 
 g2 <- ggplot(final_data %>% filter(year>2013), aes(x = year, y = deviation, group = site_name, color = Incipient, fill = Incipient)) +
   geom_line() +
   geom_point() +
-  facet_wrap(~reorder(site_name, site_order), ncol = 4, scales = "free_y") +
+  facet_wrap(~reorder(site_name, site_num), ncol = 4, scales = "free_y") +
   # Heatwave
   annotate(geom="rect", xmin=2013.5, xmax=2016.5, ymin=-Inf, ymax=Inf, fill="red", alpha=0.2) +
   labs(x = "Year", y = "Standard deviations from baseline (2000-2013)") +
@@ -85,7 +120,7 @@ g2
 
 
 # Export figure
-ggsave(g2, filename=file.path(figdir, "FigX_landsat_sd_trend_2014-2022.png"), 
+ggsave(g2, filename=file.path(figdir, "FigX_landsat_atos_trend_2014-2022.png"), 
        width=7, height=10, units="in", dpi=600)
 
 
