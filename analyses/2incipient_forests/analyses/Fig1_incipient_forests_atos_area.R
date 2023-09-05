@@ -34,6 +34,8 @@ final_data <- final_data %>%
                               site_name == "Pescadero East" |
                               site_name == "Pescadero West" |
                               site_name == "Sea Lion Point"|
+                              site_name == "Monastery"|
+                              site_name == "Stillwater Cove" | 
                               site_name == "Whaler's Cove","Yes","No"),
          incipient = factor(Incipient, levels = c("Yes","No"))) %>%
   #drop sandy sites
@@ -121,7 +123,7 @@ g2
 
 # Export figure
 ggsave(g2, filename=file.path(figdir, "FigX_landsat_atos_trend_2014-2022.png"), 
-       width=7, height=10, units="in", dpi=600)
+       width=7, height=8, units="in", dpi=600)
 
 
 
