@@ -64,15 +64,8 @@ clust_dat$cluster <- cluster_assignment
 # Visualize the clustered polygons
 plot(clust_dat, col = clust_dat$cluster)
 
-# Create a ggplot object and facet by cluster
-ggplot() +
-  geom_sf(data = clust_dat, aes(fill = cluster)) +
-  facet_wrap(~ cluster) +
-  theme_minimal()
-
 # Calculate the number of clusters assigned
 length(unique(cluster_assignment))
-
 
 
 ################################################################################
@@ -181,6 +174,12 @@ site_cluster_table <- landsat_clust_extent %>%
             dplyr::select(site_name, site_num, latitude, longitude) # each row is a distinct landsat point
 
 
+################################################################################
+#save
+
+landsat_cluster_ID <- site_cluster_table %>% st_drop_geometry()
+
+saveRDS(landsat_cluster_ID, file = file.path(here::here("analyses","2incipient_forests","output"),"landsat_cluster_ID.Rds"))
 
 ################################################################################
 #rasterize
