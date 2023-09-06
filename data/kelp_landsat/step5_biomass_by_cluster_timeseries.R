@@ -45,7 +45,7 @@ na_dat <- landsat_orig %>% filter (latitude >= 36.510140 &
 
 #find distinct landsat points across all years
 clust_dat <- na_dat %>%
-              distinct(latitude, longitude, geometry) 
+  distinct(latitude, longitude, geometry) 
 
 # Create a spatial distance matrix
 dist_matrix <- st_distance(clust_dat)
@@ -72,22 +72,22 @@ length(unique(cluster_assignment))
 #Step 3 - map clusters back to original landat data
 
 landsat_cluster <- st_join(landsat_orig, clust_dat) 
-                    
+
 #clean up
 landsat_cluster_clean <- landsat_cluster %>%
-                          rename(latitude = latitude.x,
-                                 longitude = longitude.x)%>%
-                          dplyr::select(-latitude.y, -longitude.y)
+  rename(latitude = latitude.x,
+         longitude = longitude.x)%>%
+  dplyr::select(-latitude.y, -longitude.y)
 
 #test if it worked for focal year and quarter
 
 landsat_clust_extent <- landsat_cluster_clean %>% 
-                      #select monterey area
-                      filter(latitude >= 36.510140 &
-                                latitude <= 36.670574) %>%
-                      filter(year == 2022 & quarter == 3) %>%
-                      #transform to teale
-                      st_transform(plot_dat, crs=3310)
+  #select monterey area
+  filter(latitude >= 36.510140 &
+           latitude <= 36.670574) %>%
+  filter(year == 2022 & quarter == 3) %>%
+  #transform to teale
+  st_transform(plot_dat, crs=3310)
 
 
 ################################################################################
@@ -95,10 +95,10 @@ landsat_clust_extent <- landsat_cluster_clean %>%
 
 #determine center coords (THIS WILL BE IMPORTANT TO SAVE LATER)
 cluster_position <- landsat_clust_extent %>%
-                      st_drop_geometry()%>%
-                      group_by(cluster)%>%
-                      dplyr::summarize(lat = mean(latitude),
-                                       long = mean(longitude))%>%
+  st_drop_geometry()%>%
+  group_by(cluster)%>%
+  dplyr::summarize(lat = mean(latitude),
+                   long = mean(longitude))%>%
   ungroup() %>%
   st_as_sf(coords = c("long", "lat"), crs = 4326)
 
@@ -111,67 +111,67 @@ ggplot(data = cluster_position) +
 
 #rename sites and create table
 site_cluster_table <- landsat_clust_extent %>%
-              mutate(site_name = case_when(
-                cluster == 26 ~ "Cannery row",
-                cluster == 25 ~ "Hopkins upcoast",
-                cluster == 24 ~ "Hopkins downcoast",
-                cluster == 23 ~ "Siren",
-                cluster == 21 ~"Piños upcoast",
-                cluster == 16 ~ "Piños",
-                cluster == 15 ~ "Piños downcoast",
-                cluster == 11 ~"Asilomar",
-                cluster == 8 ~ "Spanish bay",
-                cluster == 7 ~ "Point Joe",
-                cluster == 5 ~ "China rock",
-                cluster == 3 ~ "Fanshell",
-                cluster == 1 ~ "Cypress",
-                cluster == 2 ~ "Sunset",
-                cluster == 4 ~ "Pescadero upcoast",
-                cluster == 6 ~ "Carmel pinnacles",
-                cluster == 9 ~ "Pescadero downcoast",
-                cluster == 14 ~ "Stillwater cove",
-                cluster == 18 ~ "Arrowhead point",
-                cluster == 19 ~ "Carmel main",
-                cluster == 20 ~ "Carmel river",
-                cluster == 22 ~ "Monastery",
-                cluster == 17 ~ "Whaler's cove",
-                cluster == 12 ~ "Sea lion point",
-                cluster == 10 ~ "South lobos",
-                TRUE ~ as.character(cluster)
-              ),
-              #set cluster order
-              site_num = case_when(
-              cluster == 26 ~ 1,
-              cluster == 25 ~ 2,
-              cluster == 24 ~ 3,
-              cluster == 23 ~ 4,
-              cluster == 21 ~ 5,
-              cluster == 16 ~ 6,
-              cluster == 15 ~ 7,
-              cluster == 11 ~ 8, 
-              cluster == 8 ~ 9,
-              cluster == 7 ~ 10,
-              cluster == 5 ~ 11,
-              cluster == 3 ~ 12,
-              cluster == 1 ~ 13,
-              cluster == 2 ~ 14,
-              cluster == 4 ~ 15,
-              cluster == 6 ~ 16,
-              cluster == 9 ~ 17,
-              cluster == 14 ~ 18,
-              cluster == 18 ~ 19,
-              cluster == 19 ~ 20,
-              cluster == 20 ~ 21,
-              cluster == 22 ~ 22,
-              cluster == 17 ~ 23,
-              cluster == 12 ~ 24,
-              cluster == 10 ~ 25,
-              TRUE ~ NA)
-              ) %>%
-            #filter to data extent
-            filter(!(is.na(site_num)))%>%
-            #select vars
-            dplyr::select(site_name, site_num, latitude, longitude) # each row is a distinct landsat point
+  mutate(site_name = case_when(
+    cluster == 26 ~ "Cannery row",
+    cluster == 25 ~ "Hopkins upcoast",
+    cluster == 24 ~ "Hopkins downcoast",
+    cluster == 23 ~ "Siren",
+    cluster == 21 ~"Piños upcoast",
+    cluster == 16 ~ "Piños",
+    cluster == 15 ~ "Piños downcoast",
+    cluster == 11 ~"Asilomar",
+    cluster == 8 ~ "Spanish bay",
+    cluster == 7 ~ "Point Joe",
+    cluster == 5 ~ "China rock",
+    cluster == 3 ~ "Fanshell",
+    cluster == 1 ~ "Cypress",
+    cluster == 2 ~ "Sunset",
+    cluster == 4 ~ "Pescadero upcoast",
+    cluster == 6 ~ "Carmel pinnacles",
+    cluster == 9 ~ "Pescadero downcoast",
+    cluster == 14 ~ "Stillwater cove",
+    cluster == 18 ~ "Arrowhead point",
+    cluster == 19 ~ "Carmel main",
+    cluster == 20 ~ "Carmel river",
+    cluster == 22 ~ "Monastery",
+    cluster == 17 ~ "Whaler's cove",
+    cluster == 12 ~ "Sea lion point",
+    cluster == 10 ~ "South lobos",
+    TRUE ~ as.character(cluster)
+  ),
+  #set cluster order
+  site_num = case_when(
+    cluster == 26 ~ 1,
+    cluster == 25 ~ 2,
+    cluster == 24 ~ 3,
+    cluster == 23 ~ 4,
+    cluster == 21 ~ 5,
+    cluster == 16 ~ 6,
+    cluster == 15 ~ 7,
+    cluster == 11 ~ 8, 
+    cluster == 8 ~ 9,
+    cluster == 7 ~ 10,
+    cluster == 5 ~ 11,
+    cluster == 3 ~ 12,
+    cluster == 1 ~ 13,
+    cluster == 2 ~ 14,
+    cluster == 4 ~ 15,
+    cluster == 6 ~ 16,
+    cluster == 9 ~ 17,
+    cluster == 14 ~ 18,
+    cluster == 18 ~ 19,
+    cluster == 19 ~ 20,
+    cluster == 20 ~ 21,
+    cluster == 22 ~ 22,
+    cluster == 17 ~ 23,
+    cluster == 12 ~ 24,
+    cluster == 10 ~ 25,
+    TRUE ~ NA)
+  ) %>%
+  #filter to data extent
+  filter(!(is.na(site_num)))%>%
+  #select vars
+  dplyr::select(site_name, site_num, latitude, longitude) # each row is a distinct landsat point
 
 
 ################################################################################
@@ -203,9 +203,9 @@ base_theme <-  theme(axis.text=element_text(size=6, color = "black"),
                      panel.background = element_blank(), 
                      axis.line = element_line(colour = "black"),
                      # Legend
-                    # legend.key.size = unit(0.3, "cm"), 
-                    # legend.key = element_rect(fill=alpha('blue', 0)),
-                    # legend.spacing.y = unit(0.1, "cm"),  
+                     # legend.key.size = unit(0.3, "cm"), 
+                     # legend.key = element_rect(fill=alpha('blue', 0)),
+                     # legend.spacing.y = unit(0.1, "cm"),  
                      legend.text=element_text(size=5,color = "black"),
                      legend.title=element_text(size=6,color = "black"),
                      #legend.key.height = unit(0.1, "cm"),
