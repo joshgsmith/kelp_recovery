@@ -121,10 +121,10 @@ atos_plot_poly <- atos_poly %>%
 #Step 4 - plot
 
 # Theme
-base_theme <-  theme(axis.text=element_text(size=6, color = "black"),
-                     axis.title=element_text(size=7,color = "black"),
+base_theme <-  theme(axis.text=element_text(size=4, color = "black"),
+                     axis.title=element_text(size=6,color = "black"),
                      plot.tag=element_text(size=7,color = "black"),
-                     plot.title=element_text(size=7,color = "black", face = "bold"),
+                     plot.title=element_text(size=6,color = "black", face = "bold"),
                      # Gridlines
                      panel.grid.major = element_blank(), 
                      panel.grid.minor = element_blank(),
@@ -134,8 +134,8 @@ base_theme <-  theme(axis.text=element_text(size=6, color = "black"),
                      legend.key.size = unit(0.3, "cm"), 
                      legend.key = element_rect(fill=alpha('blue', 0)),
                      legend.spacing.y = unit(0.1, "cm"),  
-                     legend.text=element_text(size=5,color = "black"),
-                     legend.title=element_text(size=6,color = "black"),
+                     legend.text=element_text(size=4,color = "black"),
+                     legend.title=element_text(size=4,color = "black"),
                      #legend.key.height = unit(0.1, "cm"),
                      legend.background = element_rect(fill=alpha('blue', 0)),
                      #facets
@@ -180,74 +180,61 @@ monterey_label <- data.frame(
 
  
 p1 <- ggplot() +
-  geom_sf(data = atos_plot_poly, aes(fill = incipient), color = NA,
-          alpha = 0.4) +
-  scale_fill_manual(values = c("lightpink", "transparent"),
-                    breaks = c("Yes", "No"),
-                    labels = c("", "")) +
-  labs(fill = "Incipient \nforest")+
-  ggnewscale::new_scale_fill()+
   #add historic kelp extent
   tidyterra::geom_spatraster(data = kelp_na, na.rm = TRUE) +
-  tidyterra::scale_fill_hypso_c(
-    palette = "moon_bathy",
-    na.value = NA,
-    labels = NULL
-  ) +
-  guides(fill = guide_legend(override.aes = list(size = 3))) +
+  scale_fill_gradient(low = alpha("#7286AC",0.4),
+                      high = alpha("#7286AC",0.4),
+                       na.value = NA)+
+  guides(fill = guide_legend(override.aes = list(size = 3),
+                             label.theme = element_text(color = "white"))) +
   labs(fill = "Max kelp \nextent")+
   #add observed landsat for 2022 Q3
   ggnewscale::new_scale_fill()+
   tidyterra::geom_spatraster(data = landsat_rast_2022, na.rm = TRUE) +
-  tidyterra::scale_fill_whitebox_c(
-    palette = "atlas",
-    na.value = NA
-  ) +
+  scale_fill_gradient2(low = "navyblue",mid="#1B9C00",high = "#FFFF79",
+                       na.value = NA)+
+  #scale_fill_viridis_c(na.value = NA)+
   labs(fill = expression("Kelp biomass" ~(kg~"/"~"30m"^{-2})))+
-  #labs(fill = expression(atop("Kelp biomass", ~(kg~"per"~"30m"^{-2}))))+
-  #add scan area
-  ggnewscale::new_scale_fill() +  # Start a new fill scale
-  geom_sf(data = atos_plot_poly, fill = NA, color = "gray20") +
   #add land
   geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") +
   coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs = 4326)+
-  labs(title = "2022", tag = "B")+
+  labs(title = "2022 Q3 kelp cover")+
   #reorder legend
-  guides(
-    fill = guide_legend(order = 2),  
-    fill_new_scale = guide_legend(order = 3),  
-    fill_new_scale1 = guide_legend(order = 1)  
-  ) +  
+  #guides(
+  #  fill = guide_legend(order = 2),  
+  #  fill_new_scale = guide_legend(order = 3),  
+  #  fill_new_scale1 = guide_legend(order = 1)  
+  #) +  
   #add landmarks
-  geom_text(data=monterey_label, mapping=aes(x=x, y=y, label=label),
-            size=3, fontface= "bold") +
-  theme_bw() + base_theme +theme(axis.text.y = element_blank(),
+  #geom_text(data=monterey_label, mapping=aes(x=x, y=y, label=label),
+   #         size=3, fontface= "bold") +
+  theme_bw() + base_theme +theme(#axis.text.y = element_blank(),
                                       plot.tag.position = c(-0.03, 1),
-                                 axis.title=element_blank())
+                                 axis.title=element_blank(),
+                                 panel.background = element_rect(fill = "navyblue"))
 p1
+
+
+# Save the final figure
+ggsave(p1, filename = file.path(figdir, "FigX_incipient_forests.png"), 
+       width = 4, height = 4, units = "in", dpi = 600)
+
 
 
 p2 <- ggplot() +
   #add historic kelp extent
   tidyterra::geom_spatraster(data = kelp_na, na.rm = TRUE) +
-  tidyterra::scale_fill_hypso_c(
-    palette = "moon_bathy",
-    na.value = NA,
-    labels = NULL
-  ) +
-  guides(fill = guide_legend(override.aes = list(size = 3))) +
+  scale_fill_gradient(low = "#5E5C87", high = "#5E5C87",
+                      na.value = NA)+
+  guides(fill = guide_legend(override.aes = list(size = 3),
+                             label.theme = element_text(color = "white"))) +
   labs(fill = "Max kelp \nextent")+
   #add observed landsat for 2022 Q3
   ggnewscale::new_scale_fill()+
   tidyterra::geom_spatraster(data = landsat_rast_2017, na.rm = TRUE) +
-  tidyterra::scale_fill_whitebox_c(
-    palette = "atlas",
-    na.value = NA
-  ) +
-  labs(fill = expression(atop("Kelp biomass", ~(kg~"per"~"30m"^{-2}))))+
-  #add scan area
-  ggnewscale::new_scale_fill() +  # Start a new fill scale
-  geom_sf(data = atos_plot_poly, fill = NA, color = "gray20") +
+  scale_fill_gradient2(low = "navyblue",mid="#3B74FF",high = "yellow",
+                       na.value = NA)+
+  labs(fill = expression("Kelp biomass" ~(kg~"/"~"30m"^{-2})))+
   #add land
   geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") +
   #add inset
@@ -282,6 +269,8 @@ p2 <- ggplot() +
   labs(title = "2017", tag = "A")+
   theme_bw() + base_theme + theme(legend.position = "none", plot.tag.position = c(0.05, 1), axis.title=element_blank())
 p2
+
+
 
 
 #make tile plot
