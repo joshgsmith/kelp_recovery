@@ -39,9 +39,14 @@ size_class_long <- vcdExtra::expand.dft(size_class_counts_in_sample, freq="Freq"
 size_class_long$Var1_mm <- size_class_long$Var1 * 10
 
 ################################################################################
+
+a <- -19.94355
+b <- 10.71374
+c <- 0.03670476 
+
 # Define the biomass conversion function
 biomass_conversion <- function(diameter_mm) {
-  biomass_g <- -22.45 + 12.23 * exp(0.0394 * diameter_mm)
+  biomass_g <- a + b * exp(c * diameter_mm)
   return(biomass_g)
 }
 
@@ -90,12 +95,6 @@ plot <- ggplot(biomass_df, aes(x = Size_cm, y = Biomass)) +
   theme_minimal()
 
 plot
-
-
-
-
-
-
 
 
 
