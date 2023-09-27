@@ -106,7 +106,6 @@ census_dat <- final_shapefile %>%
 #export
 
 st_write(census_dat, file.path(output, "usgs_1985_2019_annual_census.shp")) 
-s
 
 
 
