@@ -7,7 +7,7 @@ rm(list=ls())
 
 ######
 #required packages
-librarian::shelf(tidyverse, sf)
+librarian::shelf(tidyverse, sf, zoo)
 
 #set directories 
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/data/census_data"
