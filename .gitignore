@@ -31,4 +31,5 @@ vignettes/*.pdf
 pca-kf-new.R
 # Confidential data
 analyses/2forage_behavior/analyses/foraging_shiny/foraging_data_2016_2023.csv
-data/census_data
+# Confidential scripts 
+data/census_data/*.R
