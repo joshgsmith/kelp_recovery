@@ -256,5 +256,11 @@ View(mpen_2019)
 
 mpen_total <- mpen_build10 %>% group_by(year) %>% summarize(total = sum(avg_n_indep, na.rm=TRUE))
 
+usgs_total <- usgs_2019 %>% group_by(year) %>% summarize(total = sum(n_indep, na.rm=TRUE))
+
+
+
+
+
 
 
