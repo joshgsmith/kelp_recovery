@@ -121,7 +121,7 @@ library(leaflet)
 # Read the shapefile
 dat <- st_read(file.path(output, "usgs_1985_2019_annual_census.shp")) %>%
   filter(year == 2008) %>%
-  select(year, geometry) %>%
+  #select(year, geometry) %>%
   st_transform(crs = 4326)
 
 # Create a leaflet map
@@ -137,8 +137,5 @@ m <- m %>%
     weight = 1,           # Border width
     fillOpacity = 0.7     # Opacity of the fill
   )
-
-# Display the map
-m
 
 
