@@ -32,5 +32,4 @@ pca-kf-new.R
 # Confidential data
 analyses/2forage_behavior/analyses/foraging_shiny/foraging_data_2016_2023.csv
 # Confidential scripts 
-data/census_data/*.R
-kelp_recovery/data/census_data/
+data/census_data/
