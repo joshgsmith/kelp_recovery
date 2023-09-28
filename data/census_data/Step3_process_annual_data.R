@@ -15,6 +15,8 @@ censusdir <- file.path(basedir,"annual_surveys/raw")
 output <-file.path(basedir,"annual_surveys/processed")
 
 
+
+
 ################################################################################
 #Read USGS 1985-2014 shapefiles
 
@@ -107,5 +109,36 @@ census_dat <- final_shapefile %>%
 
 st_write(census_dat, file.path(output, "usgs_1985_2019_annual_census.shp")) 
 
+
+
+################################################################################
+#Explore output
+
+# Load required libraries
+library(sf)
+library(leaflet)
+
+# Read the shapefile
+dat <- st_read(file.path(output, "usgs_1985_2019_annual_census.shp")) %>%
+  filter(year == 2008) %>%
+  select(year, geometry) %>%
+  st_transform(crs = 4326)
+
+# Create a leaflet map
+m <- leaflet() %>%
+  addProviderTiles("OpenStreetMap.Mapnik")  # Add OpenStreetMap tiles as the base map
+
+# Add your polygon layer to the map
+m <- m %>%
+  addPolygons(
+    data = dat,
+    fillColor = "blue",   # Fill color of the polygons
+    color = "black",      # Border color of the polygons
+    weight = 1,           # Border width
+    fillOpacity = 0.7     # Opacity of the fill
+  )
+
+# Display the map
+m
 
 

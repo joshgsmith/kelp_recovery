@@ -71,6 +71,12 @@ rast_build2 <- st_transform(landsat_orig, crs = 3310) %>%
   mutate(biomass = ifelse(biomass == 0, NA, biomass))  %>% filter (year == 2017 & quarter ==3) 
 landsat_rast_2017 <- rasterize(rast_build2, r, field = "biomass", fun = mean)
 
+
+
+rast_build3 <- st_transform(landsat_orig, crs = 3310) %>% 
+  mutate(biomass = ifelse(biomass == 0, NA, biomass))  %>% filter (year == 2008 & quarter ==3) 
+landsat_rast_2008 <- rasterize(rast_build3, r, field = "biomass", fun = mean)
+
 ################################################################################
 #Step 2 - define max kelp extent
 
@@ -190,7 +196,7 @@ p1 <- ggplot() +
   scale_fill_manual(values = custom_palette, na.value = "transparent") +
   geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") +
   coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs = 4326) +
-  labs(title = "", tag = "A") +
+  labs(title = "", tag = "") +
   # Add landmarks
   geom_text(data = monterey_label, mapping = aes(x = x, y = y, label = label),
             size = 3, fontface = "bold") +
@@ -215,7 +221,7 @@ p1 <- ggplot() +
                  y.min = 36.519, y.max = 36.645,
                  #anchor=c(x=-124.7,y=41),
                  location="bottomright",
-                 dist = 2.5, dist_unit = "km",
+                 dist = 2, dist_unit = "km",
                  transform=TRUE, 
                  model = "WGS84",
                  st.dist=0.02,
@@ -229,11 +235,11 @@ p1 <- ggplot() +
               location = "topright", 
               scale = 0.05, 
               symbol = 10)+
-  theme_bw() + base_theme + theme(
+  theme_bw() +  theme(
                                   plot.tag.position = c(-0.03, 1),
                                   axis.title = element_blank()) +
   labs(title = "Cluster area")+
-  guides(fill = "none")
+  guides(fill = "none") +base_theme
 
 p1
 
@@ -258,9 +264,10 @@ p2 <- ggplot() +
  # geom_text(data=monterey_label, mapping=aes(x=x, y=y, label=label),
   #          size=3, fontface= "bold") +
   coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs = 4326)+
-  labs(title = "2017 Q3", tag = "A")+
-  theme_bw() + base_theme + theme(axis.text.y = element_blank(),
-    legend.position = "none", plot.tag.position = c(0.05, 1), axis.title=element_blank())
+  labs(title = "2017 Q3", tag = "")+
+  theme_bw() + base_theme + theme(#axis.text.y = element_blank(),
+    #legend.position = "none",
+    plot.tag.position = c(0.05, 1), axis.title=element_blank())
 p2
 
 
@@ -284,17 +291,58 @@ p3 <- ggplot() +
   geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") +
   coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs = 4326)+
   labs(title = "2022 Q3")+
-  theme_bw() + base_theme +theme(axis.text.y = element_blank(),
+  theme_bw() + base_theme +theme(#axis.text.y = element_blank(),
     plot.tag.position = c(-0.03, 1),
     axis.title=element_blank(),
     panel.background = element_rect(fill = "white"))
 p3
 
-# Arrange p and the adjusted p3 in two rows
-p <- gridExtra::grid.arrange(p1, p2,p3, nrow=1, widths = c(0.2,0.35,0.35))
-p
 
-# Save the final figure
-ggsave(p, filename = file.path(figdir, "Fig1_map_figure_hclust.png"), 
-       width = 7, height = 7, units = "in", dpi = 600)
+
+
+p4 <- ggplot() +
+  #add historic kelp extent
+  tidyterra::geom_spatraster(data = kelp_na, na.rm = TRUE) +
+  scale_fill_gradient(low = alpha("#7286AC",0.4),
+                      high = alpha("#7286AC",0.4),
+                      na.value = NA)+
+  guides(fill = guide_legend(override.aes = list(size = 3),
+                             label.theme = element_text(color = "white"))) +
+  labs(fill = "Max kelp \nextent")+
+  #add observed landsat for 2022 Q3
+  ggnewscale::new_scale_fill()+
+  tidyterra::geom_spatraster(data = landsat_rast_2008, na.rm = TRUE) +
+  scale_fill_gradient2(low = "navyblue",mid="#1B9C00",high = "#FFFF79",
+                       na.value = NA)+
+  #scale_fill_viridis_c(na.value = NA)+
+  labs(fill = expression("Kelp area" ~(Kg~"/"~"30m"^{-2})))+
+  #add land
+  geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") +
+  coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs = 4326)+
+  labs(title = "2008 Q3")+
+  theme_bw() + base_theme +theme(
+                                 plot.tag.position = c(-0.03, 1),
+                                 axis.title=element_blank(),
+                                 panel.background = element_rect(fill = "white"))
+p4
+
+
+
+#save
+ggsave(p1, filename = file.path(figdir, "FigX_cluster_area.png"), 
+       width = 5, height = 6, units = "in", dpi = 600)
+
+
+#save
+ggsave(p2, filename = file.path(figdir, "FigX_2017_Q3.png"), 
+       width = 5, height = 6, units = "in", dpi = 600)
+
+#save
+ggsave(p3, filename = file.path(figdir, "FigX_2022_Q3.png"), 
+       width = 5, height = 6, units = "in", dpi = 600)
+
+#save
+ggsave(p4, filename = file.path(figdir, "FigX_2008_Q3.png"), 
+       width = 5, height = 6, units = "in", dpi = 600)
+
 
