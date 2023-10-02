@@ -11,7 +11,7 @@ rm(list=ls())
 librarian::shelf(tidyverse, sf, raster, terra)
 
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
-figdir <- here::here("anaylyses","5community_regulation","figures")
+figdir <- here::here("analyses","5community_regulation","figures")
 
 #read landsat dat
 landsat_orig <- st_read(file.path(basedir,"kelp_landsat/processed/monterey_peninsula/landsat_mpen_1984_2023_points_withNAs.shp"))
@@ -75,10 +75,12 @@ forage_build1 <- forage_orig %>%
 
 
 base_theme <-  theme(axis.text=element_text(size=7, color = "black"),
+                     axis.text.x = element_blank(),
+                     axis.text.y = element_blank(),
                      axis.title=element_text(size=8,color = "black"),
                      legend.text=element_text(size=7,color = "black"),
                      legend.title=element_text(size=8,color = "black"),
-                     plot.tag=element_text(size=8,color = "black"),
+                     plot.tag=element_text(size=10,color = "black"),
                      # Gridlines
                      panel.grid.major = element_blank(), 
                      panel.grid.minor = element_blank(),
@@ -122,7 +124,7 @@ g1_inset <-  ggplotGrob(
 
 # Create the "Monterey" text label
 monterey_label <- data.frame(
-  x = c(-121.9, -121.98), # x-coordinate for the upper right corner
+  x = c(-121.9, -121.97), # x-coordinate for the upper right corner
   y = c(36.64, 36.54),  # y-coordinate for the upper right corner
   label = c("Monterey \nBay", "Carmel \nBay")
 )
@@ -151,14 +153,21 @@ p1 <- ggplot() +
   ggnewscale::new_scale_fill()+
   geom_sf(
     data = forage_build1 %>% filter(year == 2017),
-    aes(fill = "Mussel forage \nbouts")
+    aes(fill = "Mussel forage \nbout"),
+    size=0.1
   ) +
   labs(
     fill = NULL,  # Remove the title from the legend
     guide = guide_legend(title = NULL)  # Remove the legend title
   )+
+  guides(
+    fill = guide_legend(
+      override.aes = list(size = 3),  # Adjust the legend point size as needed
+      title = NULL  # Remove the legend title
+    )
+  )+
   #add land
-  geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80", size=0.5) +
+  geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") +
   #add scale bar
   ggsn::scalebar(x.min = -121.99, x.max = -121.88, 
                  y.min = 36.519, y.max = 36.645,
@@ -179,17 +188,18 @@ p1 <- ggplot() +
               scale = 0.05, 
               symbol = 10)+
   coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs = 4326)+
-  labs(title = "", tag = "")+
+  labs(title = "", tag = "B")+
   theme_bw() + base_theme + theme(#axis.text.y = element_blank(),
     #legend.position = "none",
-    plot.tag.position = c(0.05, 1), axis.title=element_blank())
+   # plot.tag.position = c(0.05, 1), 
+    axis.title=element_blank())
 
 p1
 
 
 #save
 ggsave(p1, filename = file.path(figdir, "FigX_bout_locations.png"), 
-       width = 5, height = 6, units = "in", dpi = 600)
+       width = 5, height = 4, units = "in", dpi = 600)
 
                     
   
