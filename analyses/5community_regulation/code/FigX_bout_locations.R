@@ -143,12 +143,19 @@ p1 <- ggplot() +
                     ymin = 36.625) +
   #add historic kelp extent
   tidyterra::geom_spatraster(data = kelp_na, na.rm = TRUE) +
-  scale_fill_gradient(low = alpha("forestgreen",0.4),
-                      high = alpha("forestgreen",0.4),
-                      na.value = NA)+
-  guides(fill = guide_legend(override.aes = list(size = 3),
-                             label.theme = element_text(color = "white"))) +
-  labs(fill = "Max kelp \nextent")+
+  scale_fill_gradient(low = alpha("forestgreen", alpha=0.6),
+                      high = alpha("forestgreen", alpha=0.6),
+                      na.value = NA,
+                      labels = c("Max kelp\nextent"))+
+  guides(fill = guide_legend(override.aes = list(size = 1),
+                             label.theme = element_text(color = "gray"))) +
+  #labs(fill = "Max kelp \nextent")+
+  guides(
+    fill = guide_legend(
+      override.aes = list(size = 1),  # Adjust the legend point size as needed
+      title = NULL  # Remove the legend title
+    )
+  )+
   #add foraging bouts for mussels
   ggnewscale::new_scale_fill()+
   geom_sf(
@@ -192,13 +199,22 @@ p1 <- ggplot() +
   theme_bw() + base_theme + theme(#axis.text.y = element_blank(),
     #legend.position = "none",
    # plot.tag.position = c(0.05, 1), 
-    axis.title=element_blank())
+    axis.title=element_blank()) +  
+  #adjust legend position
+  theme(
+    legend.position = "bottom",         # Place legend at the bottom
+    legend.justification = "right",     # Align the legend to the right
+    legend.box = "vertical",         
+    legend.margin = margin(t = -60),   # Adjust the top margin to move the legend up
+    plot.margin = margin(b = 90),         # Add extra margin at the bottom of the plot
+    legend.box.spacing = unit(0.001, "cm")
+  )
 
 p1
 
 
 #save
-ggsave(p1, filename = file.path(figdir, "FigX_bout_locations.png"), 
+ggsave(p1, filename = file.path(figdir, "FigX_bout_locations2.png"), 
        width = 5, height = 4, units = "in", dpi = 600)
 
                     
