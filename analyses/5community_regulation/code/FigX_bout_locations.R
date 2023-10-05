@@ -19,6 +19,9 @@ landsat_orig <- st_read(file.path(basedir,"kelp_landsat/processed/monterey_penin
 #read foraging data
 forage_orig <- read_csv(file.path(basedir,"/foraging_data/processed/foraging_data_2016_2023.csv"))
 
+#read bathy
+bathy_5m <- st_read(file.path(basedir, "gis_data/raw/bathymetry/contours_5m/contours_5m.shp")) %>% filter(CONTOUR == "-5" | CONTOUR == "-10")
+
 #read state
 ca_counties_orig <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7vc7n.shp")) 
 
@@ -175,6 +178,7 @@ p1 <- ggplot() +
   )+
   #add land
   geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") +
+  geom_sf(data = bathy_5m, fill = "black", color = "black") +
   #add scale bar
   ggsn::scalebar(x.min = -121.99, x.max = -121.88, 
                  y.min = 36.519, y.max = 36.645,
