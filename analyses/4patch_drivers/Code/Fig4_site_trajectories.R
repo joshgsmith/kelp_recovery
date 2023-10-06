@@ -117,6 +117,26 @@ df_mean_kelp <- swath_sub %>%
 
 plot_dat <- left_join(df_mean_kelp, dist_long1, by="site")
 
+################################################################################
+#determine slopes
+
+slope_dat <- plot_dat %>% dplyr::select(1:4, mean_sim) %>% 
+  pivot_wider(names_from = species, values_from = c(mean_count_before, mean_count_after)) %>%
+  #calculate slope
+  mutate(slope = (mean_count_after_macrocystis_pyrifera - mean_count_before_macrocystis_pyrifera) /
+                 (mean_count_after_strongylocentrotus_purpuratus - mean_count_before_strongylocentrotus_purpuratus),
+         perc_change_kelp = (mean_count_after_macrocystis_pyrifera - mean_count_before_macrocystis_pyrifera)/mean_count_before_macrocystis_pyrifera,
+         perc_change_urch =  (mean_count_after_strongylocentrotus_purpuratus - mean_count_before_strongylocentrotus_purpuratus)/ mean_count_before_strongylocentrotus_purpuratus)
+           
+
+
+# Fit a linear regression model
+model <- lm(mean_sim ~ slope, data = slope_dat)
+model <- lm(mean_sim ~ perc_change_kelp, data = slope_dat)
+model <- lm(mean_sim ~ perc_change_urch, data = slope_dat)
+
+summary(model)
+
 
 ################################################################################
 #plot
