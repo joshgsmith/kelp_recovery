@@ -1,11 +1,11 @@
-Survey method,Genus species,Common name,Taxonomic level,Trophic ecology
+Survey method,Taxa,Common name,Taxonomic level,Trophic ecology
 Swath,Pisaster brevispinus,Short spined star,Invertebrate,Macroinvertivore
 Swath,Pterygophora californica,Pterygophora,Algae,Autotroph
 Swath,Eisenia arborea,Eisenia,Algae,Autotroph
 Swath,Macrocystis pyrifera,Giant kelp,Algae,Autotroph
 Swath,Pisaster giganteus,Giant spined star,Invertebrate,Macroinvertivore
-Swath,Stephanocystis osmundacea,Cystoseira,Algae,Autotroph
-Swath,Strongylocentrotus purpuratus,Purple urchin,Invertebrate,Herbivore
+Swath,Stephanocystis osmundacea,Chain-bladder kelp,Algae,Autotroph
+Swath,Strongylocentrotus purpuratus,Purple sea urchin,Invertebrate,Herbivore
 Swath,Mesocentrotus franciscanus,Red sea urchin,Invertebrate,Detritivore (algal)
 Swath,Patiria miniata,Bat star,Invertebrate,Detritivore (algal)
 Swath,Tethya californiana,Orange puffball sponge,Invertebrate,Planktivore
@@ -15,17 +15,17 @@ Swath,Pisaster ochraceus,Ochre star,Invertebrate,Macroinvertivore
 Swath,Pycnopodia helianthoides,Sunflower star,Invertebrate,Macroinvertivore
 Swath,Loxorhynchus grandis,Sheep crab,Invertebrate,Macroinvertivore
 Swath,Neobernaya spadicea,Chestnut cowrie,Invertebrate,Microinvertivore
-Swath,Cancridae,Crab,Invertebrate,Detritivore 
-Swath,Lytechinus pictus,White urchin (adult > 2.5 cm),Invertebrate,Herbivore
+Swath,Cancridae family,,,
+Swath,Lytechinus pictus,White urchin ,Invertebrate,Herbivore
 Swath,Dermasterias imbricata,Leather star,Invertebrate,Microinvertivore
 Swath,Crassadoma gigantea,Rock scallop,Invertebrate,Planktivore
 Swath,Henricia leviuscula,Blood star,Invertebrate,Microinvertivore
-Swath,Nereocystis luetkeana,Nereocystis,Algae,Autotroph
+Swath,Nereocystis luetkeana,Bull kelp,Algae,Autotroph
 Swath,Pomaulax gibberosus,Red turban snail,Invertebrate,Herbivore
 Swath,Aplysia californica,California brown sea hare,Invertebrate,Herbivore
 Swath,Cryptochiton stelleri,Gumboot chiton,Invertebrate,Herbivore
-Swath,Mediaster aequalis,Red star,Invertebrate,Microinvertivore
-Swath,Loxorhynchus crispatus scyra acutifrons,"Decorator crab, moss crab",Invertebrate,Detritivore (algal)
+Swath,Mediaster aequalis,Red sea star,Invertebrate,Microinvertivore
+Swath,Loxorhynchus crispatus  or scyra acutifrons,"Decorator crab, moss crab",Invertebrate,Detritivore (algal)
 Swath,Stylaster californicus,California hydrocoral,Invertebrate,Planktivore
 Swath,Haliotis rufescens,Red abalone,Invertebrate,Detritivore (algal)
 Swath,Metridium,White plumed anemones,Invertebrate,Planktivore
@@ -36,25 +36,25 @@ Swath,Pugettia producta,Northern kelp crab,Invertebrate,Herbivore
 Swath,Megastraea undosa,Wavy turban snail,Invertebrate,Herbivore
 Swath,Anthopleura xanthogrammica,Giant green anemone,Invertebrate,Planktivore
 Swath,Pugettia richii,Cryptic kelp crab,Invertebrate,Herbivore
-Swath,Costaria costata,Costaria,Algae,Autotroph
+Swath,Costaria costata,Five-ribbed kelp,Algae,Autotroph
 Swath,Cucumaria miniata,Orange sea cucumber,Invertebrate,Planktivore
-Swath,Cribrinopsis albopunctata,Nudibranch,Invertebrate,Microinvertivore
+Swath,Cribrinopsis albopunctata,White-spotted rose anemone,Invertebrate,Microinvertivore
 Swath,Ceratostoma foliatum,Leafy hornmouth,Invertebrate,Microinvertivore
 Swath,Pugettia foliata,Kelp crab,Invertebrate,Herbivore
 Swath,Styela montereyensis,Stalked tunicate,Invertebrate,Planktivore
 Swath,Apostichopus parvimensis,Warty sea cucumber,Invertebrate,Detritivore (algal)
 Swath,Apostichopus californicus,California sea cucumber,Invertebrate,Detritivore (algal)
-Swath,Laminaria setchellii,Laminaria,Algae,Autotroph
+Swath,Laminaria setchellii,Southern stiff-stiped kelp,Algae,Autotroph
 Swath,Balanus nubilus,Barnacle,Invertebrate,Planktivore
-Swath,Laminaria farlowii,Laminaria,Algae,Autotroph
-Swath,Pleurophycus gardneri,Pleurophycus,Algae,Autotroph
+Swath,Laminaria farlowii,Oar weed,Algae,Autotroph
+Swath,Pleurophycus gardneri,Tender kelp,Algae,Autotroph
 Swath,Pachycerianthus fimbriatus,Burrowing anemone,Invertebrate,Planktivore
 Swath,Haliotis walallensis,Flat abalone,Invertebrate,Detritivore (algal)
 Swath,Haliotis kamtschatkana,Pinto abalone,Invertebrate,Detritivore (algal)
 Swath,Craniella arb,Grey tennis ball sponge,Invertebrate,Planktivore
 Swath,Aplysia vaccaria,Black sea hare,Invertebrate,Herbivore
 Swath,Cryptolithodes sitchensis,Umbrella crab,Invertebrate,Microinvertivore
-Swath,Leptasterias hexactis,Six-rayed star,Invertebrate,Detritivore (algal)
+Swath,Leptasterias hexactis,Six-rayed star,Invertebrate,Macroinvertivore
 Swath,Urticina,Urticina spp.,Invertebrate,Planktivore
 UPC,Red algae branching flat blade,Red algae (branching flat blade),Algae,Autotroph
 UPC,Phaeophyceae,Brown algae,Algae,Autotroph
@@ -89,7 +89,7 @@ UPC,Red algae encrusting,Red algae encrusting,Algae,Autotroph
 UPC,Red algae lacy branching,Red algae (lacy branching),Algae,Autotroph
 UPC,Red filamentous turf,Red filamentous turf,Algae,Autotroph
 UPC,Red algae cylindrical branches,Red algae (cylindrical branches),Algae,Autotroph
-UPC,Tubeworm mat,Tubeworm mat.,Invertebrate,Planktivore
+UPC,Tubeworm mat,Tubeworm mat,Invertebrate,Planktivore
 UPC,Stylaster californicus,California hydrocoral,Invertebrate,Planktivore
 UPC,Scallop,Scallop,Invertebrate,Planktivore
 UPC,Thylacodes squamigerus,"Tube snail, scaled worm shell",Invertebrate,Planktivore
@@ -122,7 +122,6 @@ Fish,Sebastes carnatus,Gopher rockfish,Fish,Macroinvertivore
 Fish,Sebastes melanops,Black rockfish,Fish,Piscivore
 Fish,Heterostichus rostratus,Giant kelpfish,Fish,Macroinvertivore
 Fish,Embiotoca lateralis,Striped surfperch,Fish,Microinvertivore
-Fish,Sebastes chrysomelas carnatus,Black and yellow rockfish,Fish,Macroinvertivore
 Fish,Sebastes paucispinis,Bocaccio,Fish,Piscivore
 Fish,Rhinogobiops nicholsii,Blackeye goby,Fish,Planktivore
 Fish,Cebidichthys violaceus,Monkeyface eel,Fish,Herbivore
@@ -130,7 +129,6 @@ Fish,Sebastes pinniger,Canary rockfish,Fish,Piscivore
 Fish,Zalembius rosaceus,Pink surfperch,Fish,Microinvertivore
 Fish,Chromis punctipinnis,Blacksmith,Fish,Planktivore
 Fish,Girella nigricans,Opaleye,Fish,Herbivore
-Fish,Sebastes serranoides flavidus melanops,"Olive, yellowtail, or black rockfish",Fish,Macroinvertivore
 Fish,Hexagrammos lagocephalus,Rock greenling,Fish,Macroinvertivore
 Fish,Sebastes serriceps,Treefish,Fish,Macroinvertivore
 Fish,Anarrhichthys ocellatus,Wolf eel,Fish,Macroinvertivore
