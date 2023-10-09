@@ -13,53 +13,11 @@ figdir <- here::here("analyses","4patch_drivers","Figures")
 tabdir <- here::here("analyses","4patch_drivers","Tables")
 
 #load raw dat
-swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv")) %>%
-  #select sites in Carmel and Monterey Bay only
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK")) 
+swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv"))
 
-upc_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_upc_cov_CC.csv")) %>%
-  #select sites in Carmel and Monterey Bay only
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK"))
+upc_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_upc_cov_CC.csv")) 
 
-fish_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_fish_counts_CC.csv")) %>%
-  #select sites in Carmel and Monterey Bay only
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK"))
+fish_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_fish_counts_CC.csv"))
 
 #load species attribute table
 spp_attribute <- read.csv(file.path(tabdir,"TableS1_spp_table.csv")) %>% janitor::clean_names()
@@ -194,7 +152,7 @@ fish_mod_dat <- fish_build1 %>%
   dplyr::select(outbreak_period, everything()) %>%
   dplyr::group_by(year, outbreak_period, MHW, baseline_region, latitude, longitude, site,
                   affiliated_mpa, mpa_class, mpa_designation) %>%
-  dplyr::summarize(across(4:59, mean, na.rm = TRUE)) %>%
+  dplyr::summarize(across(4:57, mean, na.rm = TRUE)) %>%
   #define transition sites
   mutate(transition_site = ifelse(site == "HOPKINS_UC" | site == "CANNERY_UC" |
                                     site == "SIREN" | site == "CANNERY_DC","no","yes"))%>%
@@ -205,7 +163,7 @@ fish_persist <- fish_mod_dat %>% filter(transition_site == "no")
 
 #####run model for transition sites
 #create multivariate object
-fish_t_spp <- mvabund(fish_transition[, 12:67]) #exclude grouping vars
+fish_t_spp <- mvabund(fish_transition[, 12:65]) #exclude grouping vars
 #fit the model
 fish_t_model <- manyglm(fish_t_spp ~ fish_transition$outbreak_period)
 #test for significance
@@ -222,7 +180,7 @@ fish_t_sig <- fish_t_out %>%
 
 #####run model for persist sites
 #create multivariate object
-fish_p_spp <- mvabund(fish_persist[, 12:67]) #exclude grouping vars
+fish_p_spp <- mvabund(fish_persist[, 12:65]) #exclude grouping vars
 #fit the model
 fish_p_model <- manyglm(fish_p_spp ~ fish_persist$outbreak_period)
 #test for significance
@@ -261,7 +219,7 @@ upc_filtered <- upc_mod_dat %>%
   filter(!(is.na(group)))
 
 fish_filtered <- fish_mod_dat %>%
-  pivot_longer(12:67, names_to = "species", values_to = "counts")%>%
+  pivot_longer(12:65, names_to = "species", values_to = "counts")%>%
   #dplyr::select(!(transition_site))%>%
   #filter to significant species
   left_join(fish_mvabund, by=c("transition_site","species"), relationship = "many-to-many")%>%
@@ -603,7 +561,7 @@ combined_plot_annotated <- ggpubr::annotate_figure(combined_plot,
 
 combined_plot
 
-ggsave(combined_plot_annotated, filename=file.path(figdir, "Fig4_mvabund.png"), bg = "white",
+ggsave(combined_plot_annotated, filename=file.path(figdir, "Fig4_mvabund2.png"), bg = "white",
        width=8.5, height=10, units="in", dpi=600) 
 
 
