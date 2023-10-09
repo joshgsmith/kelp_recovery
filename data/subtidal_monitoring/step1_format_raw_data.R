@@ -40,14 +40,15 @@ kelp_fish_build1 <- kelp_fish_counts_raw %>%
 
 #join species names by class code 
 kelp_fish_build2 <- left_join(kelp_fish_build1, kelp_taxon, by="classcode")
+nrow(kelp_fish_build2)
 
 kelp_fish_build3 <- kelp_fish_build2 %>%
-  dplyr::select(year, site, zone, level, transect, species=species_definition, total_count)%>%
-  filter(!(species=='Sebastes atrovirens/carnatus/chrysomelas/caurinus'))
-
+  dplyr::select(year, site, zone, level, transect, species=species_definition, total_count)
+nrow(kelp_fish_build3)
 
 #add affiliated_mpa
 kelp_fish_build4 <- left_join(kelp_fish_build3, site_table, by="site")
+nrow(kelp_fish_build4) #note: extra rows are from Swami's in data != Swamis in site table. This site gets dropped because it is south coast
 
 kelp_fish_build5 <- kelp_fish_build4 %>%
   ungroup() %>%
@@ -57,7 +58,8 @@ kelp_fish_build5 <- kelp_fish_build4 %>%
   #make sure species are not duplicates by summarizing at the transect level (total counts)
   group_by(year, baseline_region, latitude, longitude, site, affiliated_mpa, mpa_class, mpa_designation, zone, level, transect, species) %>%
   dplyr::summarise(counts = sum(total_count))
-  
+
+
 
 #reshape to wide format 
 kelp_fish_build6 <- kelp_fish_build5 %>%
@@ -77,12 +79,12 @@ unique(kelp_fish_build6$site)
 #### see reference taxonomy table https://docs.google.com/spreadsheets/d/1vxy0XVOrlNhXD-i9tWL_F9G5h8S3S4OV/edit#gid=2031917236
 
 kelp_fish_build7 <- as.data.frame(kelp_fish_build6) %>%
-  
-  #merge species
+  #merge species to higher taxa
   dplyr::mutate(citharichthys_merge = rowSums(select(.,'citharichthys','citharichthys_sordidus','citharichthys_stigmaeus')
   ))%>%
   select(!(c('citharichthys','citharichthys_sordidus','citharichthys_stigmaeus'))) %>%
-  #drop species
+  #drop species that were not observed in the central coast region, or have species-level observations. 
+  # we want distinct species, so can't include genus if species are recorded. 
   select(!(c('anisotremus_davidsonii',
              'cheilotrema_saturnum',
              'unidentified_fish',
@@ -111,11 +113,16 @@ kelp_fish_build7 <- as.data.frame(kelp_fish_build6) %>%
              'stichaeidae',
              'syngnathus',
              'trachurus_symmetricus',
-             'ulvicola_sanctaerosae')))%>%
+             'ulvicola_sanctaerosae',
+             'sebastes_atrovirens_carnatus_chrysomelas_caurinus',
+             "sebastes_chrysomelas_carnatus",
+             "sebastes_serranoides_flavidus_melanops"
+             )))%>%
   #drop string
   rename(citharichthys=citharichthys_merge) %>%
   dplyr::select(year, MHW, everything())
 
+names(kelp_fish_build7)
 
 #Export
 #write.csv(kelp_fish_build7,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_fish_counts_CC.csv"), row.names = FALSE)
@@ -126,7 +133,7 @@ kelp_fish_build7 <- as.data.frame(kelp_fish_build6) %>%
 
 #select vars and clean
 kelp_swath_build1 <- kelp_swath_raw %>%
-  #drop species
+  #drop juvenile sea urchins, since these were not consistently recorded 
   dplyr::filter(!(classcode == "STRPURREC" |
                     classcode == "MESFRAREC"))%>%
   dplyr::select(year, site, zone, transect, classcode, count, size)%>%
@@ -196,6 +203,7 @@ kelp_swath_build7 <- as.data.frame(kelp_swath_build6) %>%
              'stylasterias_forreri',
              'urticina_columbiana',
              'urticina_columbiana_mcpeaki',
+             "unidentified_mobile_invert_species",
   )))%>%
   #drop string
   rename(urticina=urticina_merge)
@@ -306,8 +314,84 @@ kelp_upc_build10 <- kelp_upc_build9 %>%
   #select(where(~ any(. != 0)))
   #mutate_all(~ifelse(is.nan(.), NA, .))
 
+################################################################################
+#drop sites that do not have consistent sampling
+
+kelp_fish_build8 <- kelp_fish_build7 %>%
+                    #select sites in Carmel and Monterey Bay only
+                    dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
+                   filter(!(site == "ASILOMAR_DC" |
+                   site == "ASILOMAR_UC" |
+                   site == "CHINA_ROCK" |
+                   site == "CYPRESS_PT_DC" |
+                   site == "CYPRESS_PT_UC" |
+                   site == "PINNACLES_IN" |
+                   site == "PINNACLES_OUT" |
+                   site == "PT_JOE" |
+                   site == "SPANISH_BAY_DC" |
+                   site == "SPANISH_BAY_UC" |
+                   site == "BIRD_ROCK"|
+                   site == "LINGCOD_DC"|
+                   site == "LINGCOD_UC"|
+                   site == "CARMEL_DC"|
+                   site == "CARMEL_UC"))
+
+kelp_swath_build9 <- kelp_swath_build8 %>%
+  #select sites in Carmel and Monterey Bay only
+  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
+  filter(!(site == "ASILOMAR_DC" |
+             site == "ASILOMAR_UC" |
+             site == "CHINA_ROCK" |
+             site == "CYPRESS_PT_DC" |
+             site == "CYPRESS_PT_UC" |
+             site == "PINNACLES_IN" |
+             site == "PINNACLES_OUT" |
+             site == "PT_JOE" |
+             site == "SPANISH_BAY_DC" |
+             site == "SPANISH_BAY_UC" |
+             site == "BIRD_ROCK"|
+             site == "LINGCOD_DC"|
+             site == "LINGCOD_UC"|
+             site == "CARMEL_DC"|
+             site == "CARMEL_UC"))
+
+
+
+kelp_upc_build11 <- kelp_upc_build10 %>%
+  #select sites in Carmel and Monterey Bay only
+  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
+  filter(!(site == "ASILOMAR_DC" |
+             site == "ASILOMAR_UC" |
+             site == "CHINA_ROCK" |
+             site == "CYPRESS_PT_DC" |
+             site == "CYPRESS_PT_UC" |
+             site == "PINNACLES_IN" |
+             site == "PINNACLES_OUT" |
+             site == "PT_JOE" |
+             site == "SPANISH_BAY_DC" |
+             site == "SPANISH_BAY_UC" |
+             site == "BIRD_ROCK"|
+             site == "LINGCOD_DC"|
+             site == "LINGCOD_UC"|
+             site == "CARMEL_DC"|
+             site == "CARMEL_UC"))
+
 #Export
-#write.csv(kelp_upc_build10,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_upc_cov_CC.csv"), row.names = FALSE)
+write.csv(kelp_fish_build8,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_fish_counts_CC.csv"), row.names = FALSE)
+
+#Export
+write.csv(kelp_swath_build9,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv"), row.names = FALSE)
+
+#Export
+write.csv(kelp_upc_build11,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_upc_cov_CC.csv"), row.names = FALSE)
+
+
+
+
+
+
+
+
 
 
 
