@@ -16,54 +16,13 @@ outdir <- here::here("analyses","4patch_drivers","Output")
 stan_dat <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_stan_CC.csv")) 
 
 #load raw dat
-fish_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_fish_counts_CC.csv")) %>%
-  #select sites in Carmel and Monterey Bay only
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK")) 
+fish_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_fish_counts_CC.csv")) 
 
-
-upc_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_upc_cov_CC.csv")) %>%
-  #select sites in Carmel and Monterey Bay only
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK"))
+upc_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_upc_cov_CC.csv")) 
 
 swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv")) %>%
-  #select sites in Carmel and Monterey Bay only
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK")) %>% dplyr::select(-macrocystis_pyrifera,
+  #remove kelps
+  dplyr::select(-macrocystis_pyrifera,
                                                             -pterygophora_californica,
                                                             -eisenia_arborea,
                                                             -stephanocystis_osmundacea,
@@ -74,21 +33,9 @@ swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kel
                                                             -laminaria_farlowii,
                                                             -pleurophycus_gardneri)
 
-kelp_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv")) %>%
-  #select sites in Carmel and Monterey Bay only
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK")) %>% dplyr::select(1:11, macrocystis_pyrifera,
+kelp_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv")) %>% 
+  #extract kelps as their own group              
+          dplyr::select(1:11, macrocystis_pyrifera,
                                                             pterygophora_californica,
                                                             eisenia_arborea,
                                                             stephanocystis_osmundacea,
@@ -104,28 +51,10 @@ kelp_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp
 #process data
 
 #replace any NAs with 0
-stan_dat <- stan_dat %>% mutate(across(where(is.numeric), ~replace_na(., 0))) %>%
-  #select sites in Carmel and Monterey Bay only
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sea stars and purple urchins
-  #dplyr::select(!(c(strongylocentrotus_purpuratus,
-   #                 pycnopodia_helianthoides,
-    #                macrocystis_pyrifera)))%>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK"))
+stan_dat <- stan_dat %>% mutate(across(where(is.numeric), ~replace_na(., 0)))
 
 fish_sum <- fish_raw %>% group_by(year, MHW, site) %>%
-  dplyr::summarize(across(10:120, mean, na.rm = TRUE))
+  dplyr::summarize(across(10:118, mean, na.rm = TRUE))
 
 swath_sum <- swath_raw %>% group_by(year, MHW, site) %>%
   dplyr::summarize(across(9:57, mean, na.rm = TRUE))
@@ -261,11 +190,11 @@ upc_alphadiv <- cbind(upc_groups, upc_richness, upc_shannon, upc_simpson, upc_ev
 fish_dat <- fish_sum %>% ungroup() %>% dplyr::select(4:ncol(.))
 fish_groups <- fish_sum %>% ungroup() %>% dplyr::select(1:3)
 
-fish_richness <- data.frame(S.obs = apply(fish_dat[,1:111]>0, 1, sum))
+fish_richness <- data.frame(S.obs = apply(fish_dat[,1:109]>0, 1, sum))
 fish_evenness <- diversity(fish_dat)/log(specnumber(fish_dat))
 fish_shannon <- diversity(fish_dat, index="shannon")
 fish_simpson <- diversity(fish_dat, index="simpson")
-fish_abund <- rowSums(fish_dat[,1:111])
+fish_abund <- rowSums(fish_dat[,1:109])
 
 fish_alphadiv <- cbind(fish_groups, fish_richness, fish_shannon, fish_simpson, fish_evenness, fish_abund)%>%
   mutate(MHW = str_to_sentence(MHW),
@@ -287,7 +216,82 @@ kelp_abund <- rowSums(kelp_dat[,1:10])
 kelp_alphadiv <- cbind(kelp_groups, kelp_richness, kelp_shannon, kelp_simpson, kelp_evenness, kelp_abund)%>%
   mutate(MHW = str_to_sentence(MHW),
          MHW = factor(MHW, levels=c("Before","During","After")))
+################################################################################
+#determine spp that explain changes over time
 
+fish_join <- cbind(fish_alphadiv, fish_dat) %>% rename(richness=S.obs) %>%
+              #calculate annual mean
+              group_by(year)%>%
+              summarize(across(3:116,mean))
+
+fish_rich <- fish_join %>%
+  select(year, 7:115) %>%
+  mutate(across(2:110, ~ifelse(. > 0, 1, 0))) 
+
+# Create a data frame for species changes (added or lost)
+species_changes <- data.frame(year = numeric(0), species_added = character(0), species_lost = character(0))
+
+# Sort the data frame by year
+fish_rich <- fish_rich %>%
+  arrange(year)
+
+# Iterate through years starting from the second year (2008)
+for (i in 2:nrow(fish_rich)) {
+  current_year <- fish_rich$year[i]
+  previous_year <- fish_rich$year[i - 1]
+  
+  current_species <- fish_rich[i, 3:110]  # Exclude the year column from comparison
+  previous_species <- fish_rich[i - 1, 3:110]
+  
+  species_added <- colnames(current_species)[current_species > previous_species]
+  species_lost <- colnames(previous_species)[previous_species > current_species]
+  
+  species_changes <- rbind(species_changes, data.frame(year = current_year, species_added = paste(species_added, collapse = ", "), species_lost = paste(species_lost, collapse = ", ")))
+}
+
+# Print or work with species_changes to see which species were added or lost each year relative to the previous year
+print(species_changes)
+
+
+# Reshape the data to long format
+fish_rich_long <- fish_rich %>%
+  pivot_longer(cols = -year, names_to = "species", values_to = "presence")
+
+# Filter out species that were never observed (presence == 0) in any year
+fish_rich_filtered <- fish_rich_long %>%
+  group_by(species) %>%
+  filter(any(presence == 1))
+
+# Calculate richness (number of species observed) for each year based on the filtered dataset
+richness_data <- fish_rich_filtered %>%
+  group_by(year) %>%
+  summarize(richness = sum(presence))
+
+# Filter out species that were observed in ALL years
+fish_rich_reduced <- fish_rich_filtered %>%
+  group_by(species) %>%
+  filter(sum(presence) != n_distinct(year))
+
+# Create a heatmap
+g <- ggplot(data = fish_rich_reduced, aes(x = year, y = species, fill = factor(presence))) +
+  geom_tile() +
+  scale_fill_manual(values = c("0" = "white", "1" = "green"), labels = c("0" = "Absent", "1" = "Present")) +
+  labs(title = "Species Presence/Absence Over Years", x = "Year", y = "Species") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+# Create a colored line plot with a gradient color transition between years
+ggplot(data = richness_data, aes(x = year, y = 0, color = richness)) +
+  geom_line(size = 20, aes(group = 1)) +
+  labs(title = "Richness Over Years", x = "Year", y = NULL) +
+  scale_color_gradientn(
+    colors = c("navyblue", "indianred"),
+    values = scales::rescale(c(min(richness_data$year), max(richness_data$year))),
+    guide = "none"
+  ) +  # Adjust the gradient colors and values as needed
+  theme_minimal()
 
 ################################################################################
 #Step 4 - plot
@@ -360,7 +364,7 @@ shannon <- ggplot() +
   # Heatwave
   annotate(geom = "rect", xmin = 2014, xmax = 2016, ymin = -Inf, ymax = Inf, fill = "indianred1", alpha = 0.2) +
   theme_bw() + my_theme +
-  labs(color = "Organism \ntype", fill = "Organism \ntype") +
+  labs(color = "Taxa", fill = "Taxa") +
   ylab("Shannon diversity") +
   xlab("Year") +
   ggtitle("Shannon diversity") +
@@ -389,7 +393,7 @@ simpson <- ggplot() +
   # Heatwave
   annotate(geom = "rect", xmin = 2014, xmax = 2016, ymin = -Inf, ymax = Inf, fill = "indianred1", alpha = 0.2) +
   theme_bw() + my_theme +
-  labs(color = "Organism \ntype", fill = "Organism \ntype") +
+  labs(color = "Taxa", fill = "Taxa") +
   ylab("Simpson diversity") +
   xlab("Year") +
   ggtitle("Simpson diversity") +
@@ -420,7 +424,7 @@ richness <- ggplot()+
   # Heatwave
   annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
-  labs(color = "Organism \ntype", fill = "Organism \ntype")+
+  labs(color = "Taxa", fill = "Taxa")+
   ylab("Species richness (n)")+
   xlab("Year")+
   ggtitle("Species richness")+
@@ -453,7 +457,7 @@ evenness <- ggplot()+
   # Heatwave
   annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
-  labs(color = "Organism \ntype", fill = "Organism \ntype")+
+  labs(color = "Taxa", fill = "Taxa")+
   ylab("Species evenness (n)")+
   xlab("Year")+
   ggtitle("Species evenness")+
@@ -468,14 +472,14 @@ combined_plot <- ggpubr::ggarrange(shannon, simpson, richness, evenness, ncol = 
 combined_plot <- combined_plot + theme(plot.margin = margin(5, 0, 5, 20, "pt")) + 
   labs(tag = "B") + theme(plot.tag=element_text(size=8, color = "black", face = "plain")) 
 
-ggsave(combined_plot, filename=file.path(figdir, "Fig3_richness_diversity_evenness.png"), bg = "white",
-       width=5.5, height=4.5, units="in", dpi=600) 
+#ggsave(combined_plot, filename=file.path(figdir, "Fig3_richness_diversity_evenness.png"), bg = "white",
+ #      width=5.5, height=4.5, units="in", dpi=600) 
 
 
 region_wide_plot <- ggpubr::ggarrange(stan_trajectory, combined_plot, ncol=1)
 region_wide_plot 
 
-ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics_new4.png"), bg = "white",
+ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics_new5.png"), bg = "white",
       width=5.5, height=8, units="in", dpi=600) 
 
 
