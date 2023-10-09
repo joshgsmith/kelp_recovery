@@ -11,21 +11,7 @@ librarian::shelf(tidyverse, here, vegan)
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/"
 figdir <- here::here("analyses","4patch_drivers","Figures")
 
-swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv")) %>%
-  #select sites in Carmel and Monterey Bay only
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK"))
+swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv")) 
 
 ################################################################################
 #select and reshape data
@@ -183,11 +169,11 @@ ggsave(g, filename=file.path(figdir, "FigS1_urchin_kelp_timeseries.png"),
 ################################################################################
 #plot region
 # Theme
-my_theme <-  theme(axis.text=element_text(size=6),
+my_theme <-  theme(axis.text=element_text(size=8),
                    axis.text.y = element_text(angle = 90, hjust = 0.5),
-                   axis.title=element_text(size=6),
+                   axis.title=element_text(size=8),
                    plot.tag=element_blank(), #element_text(size=8),
-                   plot.title =element_text(size=7, face="bold"),
+                   plot.title =element_text(size=9, face="bold"),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -197,12 +183,12 @@ my_theme <-  theme(axis.text=element_text(size=6),
                    legend.key = element_blank(),
                    legend.background = element_rect(fill=alpha('white', 0)),
                    legend.key.height = unit(1, "lines"), 
-                   legend.text = element_text(size = 6),
-                   legend.title = element_text(size = 7),
+                   legend.text = element_text(size = 8),
+                   legend.title = element_text(size = 9),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
-                   strip.text = element_text(size = 6 ,face="bold"),
+                   strip.text = element_text(size = 8 ,face="bold"),
 )
 
 swath_sub_site <- swath_sub %>% group_by(year, site, species) %>% summarize(count_mean = mean(counts)) %>%
@@ -261,49 +247,30 @@ g1
 
 
 
-
-########
-
-
-
-
-#######THIS WORKS GOOD
-
-library(dplyr)
-library(ggplot2)
-
-# Compute site-level mean and standard deviation of kelp_mean for the "before" outbreak period
-before_kelp <- subset(kelp_mean, outbreak_period == "before")
-site_stats <- before_kelp %>%
-  group_by(site) %>%
-  summarize(mean_kelp = mean(kelp_mean), sd_kelp = sd(kelp_mean))
-
-# Merge site-level mean and sd back into the kelp_mean dataset
-kelp_mean <- kelp_mean %>% left_join(site_stats, by = "site")
-
-# Create a new column indicating whether each year is within, above or below 1 sd of the mean at each site
-kelp_mean$color <- ifelse(kelp_mean$kelp_mean > kelp_mean$mean_kelp + kelp_mean$sd_kelp, "Above 1 SD",
-                          ifelse(kelp_mean$kelp_mean < kelp_mean$mean_kelp - kelp_mean$sd_kelp, "Below 1 SD", "Within 1 SD"))
-
-# Subset the data to only include years exceeding +/- 1 sd of the mean at each site
-subset_kelp <- kelp_mean[kelp_mean$color != "Within 1 SD",]
-
-# Create the time series plot
-ggplot(data = kelp_mean %>% mutate(site = gsub("_", " ", site)), aes(x = year, y = kelp_mean)) +
-  geom_line() +
-  geom_ribbon(data = kelp_mean %>% mutate(site = gsub("_", " ", site)), aes(ymin = mean_kelp - sd_kelp, ymax = mean_kelp + sd_kelp), fill = "gray80", alpha = 0.5) +
-  geom_point(data = subset_kelp %>% mutate(site = gsub("_", " ", site)), aes(color = color), size = 3) +
-  geom_hline(data = site_stats %>% mutate(site = gsub("_", " ", site)), aes(yintercept = mean_kelp), linetype = "solid") + # add horizontal line
-  labs(x = "Year", y = "Kelp Mean", color = "") +
-  scale_color_manual(values = c("Within 1 SD" = "black", "Above 1 SD" = "forestgreen", "Below 1 SD" = "purple")) +
-  facet_wrap(~reorder(site, -mean_kelp), scales = "fixed") +
-  theme_classic()
+# Italicize the legend labels using expression
+g1 <- g1 +
+  scale_color_manual(
+    values = c("Kelp \n(M. pyrifera)" = "forestgreen", "Sea urchins \n(S. purpuratus)" = "purple"),
+    labels = c(expression("Kelp" ~ italic("(M. pyrifera)")), expression("Sea urchins"~italic("(S. purpuratus)")))
+  ) +
+  scale_fill_manual(
+    values = c("Kelp \n(M. pyrifera)" = "forestgreen", "Sea urchins \n(S. purpuratus)" = "purple"),
+    labels = c(expression("Kelp" ~ italic("(M. pyrifera)")), expression("Sea urchins"~italic("(S. purpuratus)")))
+  )
+g1
 
 
-
-
-
-
+# Italicize the axis labels using expression with manual line breaks
+g1 <- g1 +
+  scale_y_continuous(
+    name = expression(italic("M. pyrifera") ~ "(stipes per 60m²)"),
+    sec.axis = sec_axis(~f(.), name = expression(italic("S. purpuratus") ~ "(no. per 60m²)"),
+                        breaks = c(2, 50, 200, 400, 800, 1600, 3200)),
+    limits = c(-3, 200) # Set limit of y1
+  ) +
+  scale_x_continuous(
+    name = expression("Year")
+  )
 
 
 

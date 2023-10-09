@@ -13,20 +13,7 @@ basedir <- "/Volumes/seaotterdb$/kelp_recovery/"
 figdir <- here::here("analyses","4patch_drivers","Figures")
 
 #load standardized dat
-stan_dat <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_stan_CC.csv")) %>%
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK"))
+stan_dat <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_stan_CC.csv")) 
 
 #read state
 ca_counties <- st_read(file.path(basedir, "data/gis_data/raw/ca_county_boundaries/s7vc7n.shp")) 
@@ -131,7 +118,7 @@ monterey_label <- data.frame(
   label = c("Monterey \nBay", "Carmel \nBay")
 )
 
-# Plot the county boundaries and site locations with non-overlapping labels
+ # Plot the county boundaries and site locations with non-overlapping labels
 map <- ggplot() +
   geom_sf(data = ca_counties_mpen) +
   geom_sf(data = site_locations_sf) +
@@ -148,7 +135,7 @@ map <- ggplot() +
   # Plot cities
   geom_text(data=landmarks, mapping=aes(x=long, y=lat, label=place),
             size=4, fontface= "bold") +
-  coord_sf(xlim = c(-122.08, -121.86), ylim = c(36.5, 36.66)) +
+  coord_sf(xlim = c(-122.08, -121.85), ylim = c(36.5, 36.66)) +
   ggsn::north(x.min = -122.05, x.max = -121.86, 
               y.min = 36.5, y.max = 36.66,
               location = "topright", 
@@ -160,7 +147,7 @@ map <- ggplot() +
   # Add CA inset
   annotation_custom(grob = g1_inset, 
                     xmin = -121.88, 
-                    xmax = -121.848,
+                    xmax = -121.827,
                     ymin = 36.63) +
   ggsn::scalebar(x.min = -122.088, x.max = -121.88, 
                  y.min = 36.5, y.max = 36.66,
@@ -194,7 +181,7 @@ map <- ggplot() +
 map
 
 
-ggsave(map, filename=file.path(figdir, "Fig1_site_map_new.png"), bg = "white",
+ggsave(map, filename=file.path(figdir, "Fig1_site_map_newv2.png"), bg = "white",
        width=7.5, height=6, units="in", dpi=600) 
 
 
