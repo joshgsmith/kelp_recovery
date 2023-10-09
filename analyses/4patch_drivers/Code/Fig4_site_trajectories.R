@@ -14,21 +14,7 @@ outdir <- here::here("analyses","4patch_drivers","Output")
 
 load(file.path(outdir,"multivariate_data.Rdata"))
 
-swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv")) %>%
-  #select sites in Carmel and Monterey Bay only
-  dplyr::filter(latitude >= 36.46575 & latitude <= 36.64045) %>%
-  #drop sites with insufficient data
-  dplyr::filter(!(site == "ASILOMAR_DC" |
-                    site == "ASILOMAR_UC" |
-                    site == "CHINA_ROCK" |
-                    site == "CYPRESS_PT_DC" |
-                    site == "CYPRESS_PT_UC" |
-                    site == "PINNACLES_IN" |
-                    site == "PINNACLES_OUT" |
-                    site == "PT_JOE" |
-                    site == "SPANISH_BAY_DC" |
-                    site == "SPANISH_BAY_UC" |
-                    site == "BIRD_ROCK"))
+swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv")) 
 
 ################################################################################
 #generate distance matrix
@@ -253,7 +239,7 @@ E
 
 
 # Save the combined plot
-ggsave(E, filename = file.path(figdir, "Fig3_dumbbell_new4.png"), 
+ggsave(E, filename = file.path(figdir, "Fig3_dumbbell_new5.png"), 
        width = 7, height = 8, bg = "white", units = "in", dpi = 600)
 
 
