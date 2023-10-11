@@ -254,6 +254,34 @@ p2
 
 
 
+# Reshape the data from wide to long format
+stacked_data <- sofa_build1 %>%
+  dplyr::select(period, source, 2:22) %>%
+  pivot_longer(cols = -c(period, source), names_to = "Prey", values_to = "Value") 
 
+# Filter the prey types that reach or exceed 3 for mass_gain
+prey_to_include <- stacked_data %>%
+  filter(source == "mass_gain", Value >= 3) %>%
+  distinct(Prey)
+
+# Filter the data to include the selected prey types
+filtered_data <- stacked_data %>%
+  filter(Prey %in% c("abalone","cancer_crab","urchin","mussel"))
+
+# Create a plot with stacked columns colored by prey type
+ggplot(filtered_data %>% filter(period <2020),
+       aes(x = period, y = Value, color = Prey)) +
+  #geom_line() +
+  geom_point(alpha=0.4)+
+  #geom_smooth(method = "loess", se = TRUE, aes(fill=Prey)) + 
+  stat_smooth(geom="line", size=1, span=0.7) +
+  stat_smooth(method = "loess", geom = "ribbon", alpha = 0.2, aes(fill = Prey), color=NA) +
+  facet_wrap(~ source, ncol = 1, scales = "free_y") +
+  labs(
+    title = "",
+    x = "Year",
+    y = "Prey Value"
+  ) +
+  theme_bw()+base_theme
 
 
