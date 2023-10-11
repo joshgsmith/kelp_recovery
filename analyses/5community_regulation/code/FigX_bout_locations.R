@@ -8,7 +8,7 @@ rm(list=ls())
 ######
 #required packages
 
-librarian::shelf(tidyverse, sf, raster, terra)
+librarian::shelf(tidyverse, sf, raster, terra, janitor)
 
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
 figdir <- here::here("analyses","5community_regulation","figures")
@@ -18,6 +18,11 @@ landsat_orig <- st_read(file.path(basedir,"kelp_landsat/processed/monterey_penin
 
 #read foraging data
 forage_orig <- read_csv(file.path(basedir,"/foraging_data/processed/foraging_data_2016_2023.csv"))
+
+#read sofa output
+mass_class <- readxl::read_excel(file.path(basedir,"/sofa_data/raw/MCResults_Periods_10-11-23_12h.xlsx"), sheet = 4, skip=1) %>% clean_names()
+dietcomp_class <- readxl::read_excel(file.path(basedir,"/sofa_data/raw/MCResults_Periods_10-11-23_12h.xlsx"), sheet = 5, skip = 1) %>% clean_names()
+kcal_class <- readxl::read_excel(file.path(basedir,"/sofa_data/raw/MCResults_Periods_10-11-23_12h.xlsx"), sheet = 6, skip=1) %>% clean_names()
 
 #read bathy
 bathy_5m <- st_read(file.path(basedir, "gis_data/raw/bathymetry/contours_5m/contours_5m.shp")) %>% filter(CONTOUR == "-5" | CONTOUR == "-10")
@@ -72,9 +77,23 @@ forage_build1 <- forage_orig %>%
                     filter(!is.na(lat))%>%
                     st_as_sf(coords = c("long","lat"), crs = 4326)
 
+################################################################################
+#Step 3 - process sofa
+
+ncol(mass_class)
+ncol(dietcomp_class)
+ncol(kcal_class)
+
+# Add a column to each dataset indicating the source
+mass_class1 <- mass_class %>% mutate(source = "mass_gain")
+dietcomp_class1 <- dietcomp_class %>% mutate(source = "dietcomp")
+kcal_class1 <- kcal_class %>% mutate(source = "kcal")
+
+# Combine the datasets into one
+sofa_build1 <- bind_rows(mass_class1, dietcomp_class1, kcal_class1)
 
 ################################################################################
-#Step 3 - plot
+#Step 4 - plot
 
 
 base_theme <-  theme(axis.text=element_text(size=7, color = "black"),
@@ -218,11 +237,19 @@ p1
 
 
 #save
-ggsave(p1, filename = file.path(figdir, "FigX_bout_locations2.png"), 
-       width = 5, height = 4, units = "in", dpi = 600)
+#ggsave(p1, filename = file.path(figdir, "FigX_bout_locations2.png"), 
+ #      width = 5, height = 4, units = "in", dpi = 600)
 
-                    
-  
+p2 <- ggplot(sofa_build1, aes(x = period, y = mussel, color = source)) +
+  geom_line() +
+  facet_wrap(~ source, ncol = 1, scales = "free_y") +
+  labs(
+    title = "Mussel Data Over the Years",
+    x = "Year",
+    y = "Mussel Value"
+  ) +
+  theme_minimal()
+p2  
 
 
 
