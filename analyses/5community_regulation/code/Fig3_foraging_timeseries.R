@@ -268,20 +268,51 @@ prey_to_include <- stacked_data %>%
 filtered_data <- stacked_data %>%
   filter(Prey %in% c("abalone","cancer_crab","urchin","mussel"))
 
-# Create a plot with stacked columns colored by prey type
-ggplot(filtered_data %>% filter(period <2020),
+theme2 <-  theme(axis.text=element_text(size=7, color = "black"),
+                     axis.text.x = element_text(size=8,color = "black"),
+                     axis.text.y = element_text(size=8,color = "black"),
+                     axis.title=element_text(size=8,color = "black"),
+                     legend.text=element_text(size=7,color = "black"),
+                     legend.title=element_text(size=8,color = "black"),
+                     plot.tag=element_text(size=10,color = "black"),
+                     # Gridlines
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(),
+                     panel.background = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     # Legend
+                     legend.key = element_rect(fill=alpha('blue', 0)),
+                     legend.background = element_rect(fill=alpha('blue', 0)),
+                     #facets
+                     strip.text = element_text(size=6, face = "bold",color = "black", hjust=0),
+                     strip.background = element_blank())
+
+
+ggplot(filtered_data %>% filter(period < 2020),
        aes(x = period, y = Value, color = Prey)) +
   #geom_line() +
-  geom_point(alpha=0.4)+
-  #geom_smooth(method = "loess", se = TRUE, aes(fill=Prey)) + 
-  stat_smooth(geom="line", size=1, span=0.7) +
-  stat_smooth(method = "loess", geom = "ribbon", alpha = 0.2, aes(fill = Prey), color=NA) +
-  facet_wrap(~ source, ncol = 1, scales = "free_y") +
+  geom_point(alpha = 0.4) +
+  #add SSW reference
+  geom_vline(xintercept = 2013, linetype = "dashed", color = "black")+
+  #geom_smooth(method = "loess", se = TRUE, aes(fill = Prey)) + 
+  stat_smooth(geom = "line", size = 1, span = 0.7) +
+  stat_smooth(method = "loess", geom = "ribbon", alpha = 0.2, aes(fill = Prey), color = NA) +
+  facet_wrap(~ source, ncol = 1, scales = "free_y", 
+             labeller = labeller(source = 
+                                   c(dietcomp = "Proportion diet",
+                                     kcal = "Energy gain (Kcal / min)",
+                                     mass_gain = "Mass gain (g/min)"))) +
   labs(
     title = "",
     x = "Year",
-    y = "Prey Value"
+    y = "Prey value"
   ) +
-  theme_bw()+base_theme
+  scale_x_continuous(breaks = seq(2007, 2020, by = 2)) +  
+  theme_bw() + theme2+
+  theme(legend.position = "top")+
+  scale_color_brewer(palette = "Dark2")+
+  scale_fill_brewer(palette = "Dark2")
+
+
 
 
