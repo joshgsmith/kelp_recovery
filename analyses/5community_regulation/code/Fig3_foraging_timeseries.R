@@ -25,7 +25,7 @@ dietcomp_class <- readxl::read_excel(file.path(basedir,"/sofa_data/raw/MCResults
 kcal_class <- readxl::read_excel(file.path(basedir,"/sofa_data/raw/MCResults_Periods_10-11-23_12h.xlsx"), sheet = 6, skip=1) %>% clean_names()
 
 #read bathy
-bathy_5m <- st_read(file.path(basedir, "gis_data/raw/bathymetry/contours_5m/contours_5m.shp")) %>% filter(CONTOUR == "-5" | CONTOUR == "-10")
+bathy_5m <- st_read(file.path(basedir, "gis_data/raw/bathymetry/contours_5m/contours_5m.shp")) %>% filter(CONTOUR == "-5")
 
 #read state
 ca_counties_orig <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7vc7n.shp")) 
@@ -187,7 +187,8 @@ p1 <- ggplot() +
   ) +
   labs(
     fill = NULL,  # Remove the title from the legend
-    guide = guide_legend(title = NULL)  # Remove the legend title
+    guide = guide_legend(title = NULL),  # Remove the legend title
+    tag = "B"
   )+
   guides(
     fill = guide_legend(
@@ -240,18 +241,6 @@ p1
 #ggsave(p1, filename = file.path(figdir, "FigX_bout_locations2.png"), 
  #      width = 5, height = 4, units = "in", dpi = 600)
 
-p2 <- ggplot(sofa_build1, aes(x = period, y = mussel, color = source)) +
-  geom_line() +
-  facet_wrap(~ source, ncol = 1, scales = "free_y") +
-  labs(
-    title = "Mussel Data Over the Years",
-    x = "Year",
-    y = "Mussel Value"
-  ) +
-  theme_minimal()
-p2  
-
-
 
 
 # Reshape the data from wide to long format
@@ -266,7 +255,7 @@ prey_to_include <- stacked_data %>%
 
 # Filter the data to include the selected prey types
 filtered_data <- stacked_data %>%
-  filter(Prey %in% c("abalone","cancer_crab","urchin","mussel"))
+  filter(Prey %in% c("urchin","mussel"))
 
 theme2 <-  theme(axis.text=element_text(size=7, color = "black"),
                      axis.text.x = element_text(size=8,color = "black"),
@@ -288,7 +277,7 @@ theme2 <-  theme(axis.text=element_text(size=7, color = "black"),
                      strip.background = element_blank())
 
 
-ggplot(filtered_data %>% filter(period < 2020),
+a <- ggplot(filtered_data %>% filter(period < 2020),
        aes(x = period, y = Value, color = Prey)) +
   #geom_line() +
   geom_point(alpha = 0.4) +
@@ -305,14 +294,41 @@ ggplot(filtered_data %>% filter(period < 2020),
   labs(
     title = "",
     x = "Year",
-    y = "Prey value"
+    y = "Prey value",
+    tag = "A"
   ) +
   scale_x_continuous(breaks = seq(2007, 2020, by = 2)) +  
   theme_bw() + theme2+
   theme(legend.position = "top")+
   scale_color_brewer(palette = "Dark2")+
-  scale_fill_brewer(palette = "Dark2")
+  scale_fill_brewer(palette = "Dark2") +
+  theme(plot.tag.position = c(0,0.88))
+a
 
 
+#g <- gridExtra::grid.arrange(a,p1, row=1)
+
+#ggsave(g, filename = file.path(figdir, "Fig3_foraging_timeseries.png"), 
+ #      width = 7, height = 9, units = "in", dpi = 600, bg = "white")
+
+
+# Save the ggplot objects to grobs
+a_grob <- ggplotGrob(a)
+p1_grob <- ggplotGrob(p1)
+
+# Adjust the right margin of p1_grob
+p1_grob$widths[8] <- p1_grob$widths[8] + unit(1, "cm")  # Increase the margin by 1 cm
+
+# Define the amount to nudge p1_grob down 
+nudge_down <- unit(-3, "lines")
+
+# Add a row of padding to p1_grob
+p1_grob <- gtable::gtable_add_rows(p1_grob, heights = nudge_down)
+
+# Arrange the grobs
+combined_grob <- gridExtra::arrangeGrob(a_grob, p1_grob, ncol = 2, widths = c(1,1.1))
+
+ggsave(combined_grob, filename = file.path(figdir, "Fig3_foraging_timeseries.png"), 
+       width = 7, height = 6, units = "in", dpi = 600, bg = "white")
 
 
