@@ -22,20 +22,6 @@ meta_dat <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mytil
 mus_orig <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mytilus_cov_pis_den.xlsx"),sheet = 2)
 pis_orig <- readxl::read_xlsx(file.path(basedir,"intertidal_monitoring/raw/mytilus_cov_pis_den.xlsx"),sheet = 3)
 
-#read foraging data
-forage_orig <- read_csv(file.path(basedir,"/foraging_data/processed/foraging_data_2016_2023.csv"))
-
-#read bathy
-bathy_5m <- st_read(file.path(basedir, "gis_data/raw/bathymetry/contours_5m/contours_5m.shp")) %>% filter(CONTOUR == "-5")
-
-#read state
-ca_counties_orig <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7vc7n.shp")) 
-
-# Get land
-usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
-foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclass = "sf")
-
-
 ################################################################################
 #Step 1 - filter rocky intertidal to focal study area
 
@@ -88,16 +74,7 @@ combined_data <- bind_rows(census_join_summary, mus_build2, pis_build2) %>%
                   category = factor(category, levels = c("Total independent otters","Mussels","P. ochraceus"))
                   )
                   
-################################################################################
-#Step X - extract mussel dives
 
-forage_build1 <- forage_orig %>% 
-  #filter mussel dives
-  filter(prey == "mus") %>%
-  #select bout locations
-  dplyr::select(year, month, day, bout, lat, long) %>% distinct() %>%
-  filter(!is.na(lat))%>%
-  st_as_sf(coords = c("long","lat"), crs = 4326)
 
 
 ################################################################################
@@ -126,125 +103,29 @@ base_theme <-  theme(axis.text=element_text(size=8, color = "black"),
                      strip.background = element_blank())
 
 
-# Build inset
-g1_inset <-  ggplotGrob(
-  ggplot() +
-    # Plot land
-    geom_sf(data=foreign, fill="grey80", color="white", lwd=0.3) +
-    geom_sf(data=usa, fill="grey80", color="white", lwd=0.3) +
-    # Plot box
-    annotate("rect", xmin=-122.6, xmax=-121, ymin=36.2, ymax=37.1, color="black", fill=NA, lwd=0.6) +
-    # Label regions
-    #geom_text(data=region_labels, mapping=aes(y=lat_dd, label=region), x= -124.4, hjust=0, size=2) +
-    # Labels
-    labs(x="", y="") +
-    # Crop
-    coord_sf(xlim = c(-124.5, -117), ylim = c(32.5, 42)) +
-    # Theme
-    theme_bw() + base_theme +
-    theme( plot.margin = unit(rep(0, 4), "null"),
-           panel.margin = unit(rep(0, 4), "null"),
-           panel.background = element_rect(fill='transparent'), #transparent panel bg
-           # plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
-           axis.ticks = element_blank(),
-           axis.ticks.length = unit(0, "null"),
-           axis.ticks.margin = unit(0, "null"),
-           axis.text = element_blank(),
-           axis.title=element_blank(),
-           axis.text.y = element_blank())
-)
 
-# Create the "Monterey" text label
-monterey_label <- data.frame(
-  x = c(-121.9, -121.97), # x-coordinate for the upper right corner
-  y = c(36.64, 36.54),  # y-coordinate for the upper right corner
-  label = c("Monterey \nBay", "Carmel \nBay")
-)
-
-#rocky intertidal sites
-rocky_sites <- pis_build1 %>% dplyr::select(monitoring_site = marine_site_name, latitude, longitude)%>%distinct()
-
-
-g <- ggplot() +
-  # Add landmarks
-  geom_text(data = monterey_label, mapping = aes(x = x, y = y, label = label),
-            size = 3, fontface = "bold") +
-  # Add CA inset
-  annotation_custom(grob = g1_inset, 
-                    xmin = -122.01, 
-                    xmax = -121.96,
-                    ymin = 36.625) +
-  #labs(fill = "Max kelp \nextent")+
-  guides(
-    fill = guide_legend(
-      override.aes = list(size = 1),  # Adjust the legend point size as needed
-      title = NULL  # Remove the legend title
-    )
-  )+
-  #add foraging bouts for mussels
-  ggnewscale::new_scale_fill()+
-  geom_sf(
-    data = forage_build1, #%>% filter(year == 2017),
-    aes(fill = "Mussel forage \nbout"),
-    size=0.1
-  ) +
-  labs(
-    fill = NULL,  # Remove the title from the legend
-    guide = guide_legend(title = NULL),  # Remove the legend title
-    tag = "B"
-  )+
-  guides(
-    fill = guide_legend(
-      override.aes = list(size = 3),  # Adjust the legend point size as needed
-      title = NULL  # Remove the legend title
-    )
-  )+
-  #add land
-  geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") +
-  geom_sf(data = bathy_5m, fill = "black", color = "black") +
-  #add rocky intertidal sites
-  geom_point(
-    data = rocky_sites,
-    aes(x = longitude, y = ifelse(monitoring_site == "Point Lobos",latitude+.001,latitude)),
-    shape = 24,  
-    size = 3,
-    fill = "orange"
-  )+
-  #add scale bar
-  ggsn::scalebar(x.min = -121.99, x.max = -121.88, 
-                 y.min = 36.519, y.max = 36.645,
-                 #anchor=c(x=-124.7,y=41),
-                 location="bottomright",
-                 dist = 2, dist_unit = "km",
-                 transform=TRUE, 
-                 model = "WGS84",
-                 st.dist=0.02,
-                 st.size=2,
-                 border.size=.5,
-                 height=.02
-  )+
-  #add north arrow
-  ggsn::north(x.min = -121.99, x.max = -121.88, 
-              y.min = 36.519, y.max = 36.65,
-              location = "topright", 
-              scale = 0.05, 
-              symbol = 10)+
-  coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs = 4326)+
-  labs(title = "", tag = "D")+
-  theme_bw() + base_theme + theme(
-    axis.title = element_blank(),
-    legend.position=c(.8,.2),
-    #legend.position = "top",  # Position the legend at the top
-    #legend.justification = "right",  # Align the legend to the right
-    #legend.box = "vertical",  # Box style for the legend
-    #legend.margin = margin(t = -10, r = 10),  # Adjust the top and right margins for positioning
-    axis.text = element_blank(),
-    legend.background = element_rect(fill='transparent'),
-    legend.key = element_rect(fill='transparent')
-  )
-
+g <- ggplot(combined_data, aes(x = year, y = response)) +
+  geom_point(aes(color = category), alpha = 0.4) +
+  #stars
+  stat_smooth(data = combined_data %>% filter(category == "P. ochraceus"), geom = "line", size = 1, span = 0.6, aes(color = category)) +
+  stat_smooth(data = combined_data %>% filter(category == "P. ochraceus"), method = "loess", geom = "ribbon", alpha = 0.2, aes(fill = category), color = NA, span = 0.6) +
+  #mussels
+  stat_smooth(data = combined_data %>% filter(category == "Mussels"), geom = "line", size = 1, span = 0.6, aes(color = category)) +
+  stat_smooth(data = combined_data %>% filter(category == "Mussels"), method = "loess", geom = "ribbon", alpha = 0.2, aes(fill = category), color = NA, span = 0.6) +
+  #otters
+  stat_smooth(data = combined_data %>% filter(category == "Total independent otters"), geom = "line", size = 1, span = 0.4, aes(color = category)) +
+  stat_smooth(data = combined_data %>% filter(category == "Total independent otters"), method = "loess", geom = "ribbon", alpha = 0.2, aes(fill = category), color = NA, span = 0.4) +
+  facet_wrap(~category, scales = "free_y", ncol = 1) +
+  geom_vline(xintercept = 2013, linetype = "dotted", size = 0.6) +
+  labs(x = "Year", y = "Total Count") +
+  scale_color_brewer(palette = "Dark2", guide = guide_legend()) +  # Use Dark2 palette
+  ggtitle("") +
+  theme_minimal() +
+  theme(legend.title = element_blank()) + theme_bw() + base_theme+
+  scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, 0.05)), oob = scales::squish)
 
 g
+
 
 
 p1 <- ggplot(combined_data %>% filter(category == "P. ochraceus"), aes(x = year, y = response)) +
@@ -273,7 +154,7 @@ p1 <- ggplot(combined_data %>% filter(category == "P. ochraceus"), aes(x = year,
   scale_x_continuous(limits = c(2000, 2023)) +
   scale_color_manual(values = "#E377C2") + 
   scale_fill_manual(values = "#E377C2") +
-  labs(x = "Year", y = "Density (no. per m²)", title = "P. ochraceus", tag = "C") 
+  labs(x = "Year", y = "Density (no. per m²)", title = "P. ochraceus") 
 
 p1
 
@@ -303,7 +184,7 @@ p2 <- ggplot(combined_data %>% filter(category == "Mussels"), aes(x = year, y = 
   scale_x_continuous(limits = c(2000, 2023)) +
   scale_color_manual(values = "#FF7F0E") + 
   scale_fill_manual(values = "#FF7F0E")+
-  labs(x = "", y = "Percent cover", title = "Mussels", tag = "B") +
+  labs(x = "", y = "Percent cover", title = "Mussels") +
   theme(axis.text.x = element_blank())
 
 p2
@@ -331,21 +212,17 @@ p3 <- ggplot(combined_data %>% filter(category == "Total independent otters"), a
   scale_x_continuous(limits = c(2000, 2023)) +
   scale_color_manual(values = "#2CA02C") + 
   scale_fill_manual(values = "#2CA02C")  +    
-  labs(x = "", y = "Number of independents",title = "Sea otters", tag = "A") +
+  labs(x = "", y = "Number of independents",title = "Sea otters") +
   theme(axis.text.x = element_blank())
 
 p3
 
 
-p <- gridExtra::grid.arrange(p3,p2,p1, ncol=1) 
-
-p_final <- gridExtra::grid.arrange(p,g, ncol=2)
-
-
+p <- gridExtra::grid.arrange(p3,p2,p1, ncol=1)
 
 
 #save
-ggsave(p_final, filename = file.path(figdir, "Fig1_timeseriesv2.png"), 
-       width =7, height = 5.5, units = "in", dpi = 600)
+ggsave(p, filename = file.path(figdir, "Fig1_timeseries.png"), 
+       width =5, height = 6, units = "in", dpi = 600)
 
 
