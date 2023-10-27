@@ -175,7 +175,8 @@ hopkins <- plot_ly(scene = 'scene1') %>%
             color = ~ssw_period,
             mode = "markers",
             colors = c("indianred","navyblue"),
-            type = "scatter3d"
+            type = "scatter3d",
+            showlegend = FALSE
   ) %>%
   add_trace(data = heatmap_data %>% filter(intertidal_sitename == "Hopkins",
                                            !(is.na(y_planar))),
@@ -184,7 +185,7 @@ hopkins <- plot_ly(scene = 'scene1') %>%
             z = ~MeanZRockHeight,
             colorscale = 'Viridis',
             type = "mesh3d",
-            intensity = ~MeanZRockHeight) %>%
+            intensity = ~MeanZRockHeight) %>% hide_colorbar()%>%
   #test aesthetics
   layout(scene = list(
     yaxis = list(title = "High to <br> low intertidal (m)"),
@@ -222,7 +223,7 @@ pinos <- plot_ly(scene = 'scene2') %>%
             z = ~MeanZRockHeight,
             colorscale = 'Viridis',
             type = "mesh3d",
-            intensity = ~MeanZRockHeight) %>%
+            intensity = ~MeanZRockHeight) %>% hide_colorbar()%>%
   #test aesthetics
   layout(scene = list(
     yaxis = list(title = "High to <br> low intertidal (m)"),
@@ -251,7 +252,8 @@ stillwater <- plot_ly(scene = 'scene3') %>%
             color = ~ssw_period,
             mode = "markers",
             colors = c("indianred","navyblue"),
-            type = "scatter3d"
+            type = "scatter3d",
+            showlegend=FALSE
   ) %>%
   add_trace(data = heatmap_data %>% filter(intertidal_sitename == "Stillwater"),
             x = ~transect,
@@ -259,7 +261,7 @@ stillwater <- plot_ly(scene = 'scene3') %>%
             z = ~MeanZRockHeight,
             colorscale = 'Viridis',
             type = "mesh3d",
-            intensity = ~MeanZRockHeight) %>%
+            intensity = ~MeanZRockHeight) %>% hide_colorbar()%>%
   #test aesthetics
   layout(scene3 = list(
     yaxis = list(title = "High to <br> low intertidal (m)"),
@@ -288,7 +290,8 @@ lobos <- plot_ly(scene='scene4') %>%
             color = ~ssw_period,
             mode = "markers",
             colors = c("indianred","navyblue"),
-            type = "scatter3d"
+            type = "scatter3d",
+            showlegend=FALSE
   ) %>%
   add_trace(data = heatmap_data %>% filter(intertidal_sitename == "Point Lobos",
                                            !(is.na(y_planar))),
@@ -297,8 +300,9 @@ lobos <- plot_ly(scene='scene4') %>%
             z = ~MeanZRockHeight,
             colorscale = 'Viridis',
             type = "mesh3d",
-            intensity = ~MeanZRockHeight
-            ) %>%
+            intensity = ~MeanZRockHeight,
+            showlegend=FALSE
+            ) %>% hide_colorbar()%>%
   #test aesthetics
   layout(scene = list(
     yaxis = list(title = "High to <br> low intertidal (m)"),
@@ -318,10 +322,12 @@ lobos <- plot_ly(scene='scene4') %>%
 
 lobos
 
-#make scene
-# subplot and define scene
 
-# custom grid style
+
+#make scene
+
+
+# Define custom grid style
 axx <- list(
   gridcolor='rgb(255, 255, 255)',
   zerolinecolor='rgb(255, 255, 255)',
@@ -329,38 +335,49 @@ axx <- list(
   backgroundcolor='rgb(230, 230,230)'
 )
 
-
 # Create subplot with separate scenes
 fig <- subplot(hopkins, pinos, stillwater, lobos)
 
 
-# Define custom grid style
-axx <- list(
-  gridcolor = 'rgb(255, 255, 255)',
-  zerolinecolor = 'rgb(255, 255, 255)',
-  showbackground = TRUE,
-  backgroundcolor = 'rgb(230, 230, 230)'
-)
-
-# Set up subplot layout
+# Set up subplot layout with additional margin space
 fig <- fig %>% layout(
   title = "",
-  scene = list(domain = list(x = c(0, 1), y = c(0.5, 1)),
-                xaxis = axx, yaxis = axx, zaxis = axx,
-                aspectmode = 'cube'),
-  scene2 = list(domain = list(x = c(0, 1), y = c(0, 0.5)),
-                xaxis = axx, yaxis = axx, zaxis = axx,
-                aspectmode = 'cube'),
-  scene3 = list(domain = list(x = c(1, 0), y = c(0.5, 1)),
-                xaxis = axx, yaxis = axx, zaxis = axx,
-                aspectmode = 'cube'),
-  scene4 = list(domain = list(x = c(1, 0), y = c(0, 0.5)),
-                xaxis = axx, yaxis = axx, zaxis = axx,
-                aspectmode = 'cube')
+  scene = list(
+    domain = list(x = c(0, 0.5), y = c(0.5, 1)),  # Top-left panel
+    xaxis = axx, yaxis = axx, zaxis = axx,
+    aspectmode = 'cube',
+    margin = list(l = 50, r = 50, t = 50, b = 100)  # Add margin space
+  ),
+  scene2 = list(
+    domain = list(x = c(0.5, 1), y = c(0.5, 1)),  # Top-right panel
+    xaxis = axx, yaxis = axx, zaxis = axx,
+    aspectmode = 'cube',
+    margin = list(l = 50, r = 50, t = 50, b = 100)  # Add margin space
+  ),
+  scene3 = list(
+    domain = list(x = c(0, 0.5), y = c(0, 0.5)),  # Bottom-left panel
+    xaxis = axx, yaxis = axx, zaxis = axx,
+    aspectmode = 'cube',
+    margin = list(l = 50, r = 50, t = 50, b = 100)  # Add margin space
+  ),
+  scene4 = list(
+    domain = list(x = c(0.5, 1), y = c(0, 0.5)),  # Bottom-right panel
+    xaxis = axx, yaxis = axx, zaxis = axx,
+    aspectmode = 'cube',
+    margin = list(l = 50, r = 50, t = 50, b = 100)  # Add margin space
+  )
 )
 
 # Show the final subplot
 fig
+
+
+
+
+
+
+
+
 
 
 
