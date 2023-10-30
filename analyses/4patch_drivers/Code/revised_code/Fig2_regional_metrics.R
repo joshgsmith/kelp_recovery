@@ -8,43 +8,45 @@ librarian::shelf(tidyverse, here, vegan, ggplot2, cluster, ggforce)
 
 ################################################################################
 #set directories and load data
-basedir <- "/Volumes/seaotterdb$/kelp_recovery/"
 figdir <- here::here("analyses","4patch_drivers","Figures")
-outdir <- here::here("analyses","4patch_drivers","Output")
+basedir <- here::here("analyses","4patch_drivers","Output")
 
-#load standardized dat
-stan_dat <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_stan_CC.csv")) 
+#load multivariate data
+load(file.path(basedir, "multivariate_data.Rdata"))
+
+#load standardized data
+stan_dat <- read.csv(file.path(basedir, "kelp_stan_CC.csv")) 
 
 #load raw dat
-fish_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_fish_counts_CC.csv")) 
+fish_raw <- read.csv(file.path(basedir, "kelp_fish_counts_CC.csv")) 
 
-upc_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_upc_cov_CC.csv")) 
+upc_raw <- read.csv(file.path(basedir, "kelp_upc_cov_CC.csv")) 
 
-swath_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv")) %>%
-  #remove kelps
+swath_raw <- read.csv(file.path(basedir, "kelp_swath_counts_CC.csv")) %>%
+  #remove kelps -- we will handle them as their own group
   dplyr::select(-macrocystis_pyrifera,
-                                                            -pterygophora_californica,
-                                                            -eisenia_arborea,
-                                                            -stephanocystis_osmundacea,
-                                                            -laminaria_setchellii,
-                                                            -nereocystis_luetkeana,
-                                                            -alaria_marginata,
-                                                            -costaria_costata,
-                                                            -laminaria_farlowii,
-                                                            -pleurophycus_gardneri)
+                -pterygophora_californica,
+                -eisenia_arborea,
+                -stephanocystis_osmundacea,
+                -laminaria_setchellii,
+                -nereocystis_luetkeana,
+                -alaria_marginata,
+                -costaria_costata,
+                -laminaria_farlowii,
+                -pleurophycus_gardneri)
 
-kelp_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv")) %>% 
+kelp_raw <- read.csv(file.path(basedir, "kelp_swath_counts_CC.csv")) %>% 
   #extract kelps as their own group              
           dplyr::select(1:11, macrocystis_pyrifera,
-                                                            pterygophora_californica,
-                                                            eisenia_arborea,
-                                                            stephanocystis_osmundacea,
-                                                            laminaria_setchellii,
-                                                            nereocystis_luetkeana,
-                                                            alaria_marginata,
-                                                            costaria_costata,
-                                                            laminaria_farlowii,
-                                                            pleurophycus_gardneri)
+                              pterygophora_californica,
+                              eisenia_arborea,
+                              stephanocystis_osmundacea,
+                              laminaria_setchellii,
+                              nereocystis_luetkeana,
+                              alaria_marginata,
+                              costaria_costata,
+                              laminaria_farlowii,
+                              pleurophycus_gardneri)
 
 
 ################################################################################
@@ -54,7 +56,7 @@ kelp_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/processed/kelp
 stan_dat <- stan_dat %>% mutate(across(where(is.numeric), ~replace_na(., 0)))
 
 fish_sum <- fish_raw %>% group_by(year, MHW, site) %>%
-  dplyr::summarize(across(10:118, mean, na.rm = TRUE))
+  dplyr::summarize(across(10:114, mean, na.rm = TRUE))
 
 swath_sum <- swath_raw %>% group_by(year, MHW, site) %>%
   dplyr::summarize(across(9:57, mean, na.rm = TRUE))
@@ -65,41 +67,6 @@ upc_sum <- upc_raw %>% group_by(year, MHW, site) %>%
 kelp_sum <- kelp_raw %>% group_by(year, MHW, site) %>%
   dplyr::summarize(across(9:18, mean, na.rm = TRUE))
 
-
-################################################################################
-#prepare data for ordination
-
-#----------------process standardized data--------------------------------------
-
-#define group vars
-stan_group_vars <- stan_dat %>% dplyr::select(1:9)
-
-#define data for ordination
-stan_ord_dat <- stan_dat %>% dplyr::select(10:ncol(.))
-
-#standardize to max 
-stan_rel <- decostand(stan_ord_dat, method = "hellinger")
-
-#generate a BC mat with stan dat
-stan_max_distmat <- vegdist(stan_rel, method = "bray", na.rm = T)
-
-#generate a BC mat with ord dat
-stan_untransformed_distmat <- vegdist(stan_ord_dat, method = "bray", na.rm = T)
-
-
-################################################################################
-#ordinate data
-
-set.seed(1985)
-num_cores = 8
-
-#ordinate stan dat
-stan_ord <- metaMDS(stan_max_distmat, distance = "bray", parallel = num_cores, trymax=300)
-stan_untrans_ord <- metaMDS(stan_untransformed_distmat, distance = "bray", parallel = num_cores, trymax=300)
-
-
-save(file = paste(file.path(outdir,"multivariate_data.Rdata")),stan_dat, stan_group_vars, stan_ord,
-     stan_ord_dat, stan_rel)
 
 ################################################################################
 #Step 2 - determine optimal centroid clustering
@@ -190,11 +157,11 @@ upc_alphadiv <- cbind(upc_groups, upc_richness, upc_shannon, upc_simpson, upc_ev
 fish_dat <- fish_sum %>% ungroup() %>% dplyr::select(4:ncol(.))
 fish_groups <- fish_sum %>% ungroup() %>% dplyr::select(1:3)
 
-fish_richness <- data.frame(S.obs = apply(fish_dat[,1:109]>0, 1, sum))
+fish_richness <- data.frame(S.obs = apply(fish_dat[,1:105]>0, 1, sum))
 fish_evenness <- diversity(fish_dat)/log(specnumber(fish_dat))
 fish_shannon <- diversity(fish_dat, index="shannon")
 fish_simpson <- diversity(fish_dat, index="simpson")
-fish_abund <- rowSums(fish_dat[,1:109])
+fish_abund <- rowSums(fish_dat[,1:105])
 
 fish_alphadiv <- cbind(fish_groups, fish_richness, fish_shannon, fish_simpson, fish_evenness, fish_abund)%>%
   mutate(MHW = str_to_sentence(MHW),
@@ -216,17 +183,18 @@ kelp_abund <- rowSums(kelp_dat[,1:10])
 kelp_alphadiv <- cbind(kelp_groups, kelp_richness, kelp_shannon, kelp_simpson, kelp_evenness, kelp_abund)%>%
   mutate(MHW = str_to_sentence(MHW),
          MHW = factor(MHW, levels=c("Before","During","After")))
+
 ################################################################################
 #determine spp that explain changes over time
 
 fish_join <- cbind(fish_alphadiv, fish_dat) %>% rename(richness=S.obs) %>%
               #calculate annual mean
               group_by(year)%>%
-              summarize(across(3:116,mean))
+              summarize(across(3:112,mean))
 
 fish_rich <- fish_join %>%
-  select(year, 7:115) %>%
-  mutate(across(2:110, ~ifelse(. > 0, 1, 0))) 
+  select(year, 7:111) %>%
+  mutate(across(2:106, ~ifelse(. > 0, 1, 0))) 
 
 # Create a data frame for species changes (added or lost)
 species_changes <- data.frame(year = numeric(0), species_added = character(0), species_lost = character(0))
@@ -240,8 +208,8 @@ for (i in 2:nrow(fish_rich)) {
   current_year <- fish_rich$year[i]
   previous_year <- fish_rich$year[i - 1]
   
-  current_species <- fish_rich[i, 3:110]  # Exclude the year column from comparison
-  previous_species <- fish_rich[i - 1, 3:110]
+  current_species <- fish_rich[i, 3:106]  # Exclude the year column from comparison
+  previous_species <- fish_rich[i - 1, 3:106]
   
   species_added <- colnames(current_species)[current_species > previous_species]
   species_lost <- colnames(previous_species)[previous_species > current_species]
@@ -479,7 +447,7 @@ combined_plot <- combined_plot + theme(plot.margin = margin(5, 0, 5, 20, "pt")) 
 region_wide_plot <- ggpubr::ggarrange(stan_trajectory, combined_plot, ncol=1)
 region_wide_plot 
 
-ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics_new5.png"), bg = "white",
+ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics_new6.png"), bg = "white",
       width=5.5, height=8, units="in", dpi=600) 
 
 
