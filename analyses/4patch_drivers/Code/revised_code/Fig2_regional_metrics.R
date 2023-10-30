@@ -3,7 +3,7 @@
 
 rm(list=ls())
 
-librarian::shelf(tidyverse, here, vegan, ggplot2, cluster, ggforce)
+librarian::shelf(tidyverse, here, vegan, ggplot2, cluster, ggforce, reshape2)
 
 
 ################################################################################
@@ -185,7 +185,7 @@ kelp_alphadiv <- cbind(kelp_groups, kelp_richness, kelp_shannon, kelp_simpson, k
          MHW = factor(MHW, levels=c("Before","During","After")))
 
 ################################################################################
-#determine spp that explain changes over time
+#Step 4 determine spp that explain changes over time
 
 fish_join <- cbind(fish_alphadiv, fish_dat) %>% rename(richness=S.obs) %>%
               #calculate annual mean
@@ -260,6 +260,340 @@ ggplot(data = richness_data, aes(x = year, y = 0, color = richness)) +
     guide = "none"
   ) +  # Adjust the gradient colors and values as needed
   theme_minimal()
+
+################################################################################
+#Step 5 - examine site cohesion and distance changes over time
+
+stan_group_vars2 <- stan_group_vars %>% mutate(period = ifelse(year < 2013,"Before","After"))
+
+#use betadisper to reduce vegdist to principal coords
+disper_mat <- betadisper(stan_max_distmat, type="centroid",
+                         group = stan_group_vars2$period)
+
+plot(disper_mat)
+
+
+
+
+
+shift_dist <- reshape2::melt(as.matrix(sqrt(dist(disper_mat$centroids[,disper_mat$eig>0]^2)-
+                                        dist(disper_mat$centroids[,disper_mat$eig<0]^2))))%>%
+            tibble::rownames_to_column("distance")
+
+
+
+
+
+
+
+
+
+
+# get betadisper dataframes ####
+# have written functions to grab the necessary data from the betadisper object
+
+# functions ####
+# getting distances from betadisper() object
+betadisper_distances <- function(model){
+  temp <- data.frame(group = model$group)
+  temp2 <- data.frame(distances = unlist(model$distances))
+  temp2$sample <- row.names(temp2)
+  temp <- cbind(temp, temp2)
+  temp <- dplyr::select(temp, group, sample, dplyr::everything())
+  row.names(temp) <- NULL
+  return(temp)
+}
+
+# getting eigenvalues out of betadisper() object
+betadisper_eigenvalue <- function(model){
+  temp <- data.frame(eig = unlist(model$eig))
+  temp$PCoA <- row.names(temp)
+  row.names(temp) <- NULL
+  return(temp)
+}
+
+# getting the eigenvectors out of a betadisper() object
+betadisper_eigenvector <- function(model){
+  temp <- data.frame(group = model$group)
+  temp2 <- data.frame(unlist(model$vectors))
+  temp2$sample <- row.names(temp2)
+  temp <- cbind(temp, temp2)
+  temp <- dplyr::select(temp, group, sample, dplyr::everything())
+  row.names(temp) <- NULL
+  return(temp)
+}
+
+# get centroids
+betadisper_centroids <- function(model){
+  temp <- data.frame(unlist(model$centroids))
+  temp$group <- row.names(temp)
+  temp <- dplyr::select(temp, group, dplyr::everything())
+  row.names(temp) <- NULL
+  return(temp)
+}
+
+# betadisper data
+get_betadisper_data <- function(model){
+  temp <- list(distances = betadisper_distances(model),
+               eigenvalue = betadisper_eigenvalue(model),
+               eigenvector = betadisper_eigenvector(model),
+               centroids = betadisper_centroids(model))
+  return(temp)
+}
+
+dist_explore <- betadisper_distances(disper_mat)
+
+betadisper_dat <- get_betadisper_data(disper_mat)
+
+# combine centroid and eigenvector dataframes for plotting
+betadisper_lines <- merge(dplyr::select(betadisper_dat$centroids, group, PCoA1, PCoA2), 
+                          dplyr::select(betadisper_dat$eigenvector, group, PCoA1, PCoA2), by = c('group')) %>%
+  mutate(distance = sqrt((PCoA1.x - PCoA1.y)^2 + (PCoA2.x - PCoA2.y)^2))
+
+
+
+# do some transformations on the data
+#betadisper_dat$eigenvalue <- mutate(betadisper_dat$eigenvalue, percent = eig/sum(eig))
+
+
+
+
+# add convex hull points ####
+# this could be put in a function
+betadisper_dat$chull <- group_by(betadisper_dat$eigenvector, group) %>%
+  do(data.frame(PCoA1 = .$PCoA1[c(chull(.$PCoA1, .$PCoA2), chull(.$PCoA1, .$PCoA2)[1])],
+                PCoA2 = .$PCoA2[c(chull(.$PCoA1, .$PCoA2), chull(.$PCoA1, .$PCoA2)[1])])) %>%
+  data.frame()
+
+
+
+# Now the dataframes are all ready to be completely customisable in ggplot
+# plot betadispersion plot
+ggplot() +
+  geom_point(aes(PCoA1, PCoA2, col = group), betadisper_dat$centroids, size = 4) +
+  geom_point(aes(PCoA1, PCoA2, col = group), betadisper_dat$eigenvector) +
+  geom_path(aes(PCoA1, PCoA2, col = group, group = group), betadisper_dat$chull ) +
+  geom_segment(aes(x = PCoA1.x, y = PCoA2.x, yend = PCoA2.y, xend = PCoA1.y, group = row.names(betadisper_lines), col = group), betadisper_lines) +
+  theme_bw(base_size = 12, base_family = 'Helvetica') 
+
+
+
+
+# plot distances from centroid
+ggplot(betadisper_dat$distances, aes(group, distances, fill = group, col = group)) +
+  geom_boxplot(aes(fill = group, col = group), outlier.shape = NA, width = 0.5, position = position_dodge(width = 0.55)) +
+  stat_summary(position = position_dodge(width = 0.55), geom = 'crossbar', fatten = 0, color = 'white', width = 0.4, fun.data = function(x){ return(c(y=median(x), ymin=median(x), ymax=median(x)))}) +
+  geom_point(aes(group, distances, col = group), shape = 21, fill ='white', position = position_jitterdodge(dodge.width = 0.55, jitter.width = 0.2)) +
+  theme_bw(base_size = 12, base_family = 'Helvetica') +
+  scale_color_manual('', values = c('black', 'grey'), labels = c("Grazed", 'Ungrazed')) +
+  scale_fill_manual('', values = c('black', 'grey'), labels = c("Grazed", 'Ungrazed')) +
+  ylab('Distance to centroid') +
+  theme(legend.position = 'none') +
+  xlab('') +
+  scale_x_discrete(labels = c('Grazed', 'Ungrazed'))
+
+
+
+
+
+
+
+####################################
+#betadisper mod
+
+
+
+betadisper_mod <-
+  function(d, group, type = c("median","centroid"), bias.adjust=FALSE,
+           sqrt.dist = FALSE, add = FALSE)
+  {
+    ## inline function for double centring. We used .C("dblcen", ...,
+    ## PACKAGE = "stats") which does not dublicate its argument, but
+    ## it was removed from R in r60360 | ripley | 2012-08-22 07:59:00
+    ## UTC (Wed, 22 Aug 2012) "more conversion to .Call, clean up".
+    dblcen <- function(x, na.rm = TRUE) {
+      cnt <- colMeans(x, na.rm = na.rm)
+      x <- sweep(x, 2L, cnt, check.margin = FALSE)
+      cnt <- rowMeans(x, na.rm = na.rm)
+      sweep(x, 1L, cnt, check.margin = FALSE)
+    }
+    ## inline function for spatial medians
+    spatialMed <- function(vectors, group, pos) {
+      axes <- seq_len(NCOL(vectors))
+      spMedPos <- ordimedian(vectors, group, choices = axes[pos])
+      spMedNeg <- ordimedian(vectors, group, choices = axes[!pos])
+      cbind(spMedPos, spMedNeg)
+    }
+    ## inline function for centroids
+    centroidFUN <- function(vec, group) {
+      cent <- apply(vec, 2,
+                    function(x, group) tapply(x, INDEX = group, FUN = mean),
+                    group = group)
+      if(!is.matrix(cent)) { ## if only 1 group, cent is vector
+        cent <- matrix(cent, nrow = 1,
+                       dimnames = list(as.character(levels(group)),
+                                       paste0("Dim", seq_len(NCOL(vec)))))
+      }
+      cent
+    }
+    ## inline function for distance computation
+    Resids <- function(x, c) {
+      if(is.matrix(c))
+        d <- x - c
+      else
+        d <- sweep(x, 2, c)
+      rowSums(d^2)
+    }
+    ## Tolerance for zero Eigenvalues
+    TOL <- sqrt(.Machine$double.eps)
+    ## uses code from stats:::cmdscale by R Core Development Team
+    if(!inherits(d, "dist"))
+      stop("distances 'd' must be a 'dist' object")
+    ## Someone really tried to analyse correlation like object in range -1..+1
+    if (any(d < -TOL, na.rm = TRUE))
+      stop("dissimilarities 'd' must be non-negative")
+    ## adjust to avoid negative eigenvalues (if they disturb you)
+    if (sqrt.dist)
+      d <- sqrt(d)
+    if (is.logical(add) && isTRUE(add))
+      add <- "lingoes"
+    if (is.character(add)) {
+      add <- match.arg(add, c("lingoes", "cailliez"))
+      if (add == "lingoes") {
+        ac <- addLingoes(as.matrix(d))
+        d <- sqrt(d^2 + 2 * ac)
+      }
+      else if (add == "cailliez") {
+        ac <- addCailliez(as.matrix(d))
+        d <- d + ac
+      }
+    }
+    if(missing(type))
+      type <- "median"
+    type <- match.arg(type)
+    ## checks for groups - need to be a factor for later
+    group <- if(!is.factor(group)) {
+      as.factor(group)
+    } else { ## if already a factor, drop empty levels
+      droplevels(group, exclude = NA) # need exclude = NA under Rdevel r71113
+    }
+    n <- attr(d, "Size")
+    x <- matrix(0, ncol = n, nrow = n)
+    x[row(x) > col(x)] <- d^2
+    ## site labels
+    labs <- attr(d, "Labels")
+    ## remove NAs in group
+    if(any(gr.na <- is.na(group))) {
+      group <- group[!gr.na]
+      x <- x[!gr.na, !gr.na]
+      ## update n otherwise C call crashes
+      n <- n - sum(gr.na)
+      ## update labels
+      labs <- labs[!gr.na]
+      message("missing observations due to 'group' removed")
+    }
+    ## remove NA's in d
+    if(any(x.na <- apply(x, 1, function(x) any(is.na(x))))) {
+      x <- x[!x.na, !x.na]
+      group <- group[!x.na]
+      ## update n otherwise C call crashes
+      n <- n - sum(x.na)
+      ## update labels
+      labs <- labs[!x.na]
+      message("missing observations due to 'd' removed")
+    }
+    x <- x + t(x)
+    x <- dblcen(x)
+    e <- eigen(-x/2, symmetric = TRUE)
+    vectors <- e$vectors
+    eig <- e$values
+    ## Remove zero eigenvalues
+    eig <- eig[(want <- abs(eig) > max(TOL, TOL * eig[1L]))]
+    ## scale Eigenvectors
+    vectors <- vectors[, want, drop = FALSE] %*% diag(sqrt(abs(eig)),
+                                                      nrow = length(eig))
+    ## store which are the positive eigenvalues
+    pos <- eig > 0
+    ## group centroids in PCoA space
+    centroids <-
+      switch(type,
+             centroid = centroidFUN(vectors, group),
+             median = spatialMed(vectors, group, pos)
+      )
+    ## for each of the groups, calculate distance to centroid for
+    ## observation in the group
+    ## Uses in-line Resids function as we want LAD residuals for
+    ## median method, and LSQ residuals for centroid method
+    dist.pos <- Resids(vectors[, pos, drop=FALSE],
+                       centroids[group, pos, drop=FALSE])
+    dist.neg <- 0
+    if(any(!pos))
+      dist.neg <- Resids(vectors[, !pos, drop=FALSE],
+                         centroids[group, !pos, drop=FALSE])
+    
+    
+    # Calculate distances to centroids of all groups
+    dist_to_other_centroids <- matrix(0, ncol = n, nrow = n)
+    for (i in 1:length(levels(group))) {
+      if (type == "centroid" && i == 1) {
+        # If calculating centroids, only need to do it once
+        dist_to_other_centroids <- Resids(vectors, centroids[group == levels(group)[i],, drop = FALSE])
+      } else {
+        # Calculate distances to centroids of other groups
+        other_group_indices <- group != levels(group)[i]
+        dist_to_other_centroids[other_group_indices] <- Resids(vectors[other_group_indices, , drop = FALSE], centroids[group == levels(group)[i],, drop = FALSE])
+      }
+    }
+    
+    # zij are the distances of each point to the other group centroids
+    zij <- sqrt(dist_to_other_centroids)
+    
+    if (bias.adjust) {
+      n.group <- as.vector(table(group))
+      zij <- zij * sqrt(n.group[group] / (n.group[group] - 1))
+    }
+    
+    
+    ## zij are the distances of each point to its group centroid
+    if (any(dist.neg > dist.pos)) {
+      ## Negative squared distances give complex valued distances:
+      ## take only the real part (which is zero). Github issue #306.
+      warning("some squared distances are negative and changed to zero")
+      zij <- Re(sqrt(as.complex(dist.pos - dist.neg)))
+    } else {
+      zij <- sqrt(dist.pos - dist.neg)
+    }
+    if (bias.adjust) {
+      n.group <- as.vector(table(group))
+      zij <- zij*sqrt(n.group[group]/(n.group[group]-1))
+    }
+    ## pre-compute group mean distance to centroid/median for `print` method
+    grp.zij <- tapply(zij, group, "mean")
+    ## add in correct labels
+    if (any(want))
+      colnames(vectors) <- names(eig) <-
+      paste("PCoA", seq_along(eig), sep = "")
+    if(is.matrix(centroids))
+      colnames(centroids) <- names(eig)
+    else
+      names(centroids) <- names(eig)
+    rownames(vectors) <- names(zij) <- labs
+    retval <- list(eig = eig, vectors = vectors, distances = zij,
+                   group = group, centroids = centroids,
+                   group.distances = grp.zij, call = match.call())
+    class(retval) <- "betadisper"
+    attr(retval, "method") <- attr(d, "method")
+    attr(retval, "type") <- type
+    attr(retval, "bias.adjust") <- bias.adjust
+    
+    # Return the modified results
+    retval$distances_other_centroids <- zij
+    
+    retval
+  }
+
+
+
 
 ################################################################################
 #Step 4 - plot
