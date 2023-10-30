@@ -9,6 +9,8 @@ librarian::shelf(tidyverse, here)
 #set directories and load data
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/"
 
+output <- here::here("analyses","4patch_drivers","Output")
+
 kelp_fish_counts_raw <- read.csv(file.path(basedir, "data/subtidal_monitoring/raw/MLPA_kelpforest_fish.4.csv")) %>%
   janitor::clean_names()
 
@@ -379,15 +381,15 @@ kelp_upc_build11 <- kelp_upc_build10 %>%
 #export
 
 #Export
-write.csv(kelp_fish_build8,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_fish_counts_CC.csv"), row.names = FALSE)
+write.csv(kelp_fish_build8,file.path(output, "kelp_fish_counts_CC.csv"), row.names = FALSE)
 
 #last write 30 Oct 2023
 
 #Export
-write.csv(kelp_swath_build9,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv"), row.names = FALSE)
+write.csv(kelp_swath_build9,file.path(output, "kelp_swath_counts_CC.csv"), row.names = FALSE)
 
 #Export
-write.csv(kelp_upc_build11,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_upc_cov_CC.csv"), row.names = FALSE)
+write.csv(kelp_upc_build11,file.path(output, "kelp_upc_cov_CC.csv"), row.names = FALSE)
 
 
 

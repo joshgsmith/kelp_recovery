@@ -38,16 +38,17 @@ ggplot(data = t_fish, aes(x = year, y=n_t)) +
 fish_build2 <- fish_build1 %>%
   dplyr::group_by(year, MHW, baseline_region, latitude, longitude, site,
                   affiliated_mpa, mpa_class, mpa_designation) %>%
-  dplyr::summarize(across(4:57, mean, na.rm = TRUE))
+  dplyr::summarize(across(4:55, mean, na.rm = TRUE))
 
 
 upc_build2 <- upc_build1 %>%
   dplyr::group_by(year, MHW, baseline_region, latitude, longitude, site,
                   affiliated_mpa, mpa_class, mpa_designation) %>%
+  #remove UPC species that are recorded by swath
   dplyr::summarize(across(3:41, mean, na.rm = TRUE)) %>%
   dplyr::select(!c('macrocystis_pyrifera',
                    'stylaster_californicus',
-                   'stephanocystis_osmundacea')) #remove UPC species that are recorded by swath
+                   'stephanocystis_osmundacea')) 
 
 
 swath_build2 <- swath_build1 %>%
@@ -60,7 +61,7 @@ swath_build2 <- swath_build1 %>%
 #standardize 
 
 ##kelp fish
-fish_stan <- decostand(fish_build2[10:63], method = "max",margin = 2, na.rm=TRUE)
+fish_stan <- decostand(fish_build2[10:61], method = "max",margin = 2, na.rm=TRUE)
 nrow(fish_build2) #check length
 nrow(fish_stan) #check length
 #join with group vars
@@ -97,9 +98,9 @@ nrow(swath_stan1)
 nrow(kelp_stan_all)
 
 #export
-write.csv(kelp_stan_all,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_stan_CC.csv"), row.names = FALSE)
+write.csv(kelp_stan_all,file.path(here::here("analyses","4patch_drivers","Output"),"kelp_stan_CC.csv"), row.names = FALSE)
 
-
+#last write 30 Oct 2023
 
 
 
