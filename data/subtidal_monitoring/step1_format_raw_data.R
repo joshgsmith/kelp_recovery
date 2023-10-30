@@ -36,14 +36,19 @@ site_table <- read.csv(file.path(basedir, "data/subtidal_monitoring/raw/MLPA_kel
 kelp_fish_build1 <- kelp_fish_counts_raw %>%
   dplyr::select(year, site, zone, level, transect, classcode, count)%>%
   group_by(year, site, zone, level, transect, classcode)%>%
-  dplyr::summarize(total_count = sum(count)) #counts in raw data are grouped by size class. Take summary across all sizes
-
+  dplyr::summarize(total_count = sum(count)) %>% #counts in raw data are grouped by size class. Take summary across all sizes
+  #per PI, drop canopy surveys (these were not consistently surveyed across years)
+  #and merge mid and bottom transect
+  filter(!(level == "CAN" | level =="CNMD"))%>%
+  group_by(year, site, zone, transect, classcode, total_count)%>%
+  summarize(total_count = sum(total_count))
+  
 #join species names by class code 
 kelp_fish_build2 <- left_join(kelp_fish_build1, kelp_taxon, by="classcode")
 nrow(kelp_fish_build2)
 
 kelp_fish_build3 <- kelp_fish_build2 %>%
-  dplyr::select(year, site, zone, level, transect, species=species_definition, total_count)
+  dplyr::select(year, site, zone, transect, species=species_definition, total_count)
 nrow(kelp_fish_build3)
 
 #add affiliated_mpa
@@ -52,11 +57,11 @@ nrow(kelp_fish_build4) #note: extra rows are from Swami's in data != Swamis in s
 
 kelp_fish_build5 <- kelp_fish_build4 %>%
   ungroup() %>%
-  dplyr::select(year, baseline_region, site,latitude, longitude, affiliated_mpa=ca_mpa_name_short,mpa_class, mpa_designation, zone, level, transect, species,
+  dplyr::select(year, baseline_region, site,latitude, longitude, affiliated_mpa=ca_mpa_name_short,mpa_class, mpa_designation, zone, transect, species,
                 total_count) %>%
   mutate(mpa_designation = ifelse(mpa_designation=="reference","ref",mpa_class)) %>%
   #make sure species are not duplicates by summarizing at the transect level (total counts)
-  group_by(year, baseline_region, latitude, longitude, site, affiliated_mpa, mpa_class, mpa_designation, zone, level, transect, species) %>%
+  group_by(year, baseline_region, latitude, longitude, site, affiliated_mpa, mpa_class, mpa_designation, zone, transect, species) %>%
   dplyr::summarise(counts = sum(total_count))
 
 
@@ -116,16 +121,14 @@ kelp_fish_build7 <- as.data.frame(kelp_fish_build6) %>%
              'ulvicola_sanctaerosae',
              'sebastes_atrovirens_carnatus_chrysomelas_caurinus',
              "sebastes_chrysomelas_carnatus",
-             "sebastes_serranoides_flavidus_melanops"
+             "sebastes_serranoides_flavidus_melanops",
+             "hexagrammos"
              )))%>%
   #drop string
   rename(citharichthys=citharichthys_merge) %>%
   dplyr::select(year, MHW, everything())
 
 names(kelp_fish_build7)
-
-#Export
-#write.csv(kelp_fish_build7,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_fish_counts_CC.csv"), row.names = FALSE)
 
 
 ################################################################################
@@ -219,10 +222,6 @@ kelp_swath_build8 <- kelp_swath_build7 %>% filter(baseline_region=='CENTRAL') %>
 
 
 names(kelp_swath_build8)
-
-#Export
-#write.csv(kelp_swath_build8,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv"), row.names = FALSE)
-
 
 ################################################################################
 #process kelp upc
@@ -376,8 +375,13 @@ kelp_upc_build11 <- kelp_upc_build10 %>%
              site == "CARMEL_DC"|
              site == "CARMEL_UC"))
 
+################################################################################
+#export
+
 #Export
 write.csv(kelp_fish_build8,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_fish_counts_CC.csv"), row.names = FALSE)
+
+#last write 30 Oct 2023
 
 #Export
 write.csv(kelp_swath_build9,file.path(basedir, "/data/subtidal_monitoring/processed/kelp_swath_counts_CC.csv"), row.names = FALSE)
