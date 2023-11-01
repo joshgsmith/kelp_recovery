@@ -404,8 +404,10 @@ shannon <- ggplot() +
   xlab("Year") +
   ggtitle("Shannon diversity") +
   guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(1.1, "lines")))+
-  labs(tag = "B") + theme(axis.text.x = element_blank(), axis.title.x = element_blank(),
-                          plot.margin = margin(5, 0, 10, 3))
+  labs(tag = "C") + theme(#axis.text.x = element_blank(), 
+                          axis.title.x = element_blank(),
+                          #plot.margin = margin(5, 0, 20, 3)
+                          )
 
 
 #shannon
@@ -466,8 +468,10 @@ richness <- ggplot()+
   xlab("Year")+
   ggtitle("Species richness")+
   guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(1.1, "lines")))+
-  labs(tag = "C") + theme(axis.text.x = element_blank(), axis.title.x = element_blank(),
-                          plot.margin = margin(5, 0, 15, 3))
+  labs(tag = "D") + theme(#axis.text.x = element_blank(), 
+                          axis.title.x = element_blank(),
+                          #plot.margin = margin(5, 0, 20, 3)
+                          ) 
 
 #richness
 
@@ -502,7 +506,7 @@ evenness <- ggplot()+
   ggtitle("Species evenness")+
   scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
   guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(0.5, "lines")))+
-  labs(tag = "D") + theme(plot.margin = margin(-2, 0, 11, 3))
+  labs(tag = "E") #+ theme(plot.margin = margin(-2, 0, 9, 3))
 
 #evenness
 
@@ -529,7 +533,7 @@ cen_plot <- ggplot(cen_distance, aes(x = as.numeric(as.character(year)), y = dis
   geom_point(alpha=0.1) +
   geom_line(alpha=0.1) +
   geom_smooth(aes(group=1), color = "black", method = "loess", span = 0.4, alpha=0.8)+
-  labs(x = "Year", y = "Distance", tag = "E",
+  labs(x = "Year", y = "Distance", tag = "B",
        title = "Site distances from 2007-2012 centroid") +
   scale_color_discrete(name = "Site") +
   guides(color = FALSE) +

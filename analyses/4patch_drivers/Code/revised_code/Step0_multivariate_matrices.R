@@ -33,6 +33,7 @@ swath_raw <- read.csv(file.path(basedir, "kelp_swath_counts_CC.csv"))
 #replace any NAs with 0
 stan_dat <- stan_dat %>% mutate(across(where(is.numeric), ~replace_na(., 0))) 
 
+#take the mean across replicate transects for a given site
 fish_sum <- fish_raw %>% group_by(year, MHW, site) %>%
   dplyr::summarize(across(10:114, mean, na.rm = TRUE))
 
@@ -78,7 +79,7 @@ stan_untrans_ord <- metaMDS(stan_untransformed_distmat, distance = "bray", paral
 save(file = paste(file.path(basedir,"multivariate_data.Rdata")),stan_dat, stan_group_vars, stan_ord,
    stan_ord_dat, stan_rel, stan_max_distmat)
 
-#last write 30 Oct 2023
+#last write 31 Oct 2023
 
 
 
