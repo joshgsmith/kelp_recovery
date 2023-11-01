@@ -345,8 +345,8 @@ my_theme <-  theme(axis.text=element_text(size=10, color = "black"),
                    legend.key = element_blank(),
                    legend.background = element_rect(fill=alpha('blue', 0)),
                    legend.key.height = unit(1, "lines"), 
-                   legend.text = element_text(size = 6, color = "black"),
-                   legend.title = element_text(size = 7, color = "black"),
+                   legend.text = element_text(size = 7, color = "black"),
+                   legend.title = element_text(size = 8, color = "black"),
                    #legend.spacing.y = unit(0.75, "cm"),
                    #facets
                    strip.background = element_blank(),
@@ -464,9 +464,9 @@ richness <- ggplot()+
   annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
   labs(color = "Taxa", fill = "Taxa")+
-  ylab("Species richness (n)")+
+  ylab("Taxonomic richness (n)")+
   xlab("Year")+
-  ggtitle("Species richness")+
+  ggtitle("Taxonomic richness")+
   guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(1.1, "lines")))+
   labs(tag = "D") + theme(#axis.text.x = element_blank(), 
                           axis.title.x = element_blank(),
@@ -501,9 +501,9 @@ evenness <- ggplot()+
   annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
   theme_bw() + my_theme +
   labs(color = "Taxa", fill = "Taxa")+
-  ylab("Species evenness (n)")+
+  ylab("Taxonomic evenness (n)")+
   xlab("Year")+
-  ggtitle("Species evenness")+
+  ggtitle("Taxonomic evenness")+
   scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
   guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(0.5, "lines")))+
   labs(tag = "E") #+ theme(plot.margin = margin(-2, 0, 9, 3))
@@ -530,21 +530,25 @@ region_wide_plot <- ggpubr::ggarrange(stan_trajectory, combined_plot, ncol=2, wi
 
 
 cen_plot <- ggplot(cen_distance, aes(x = as.numeric(as.character(year)), y = distance, group = site)) +
-  geom_point(alpha=0.1) +
-  geom_line(alpha=0.1) +
-  geom_smooth(aes(group=1), color = "black", method = "loess", span = 0.4, alpha=0.8)+
-  labs(x = "Year", y = "Distance", tag = "B",
-       title = "Site distances from 2007-2012 centroid") +
-  scale_color_discrete(name = "Site") +
-  guides(color = FALSE) +
-  # Heatwave
-  annotate(geom="rect", xmin=2014, xmax=2016, ymin=-Inf, ymax=Inf, fill="indianred1", alpha=0.2) +
-  #SSW
-  geom_vline(xintercept = 2013, linetype = "dotted", size=0.3)+
-  annotate(geom="text", label="SSW", x=2011, y=0.6 , size=3) +
-  annotate("segment", x = 2011.2, y = 0.585, xend = 2012.8, yend = 0.45,
-           arrow = arrow(type = "closed", length = unit(0.02, "npc")))+
-  theme_bw() + my_theme #+ theme(plot.margin = margin(5,0,0,0))
+  geom_line(aes(color = "Sites (n=24)"), alpha = 0.7) +
+  geom_smooth(aes(color = "Median", group = 1), method = "loess", span = 0.4, alpha = 0.8) +
+  labs(x = "Year", y = "Distance (Euclidean) to 2007-2012 centroid", tag = "B",
+       title = "Temporal stability",
+       color = "") +  # Set the legend title here
+  scale_color_manual(values = c("Median" = "black","Sites (n=24)" = "lightblue")) +
+  guides(color = guide_legend()) +  # Remove guide_legend(title = "Trajectory")
+  annotate(geom = "rect", xmin = 2014, xmax = 2016, ymin = -Inf, ymax = Inf, fill = "indianred1", alpha = 0.2) +
+  annotate(geom = "text", label = "MHW", x = 2017.5, y = 0.6, size = 3) +
+  annotate("segment", x = 2016.5, y = 0.6, xend = 2015, yend = 0.6, arrow = arrow(type = "closed", length = unit(0.02, "npc"))) +
+  geom_vline(xintercept = 2013, linetype = "dotted", size = 0.3) +
+  annotate(geom = "text", label = "SSW", x = 2011, y = 0.6, size = 3) +
+  annotate("segment", x = 2011.2, y = 0.585, xend = 2012.8, yend = 0.5, arrow = arrow(type = "closed", length = unit(0.02, "npc"))) +
+  theme_bw() + my_theme +
+  guides(color = guide_legend(override.aes = list(fill = NA)),
+         linetype = guide_legend(override.aes = list(fill = NA))) +
+  theme(legend.key = element_rect(fill = NA, color = "white"),
+        legend.position = c(0.86, 0.16))  
+
 
 
 
@@ -557,7 +561,7 @@ left
 final_plot <- ggpubr::ggarrange(left, combined_plot, ncol=2)
 
 ggsave(final_plot, filename=file.path(figdir, "Fig3_regional_metrics_new8.png"), bg = "white",
-   width=7, height=7.5, units="in", dpi=600) 
+   width=8, height=7.5, units="in", dpi=600) 
 
 
 
