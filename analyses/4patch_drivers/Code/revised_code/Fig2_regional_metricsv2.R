@@ -335,7 +335,7 @@ my_theme <-  theme(axis.text=element_text(size=10, color = "black"),
                    axis.text.y = element_text(angle = 90, hjust = 0.5, color = "black"),
                    axis.title=element_text(size=10, color = "black"),
                    plot.tag=element_text(size=8, color = "black"),
-                   plot.title =element_text(size=7, face="bold", color = "black"),
+                   plot.title =element_text(size=8, face="bold", color = "black"),
                    # Gridlines 
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -373,7 +373,8 @@ stan_trajectory <- ggplot(data = cent %>% mutate(basin = ifelse(year < 2012, "be
                             size=2) +
   ggtitle("Kelp forest community structure") +
   labs(color = 'K-means \ncluster', fill = "K-means \ncluster", tag = "A")+
-  theme_bw() + my_theme
+  theme_bw() + my_theme + theme(#plot.margin = margin(t=2,1,1,1, "lines"),
+    legend.position = c(0.9, 0.2)) #+ theme(plot.margin = margin(40,0,40,0))
 
 #stan_trajectory
 
@@ -404,7 +405,7 @@ shannon <- ggplot() +
   ggtitle("Shannon diversity") +
   guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(1.1, "lines")))+
   labs(tag = "B") + theme(axis.text.x = element_blank(), axis.title.x = element_blank(),
-                          plot.margin = margin(5, 0, 8, 0))
+                          plot.margin = margin(5, 0, 10, 3))
 
 
 #shannon
@@ -466,7 +467,7 @@ richness <- ggplot()+
   ggtitle("Species richness")+
   guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(1.1, "lines")))+
   labs(tag = "C") + theme(axis.text.x = element_blank(), axis.title.x = element_blank(),
-                          plot.margin = margin(5, 0, 10, 0))
+                          plot.margin = margin(5, 0, 15, 3))
 
 #richness
 
@@ -501,7 +502,7 @@ evenness <- ggplot()+
   ggtitle("Species evenness")+
   scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
   guides(color = guide_legend(keyheight = unit(1.1, "lines")), fill = guide_legend(keyheight = unit(0.5, "lines")))+
-  labs(tag = "D") + theme(plot.margin = margin(-2, 0, -2, 0))
+  labs(tag = "D") + theme(plot.margin = margin(-2, 0, 11, 3))
 
 #evenness
 
@@ -517,7 +518,6 @@ combined_plot <- ggpubr::ggarrange(shannon, richness, evenness, ncol = 1, nrow=3
 
 
 region_wide_plot <- ggpubr::ggarrange(stan_trajectory, combined_plot, ncol=2, widths = c(0.6,0.4)) 
-region_wide_plot 
 
 
 #ggsave(region_wide_plot, filename=file.path(figdir, "Fig3_regional_metrics_new6.png"), bg = "white",
@@ -528,7 +528,7 @@ region_wide_plot
 cen_plot <- ggplot(cen_distance, aes(x = as.numeric(as.character(year)), y = distance, group = site)) +
   geom_point(alpha=0.1) +
   geom_line(alpha=0.1) +
-  geom_smooth(aes(group=1), color = "black", method = "loess", span = 0.4)+
+  geom_smooth(aes(group=1), color = "black", method = "loess", span = 0.4, alpha=0.8)+
   labs(x = "Year", y = "Distance", tag = "E",
        title = "Site distances from 2007-2012 centroid") +
   scale_color_discrete(name = "Site") +
@@ -540,14 +540,20 @@ cen_plot <- ggplot(cen_distance, aes(x = as.numeric(as.character(year)), y = dis
   annotate(geom="text", label="SSW", x=2011, y=0.6 , size=3) +
   annotate("segment", x = 2011.2, y = 0.585, xend = 2012.8, yend = 0.45,
            arrow = arrow(type = "closed", length = unit(0.02, "npc")))+
-  theme_bw() + my_theme + theme(plot.margin = margin(5,85,5,5))
+  theme_bw() + my_theme #+ theme(plot.margin = margin(5,0,0,0))
 
 
-final_plot <- ggpubr::ggarrange(region_wide_plot, cen_plot, ncol=1, heights = c(0.55,0.45))
+
+##arrange and export
+
+left <- ggpubr::ggarrange(stan_trajectory, cen_plot, ncol=1, heights = c(0.5,0.5)) 
+left
 
 
-ggsave(final_plot, filename=file.path(figdir, "Fig3_regional_metrics_new7.png"), bg = "white",
-    width=7.7, height=9, units="in", dpi=600) 
+final_plot <- ggpubr::ggarrange(left, combined_plot, ncol=2)
+
+ggsave(final_plot, filename=file.path(figdir, "Fig3_regional_metrics_new8.png"), bg = "white",
+   width=7, height=7.5, units="in", dpi=600) 
 
 
 
