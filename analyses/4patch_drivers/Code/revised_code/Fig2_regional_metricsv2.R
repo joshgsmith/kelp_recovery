@@ -275,7 +275,9 @@ stan_max_distmat2 <- usedist::dist_setNames(stan_max_distmat, stan_group_vars2$y
 
 #use betadisper to reduce vegdist to principal coords
 disper_mat <- betadisper(stan_max_distmat2, type="centroid",
-                         group = stan_group_vars2$site_period)
+                         group = stan_group_vars2$year)
+
+boxplot(disper_mat)
 
 #create function to calculate distance between samples and centroid
 betadistances <-
@@ -562,6 +564,60 @@ final_plot <- ggpubr::ggarrange(left, combined_plot, ncol=2)
 
 ggsave(final_plot, filename=file.path(figdir, "Fig3_regional_metrics_new8.png"), bg = "white",
    width=8, height=7.5, units="in", dpi=600) 
+
+
+
+
+
+
+
+
+
+
+
+########work on plotting proportions
+
+
+
+
+
+# Calculate the total density for each site at each year
+site_year_total_density <- swath_long %>%
+  mutate(transition_site = ifelse(site == "HOPKINS_UC" | site == "CANNERY_UC" |
+                                    site == "SIREN" | site == "CANNERY_DC","no","yes"))%>%
+  group_by(year, site, trophic_ecology, transition_site) %>%
+  summarize(total_density = sum(density, na.rm=TRUE))
+
+# Calculate the mean total density for each MHW level
+mean_total_density <- site_year_total_density %>%
+  group_by(year, trophic_ecology, transition_site) %>%
+  summarize(mean_density = mean(total_density, na.rm=TRUE))
+
+# Calculate the proportion using the mean total density
+proportion_data <- mean_total_density %>%
+  group_by(year, transition_site) %>%
+  mutate(proportion = mean_density / sum(mean_density))
+
+# Create the bar plot
+ggplot(proportion_data, aes(x = year, y = proportion, fill = trophic_ecology)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Total Proportion of Trophic Ecology Levels by MHW",
+       x = "MHW",
+       y = "Proportion") +
+  facet_wrap(~transition_site)+
+  scale_fill_brewer(palette = "Set3") + # You can choose a different color palette
+  theme_minimal()
+
+
+
+
+
+
+
+
+
+
+
 
 
 
