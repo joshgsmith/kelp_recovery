@@ -16,12 +16,13 @@ librarian::shelf(tidyverse, sf, raster, shiny, tmap, terra, tidyterra, RColorBre
 
 #set directories 
 basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
+localdir <- "/Users/jossmith/Documents/Data/landsat"
 
 #read state
 ca_counties_orig <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7vc7n.shp")) 
 
 #read landsat raw
-landsat_orig <- st_read(file.path(basedir, "kelp_landsat/processed/monterey_peninsula/landsat_mpen_1984_2023_points_withNAs.shp"))
+landsat_orig <- st_read(file.path(localdir, "/processed/monterey_peninsula/landsat_mpen_1984_2023_points_withNAs.shp"))
 
 
 # Get land
@@ -83,7 +84,7 @@ landsat_clust_extent <- landsat_cluster_clean %>%
                       #select monterey area
                       filter(latitude >= 36.510140 &
                                 latitude <= 36.670574) %>%
-                      filter(year == 2022 & quarter == 3) %>%
+                      filter(year == 2023 & quarter == 3) %>%
                       #transform to teale
                       st_transform(plot_dat, crs=3310)
 
@@ -177,7 +178,7 @@ site_cluster_table <- landsat_clust_extent %>%
 
 landsat_cluster_ID <- site_cluster_table %>% st_drop_geometry()
 
-saveRDS(landsat_cluster_ID, file = file.path(basedir,"/kelp_landsat/processed/landsat_cluster_ID.Rds"))
+saveRDS(landsat_cluster_ID, file = file.path(basedir,"/kelp_landsat/processed/landsat_cluster_ID.Rds")) #last write 16 Feb 2024
 
 ################################################################################
 #rasterize

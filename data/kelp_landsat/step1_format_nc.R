@@ -2,7 +2,8 @@
 # nc processing adapted from Julien Brun, brun@nceas.ucsb.edu
 
 # Data Source on EDI
-# https://portal.edirepository.org/nis/mapbrowse?packageid=knb-lter-sbc.74.17
+# https://portal.edirepository.org/nis/mapbrowse?scope=knb-lter-sbc&identifier=74&revision=23
+
 
 
 rm(list=ls())
@@ -23,7 +24,7 @@ datin <- "/Users/jossmith/Documents/Data/landsat"
 datout <- "/Volumes/seaotterdb$/kelp_recovery/data/kelp_landsat/processed"
 figdir <- here::here("analyses","figures")
 
-landsat_dat <- "LandsatKelpBiomass_2023_Q2_withmetadata.nc"
+landsat_dat <- "LandsatKelpBiomass_2023_Q4_withmetadata.nc"
 
 # read the data in
 landsat_raw <- tidync(file.path(datin, landsat_dat)) 
