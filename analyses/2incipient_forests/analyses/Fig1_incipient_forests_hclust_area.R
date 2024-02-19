@@ -25,6 +25,7 @@ ca_counties <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7v
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
 foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclass = "sf")
 
+
 ################################################################################
 #set incipient forests
 final_data <- final_data %>%
@@ -130,7 +131,7 @@ g1_inset <-  ggplotGrob(
            axis.title=element_blank(),
            axis.text.y = element_blank())
 )
-g1_inset
+#g1_inset
 
 p1 <- ggplot() +
   # Add clusters
@@ -185,14 +186,14 @@ p1 <- ggplot() +
        y="")+
   guides(fill = "none") +base_theme
 
-p1
+#p1
 
 ################################################################################
 #plot kelp forest trends by cluster
 
 # Theme
-base_theme <-  theme(axis.text=element_text(size=7, color = "black"),
-                     axis.title=element_text(size=8,color = "black"),
+base_theme <-  theme(axis.text=element_text(size=9, color = "black"),
+                     axis.title=element_text(size=9,color = "black"),
                      legend.text=element_text(size=7,color = "black"),
                      legend.title=element_text(size=8,color = "black"),
                      plot.tag=element_text(size=8,color = "black"),
@@ -215,26 +216,32 @@ p2 <- ggplot(final_data %>% filter(year >= 1990) %>%
              filter(!(site_name=="South lobos")), 
              aes(x = year, y = deviation, group = site_name)) +
   geom_line() +
-  geom_point() +
+  geom_point(size=1) +
   facet_wrap(~reorder(site_name, site_num), ncol = 4, scales = "fixed") +
   # Heatwave
   annotate(geom="rect", xmin=2013.5, xmax=2016.5, ymin=-Inf, ymax=Inf, fill="red", alpha=0.2) +
   geom_segment(aes(x = -Inf, xend = 2013.5, y = 0, yend = 0), linetype = "solid", color = "black") +
   geom_hline(yintercept = 0, linetype = "dotted", color = "black") +  # Add this line for the dotted line
-  labs(x = "Year", y = "Standard deviations from baseline (2000-2013)") +
-  scale_x_continuous(limits = c(1990, 2023), breaks = seq(1990, 2023, 5)) +  
+  labs(x = "Year", y = "Standard deviations from baseline (1990-2013)") +
+ # scale_x_continuous(limits = c(1990, 2023), breaks = seq(1990, 2023, 5)) +  
+  scale_x_continuous(
+    limits = c(1990, 2023), 
+    breaks = seq(1990, 2023, 5),  # Generate tick marks every 5 years
+    labels = function(x) ifelse(x %% 10 == 0, x, "")  # Label only years that are multiples of 10
+  )+
   #scale_fill_manual(values = c("navyblue","indianred"))+
   #scale_color_manual(values = c("navyblue","indianred")) +
   theme_bw() + base_theme 
-p2
+#p2
 
 
 
-ggpubr::ggarrange(p1,p2, widths = c(0.4,0.6))
+p <- ggpubr::ggarrange(p1,p2, widths = c(0.35,0.65))
+p
 
 
-ggsave(g0, filename=file.path(figdir, "FigX_landsat_atos_trend_2000-2022.png"), 
-       width=7, height=8, units="in", dpi=600)
+ggsave(p, filename=file.path(figdir, "FigX_landsat_cluster_trend_2000-2023.png"), 
+       width=10, height=6, units="in", dpi=600, bg="white")
 
 
 
