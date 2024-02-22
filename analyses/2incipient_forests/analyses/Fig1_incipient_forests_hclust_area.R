@@ -28,24 +28,30 @@ foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclas
 
 ################################################################################
 #set incipient forests
-final_data <- final_data %>%
+plot_data <- final_data %>%
   #set recovery category
-  mutate(Incipient = ifelse(site_name == "Butterfly House"|
-                              site_name == "Cannery Row"|
-                              site_name == "Carmel River Beach" |
-                              site_name == "Coast Guard Pier" |
-                              site_name == "Lone Cypress"|
-                              site_name =="Mono-Lobo" |
-                              site_name == "Pescadero East" |
-                              site_name == "Pescadero West" |
-                              site_name == "Sea Lion Point"|
-                              site_name == "Monastery"|
-                              site_name == "Stillwater Cove" | 
-                              site_name == "Whaler's Cove","Yes","No"),
-         incipient = factor(Incipient, levels = c("Yes","No"))) %>%
+  mutate(Incipient = ifelse(site_name == "Cannery row"|
+                              site_name == "Pescadero upcoast"|
+                              site_name == "Carmel pinnacles" |
+                              site_name == "Pescadero downcoast" |
+                              site_name == "Stillwater cove"|
+                              site_name =="Carmel river" |
+                              site_name == "Monastery" |
+                              site_name == "Whaler's cove","Yes","No"),
+         Incipient = factor(Incipient, levels = c("Yes","No"))) %>%
   #drop sandy sites
   mutate(site_name = factor(site_name))
 
+################################################################################
+#calculate rolling average
+
+plot_data <- plot_data %>%
+  arrange(site_name, year) %>%
+  group_by(site_name) %>%
+  mutate(
+    rolling_avg = zoo::rollapply(deviation, width = 3, FUN = mean, 
+                                 fill = NA, align = "center", partial = TRUE)
+  )
 
 ################################################################################
 #plot clusters
@@ -141,8 +147,8 @@ p1 <- ggplot() +
   coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs = 4326) +
   labs(title = "", tag = "") +
   # Add landmarks
-  geom_text(data = monterey_label, mapping = aes(x = x, y = y, label = label),
-            size = 3, fontface = "bold") +
+  #geom_text(data = monterey_label, mapping = aes(x = x, y = y, label = label),
+   #        size = 3, fontface = "bold") +
   # Add CA inset
   annotation_custom(grob = g1_inset, 
                     xmin = -122.01, 
@@ -184,6 +190,8 @@ p1 <- ggplot() +
   labs(title = "",
        x="",
        y="")+
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank())+
   guides(fill = "none") +base_theme
 
 #p1
@@ -210,11 +218,14 @@ base_theme <-  theme(axis.text=element_text(size=9, color = "black"),
                      strip.background = element_blank())
 
 # Sort the dataframe by site_order
-final_data <- final_data[order(final_data$site_numeric), ]
+plot_data <- plot_data[order(plot_data$site_numeric), ]
 
-p2 <- ggplot(final_data %>% filter(year >= 1990) %>%
+p2 <- ggplot(plot_data %>% filter(year >= 1990) %>%
              filter(!(site_name=="South lobos")), 
-             aes(x = year, y = deviation, group = site_name)) +
+             aes(x = year, y = rolling_avg, group = site_name)) +
+  geom_rect(data = subset(plot_data, Incipient == 'Yes'), 
+            fill = "green", xmin = -Inf, xmax = Inf,
+            ymin = -Inf, ymax = Inf, alpha = 0.008, show.legend = FALSE) +
   geom_line() +
   geom_point(size=1) +
   facet_wrap(~reorder(site_name, site_num), ncol = 4, scales = "fixed") +
@@ -232,7 +243,7 @@ p2 <- ggplot(final_data %>% filter(year >= 1990) %>%
   #scale_fill_manual(values = c("navyblue","indianred"))+
   #scale_color_manual(values = c("navyblue","indianred")) +
   theme_bw() + base_theme 
-#p2
+p2
 
 
 
@@ -240,8 +251,8 @@ p <- ggpubr::ggarrange(p1,p2, widths = c(0.35,0.65))
 p
 
 
-ggsave(p, filename=file.path(figdir, "FigX_landsat_cluster_trend_2000-2023.png"), 
-       width=10, height=6, units="in", dpi=600, bg="white")
+ggsave(p, filename=file.path(figdir, "FigX_landsat_cluster_rolling_2000-2023.png"), 
+       width=9.5, height=6, units="in", dpi=600, bg="white")
 
 
 
