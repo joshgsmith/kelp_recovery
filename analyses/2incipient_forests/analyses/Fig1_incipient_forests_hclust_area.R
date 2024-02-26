@@ -31,9 +31,9 @@ foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclas
 plot_data <- final_data %>%
   #set recovery category
   mutate(Incipient = ifelse(site_name == "Cannery row"|
-                              site_name == "Pescadero upcoast"|
+                              #site_name == "Pescadero upcoast"|
                               site_name == "Carmel pinnacles" |
-                              site_name == "Pescadero downcoast" |
+                              #site_name == "Pescadero downcoast" |
                               site_name == "Stillwater cove"|
                               site_name =="Carmel river" |
                               site_name == "Monastery" |
@@ -194,17 +194,21 @@ p1 <- ggplot() +
         axis.text.y = element_blank())+
   guides(fill = "none") +base_theme
 
-#p1
+p1
+
+
+ggsave(p1, filename=file.path(figdir, "FigX_cluster_map.png"), 
+       width=5, height=5, units="in", dpi=600, bg="white")
 
 ################################################################################
 #plot kelp forest trends by cluster
 
 # Theme
-base_theme <-  theme(axis.text=element_text(size=9, color = "black"),
-                     axis.title=element_text(size=9,color = "black"),
-                     legend.text=element_text(size=7,color = "black"),
-                     legend.title=element_text(size=8,color = "black"),
-                     plot.tag=element_text(size=8,color = "black"),
+base_theme <-  theme(axis.text=element_text(size=10, color = "black"),
+                     axis.title=element_text(size=12,color = "black"),
+                     legend.text=element_text(size=8,color = "black"),
+                     legend.title=element_text(size=9,color = "black"),
+                     plot.tag=element_text(size=9,color = "black"),
                      # Gridlines
                      panel.grid.major = element_blank(), 
                      panel.grid.minor = element_blank(),
@@ -214,7 +218,7 @@ base_theme <-  theme(axis.text=element_text(size=9, color = "black"),
                      legend.key = element_rect(fill=alpha('blue', 0)),
                      legend.background = element_rect(fill=alpha('blue', 0)),
                      #facets
-                     strip.text = element_text(size=6, face = "bold",color = "black", hjust=0),
+                     strip.text = element_text(size=9, face = "bold",color = "black", hjust=0),
                      strip.background = element_blank())
 
 # Sort the dataframe by site_order
@@ -245,6 +249,8 @@ p2 <- ggplot(plot_data %>% filter(year >= 1990) %>%
   theme_bw() + base_theme 
 p2
 
+ggsave(p2, filename=file.path(figdir, "FigX_landsat_trends_2000-2023.png"), 
+       width=9, height=7.5, units="in", dpi=600, bg="white")
 
 
 p <- ggpubr::ggarrange(p1,p2, widths = c(0.35,0.65))
