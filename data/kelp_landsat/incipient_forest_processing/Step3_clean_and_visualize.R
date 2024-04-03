@@ -214,8 +214,8 @@ landsat_build4 <- landsat_build3 %>%
   mutate(
     #set cluster order
     incipient = case_when(
-      site_num == 1 ~ "Incipient",
-      site_num == 2 ~ "Incipient",
+      site_num == 1 ~ "Forest",
+      site_num == 2 ~ "Forest",
       site_num == 3 ~ "Forest",
       site_num == 4 ~ "Forest",
       site_num == 5 ~ "Barren",
@@ -223,12 +223,12 @@ landsat_build4 <- landsat_build3 %>%
       site_num == 7 ~ "Barren",
       site_num == 8 ~ "Barren",
       site_num == 9 ~ "Barren",
-      site_num == 10 ~ "Barren",
+      site_num == 10 ~ "Forest",
       site_num == 11 ~ "Barren",
       site_num == 12 ~ "Barren",
       site_num == 13 ~ "Barren",
       site_num == 14 ~ "Barren",
-      site_num == 15 ~ "Forest",
+      site_num == 15 ~ "Incipient",
       site_num == 16 ~ "Incipient",
       site_num == 17 ~ "Barren",
       site_num == 18 ~ "Barren",
@@ -236,7 +236,7 @@ landsat_build4 <- landsat_build3 %>%
       site_num == 20 ~ "Barren",
       site_num == 21 ~ "Barren",
       site_num == 22 ~ "Barren",
-      site_num == 23 ~ "Forest",
+      site_num == 23 ~ "Incipient",
       site_num == 24 ~ "Barren",
       site_num == 25 ~ "Forest",
       site_num == 26 ~ "Incipient",
@@ -252,16 +252,16 @@ landsat_build4 <- landsat_build3 %>%
       site_num == 36 ~ "Barren",
       site_num == 37 ~ "Barren",
       site_num == 38 ~ "Barren",
-      site_num == 39 ~ "Incipient",
-      site_num == 40 ~ "Incipient",
+      site_num == 39 ~ "Forest",
+      site_num == 40 ~ "Forest",
       site_num == 41 ~ "Forest",
       site_num == 42 ~ "Barren",
       site_num == 43 ~ "Incipient",
       site_num == 44 ~ "Incipient",
-      site_num == 45 ~ "Incipient",
-      site_num == 46 ~ "Incipient",
+      site_num == 45 ~ "Forest",
+      site_num == 46 ~ "Forest",
       site_num == 47 ~ "Barren",
-      site_num == 48 ~ "Incipient",
+      site_num == 48 ~ "Forest",
       site_num == 49 ~ "Forest",
       site_num == 50 ~ "Forest",
       site_num == 51 ~ "Barren",
@@ -269,7 +269,7 @@ landsat_build4 <- landsat_build3 %>%
       site_num == 53 ~ "Forest",
       site_num == 54 ~ "Barren",
       site_num == 55 ~ "Forest",
-      site_num == 56 ~ "Forest",
+      site_num == 56 ~ "Incipient",
       site_num == 57 ~ "Barren",
       site_num == 58 ~ "Barren",
       site_num == 59 ~ "Forest",
@@ -288,7 +288,21 @@ landsat_build4 <- landsat_build3 %>%
       site_num == 72 ~ "Barren",
       site_num == 73 ~ "Forest",
       TRUE ~ NA)
-  ) %>% filter(year == 2023)
+  ) %>%
+  filter(year == 2023)
+
+#save coords
+
+site_coord <- landsat_build4 %>%
+  mutate(longitude = sf::st_coordinates(.)[,1],
+         latitude = sf::st_coordinates(.)[,2])%>%
+  st_drop_geometry()%>%
+  rename(site_type = "incipient")%>%
+  group_by(site_num, site_type)%>%
+  dplyr::summarize(lat = mean(latitude),
+                   long = mean(longitude))
+
+write_csv(site_coord, file.path(figdir, "Site_coords.csv"))
 
 
 # Plot
@@ -404,17 +418,46 @@ ggsave(p1,  filename=file.path(figdir, "Cluster_site_type_map.png"), width = 7.5
        bg = "white", dpi = 600)
 
 
+# Theme
+base_theme <-  theme(axis.text.x=element_text(size=10, color = "black"),
+                     axis.text.y=element_text(size=9, color = "black"),
+                     axis.title=element_text(size=12,color = "black"),
+                     legend.text=element_text(size=7,color = "black"),
+                     legend.title=element_text(size=8,color = "black"),
+                     plot.tag=element_text(size=8,color = "black"),
+                     # Gridlines
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(),
+                     panel.background = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     # Legend
+                     legend.key = element_rect(fill=alpha('blue', 0)),
+                     legend.background = element_rect(fill=alpha('blue', 0)),
+                     #facets
+                     strip.text = element_text(size=12, face = "bold",color = "black", hjust=0),
+                     strip.background = element_blank())
 
 
 # Plot 
-###remove year filter on landsat_buld4 before running
+
+
+# Define the sequence of years to label every 3 years
+years_to_label <- seq(2014, max(landsat_build4$year), by = 3)
+
 p2 <- ggplot(landsat_build4 %>% filter(year > 2013), aes(x = year, y = perc_of_max_3,
                                                          color = incipient)) +
   geom_point() + 
   geom_smooth(se = TRUE) +
   scale_color_manual(values = c("Forest" = "forestgreen", "Barren" = "purple", "Incipient" = "orange"), name = "Site type") +
-  facet_wrap(~ site_num, scales = "free_y") + theme_bw() + base_theme
+  labs(y = "Percent of max (relative to 2009-2013)",
+       title = "")+
+  facet_wrap(~ site_num, scales = "free_y") + 
+  theme_bw() + 
+  base_theme +
+  scale_x_continuous(breaks = years_to_label)  # Setting breaks every 3 years
+
 p2
+
 
 ggsave(p2,  filename=file.path(figdir, "Cluster_timeseries.png"), width = 16, height = 10, units = "in",
        bg = "white", dpi = 600)
