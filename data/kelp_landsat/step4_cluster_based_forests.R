@@ -24,10 +24,13 @@ ca_counties_orig <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundarie
 #read landsat raw
 landsat_orig <- st_read(file.path(localdir, "/processed/monterey_peninsula/landsat_mpen_1984_2023_points_withNAs.shp"))
 
-
 # Get land
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
 foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclass = "sf")
+
+#read bathy
+bathy_10m <- st_read(file.path(basedir, "gis_data/raw/bathymetry/contours_5m/contours_5m.shp")) %>% filter(CONTOUR == "-10")
+
 
 
 ################################################################################
