@@ -1,0 +1,120 @@
+#Joshua G. Smith; jossmith@mbayaq.org
+
+rm(list=ls())
+
+######
+######
+#required packages
+librarian::shelf(tidyverse, sf, raster, shiny, tmap, terra, tidyterra, RColorBrewer)
+
+#set directories 
+basedir <- "/Volumes/seaotterdb$/kelp_recovery/data"
+localdir <- "/Users/jossmith/Documents/Data/landsat/processed" #local directory
+figdir <- here::here("analyses","2incipient_forests","figures")
+output <- here::here("analyses","2incipient_forests","output")
+
+#read state
+ca_counties_orig <- st_read(file.path(basedir, "gis_data/raw/ca_county_boundaries/s7vc7n.shp")) 
+
+#read landsat raw
+landsat_orig <- st_read(file.path(localdir, "/monterey_peninsula/landsat_mpen_1984_2023_points_withNAs.shp"))
+
+
+# Get land
+usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
+foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclass = "sf")
+
+
+################################################################################
+#Step 1 - raster for focal year and quarter
+
+# transform landsat data to Teale Albers
+rast_build1 <- st_transform(landsat_orig, crs = 3310) %>% 
+  mutate(biomass = ifelse(biomass == 0, NA, biomass))  %>% filter (year == 2023 & quarter ==3) 
+
+#define blank raster
+r <- rast(rast_build1, res=30)
+
+landsat_rast_2023 <- rasterize(rast_build1, r, field = "biomass", fun = mean)
+
+
+################################################################################
+#Step 2 - define max kelp extent
+
+#select MPEN as focal region 
+plot_dat <- rast_build1 %>% filter (latitude >= 36.510140 &
+                                      latitude <= 36.670574) %>% st_transform(crs=3310)
+
+#define 0 cover as historical kelp footprint
+na_dat <- landsat_orig %>% filter (latitude >= 36.510140 &
+                                     latitude <= 36.670574, 
+                                   biomass == 0)
+
+#transform landsat data to Teale Albers
+t_dat <- st_transform(plot_dat, crs=3310) %>% 
+  mutate(biomass = ifelse(biomass==0,NA,biomass))
+
+kelp_historic <- st_transform(na_dat, crs=3310) # %>% mutate(biomass = ifelse(biomass==0,1,NA))
+
+#create grid
+r <- rast(t_dat, res=30)  # Builds a blank raster of given dimensions and resolution  
+vr <- rasterize(t_dat, r,"biomass", resolution = 30) 
+
+kelp_na <- rasterize(kelp_historic, r,"biomass", resolution = 30) 
+
+
+
+
+################################################################################
+#plot kelp forest trends by scan area
+
+# Theme
+base_theme <-  theme(axis.text=element_text(size=7, color = "black"),
+                     axis.title=element_text(size=8,color = "black"),
+                     legend.text=element_text(size=7,color = "black"),
+                     legend.title=element_text(size=8,color = "black"),
+                     plot.tag=element_text(size=8,color = "black"),
+                     # Gridlines
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(),
+                     panel.background = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     # Legend
+                     legend.key = element_rect(fill=alpha('blue', 0)),
+                     legend.background = element_rect(fill=alpha('blue', 0)),
+                     #facets
+                     strip.text = element_text(size=6, face = "bold",color = "black", hjust=0),
+                     strip.background = element_blank())
+
+
+p1 <- ggplot() +
+  #add historic kelp extent
+  tidyterra::geom_spatraster(data = kelp_na, na.rm = TRUE) +
+  scale_fill_gradient(low = alpha("#7286AC",0.4),
+                      high = alpha("#7286AC",0.4),
+                      na.value = NA)+
+  guides(fill = guide_legend(override.aes = list(size = 3),
+                             label.theme = element_text(color = "white"))) +
+  labs(fill = "Max kelp \nextent")+
+  #add observed landsat for 2022 Q3
+  ggnewscale::new_scale_fill()+
+  tidyterra::geom_spatraster(data = landsat_rast_2023, na.rm = TRUE) +
+  scale_fill_gradient2(low = "navyblue",mid="#1B9C00",high = "#FFFF79",
+                       na.value = NA)+
+  #add land
+  geom_sf(data = ca_counties_orig, fill = "gray", color = "gray80") +
+  #add landmarks
+ # geom_text(data=monterey_label, mapping=aes(x=x, y=y, label=label),
+  #          size=3, fontface= "bold") +
+  coord_sf(xlim = c(-121.99, -121.88), ylim = c(36.519, 36.645), crs = 4326)+
+  labs(title = "2023 Q3", tag = "")+
+  theme_bw() + base_theme + theme(#axis.text.y = element_blank(),
+    #legend.position = "none",
+    plot.tag.position = c(0.05, 1), axis.title=element_blank())
+p1
+
+
+
+#save
+ggsave(p1, filename = file.path(figdir, "Biomass_2023_Q3.png"), 
+       width = 5, height = 6, units = "in", dpi = 600)
