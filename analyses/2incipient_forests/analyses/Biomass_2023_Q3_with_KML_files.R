@@ -30,12 +30,12 @@ foreign <- rnaturalearth::ne_countries(country=c("Canada", "Mexico"), returnclas
 
 # transform landsat data to Teale Albers
 rast_build1 <- st_transform(landsat_orig, crs = 3310) %>% 
-  mutate(biomass = ifelse(biomass == 0, NA, biomass))  %>% filter (year == 2023 & quarter ==3) 
+  mutate(area = ifelse(area == 0, NA, area))  %>% filter (year == 2023 & quarter ==3) 
 
 #define blank raster
 r <- rast(rast_build1, res=30)
 
-landsat_rast_2023 <- rasterize(rast_build1, r, field = "biomass", fun = mean)
+landsat_rast_2023 <- rasterize(rast_build1, r, field = "area", fun = mean)
 
 
 ################################################################################
@@ -48,21 +48,19 @@ plot_dat <- rast_build1 %>% filter (latitude >= 36.510140 &
 #define 0 cover as historical kelp footprint
 na_dat <- landsat_orig %>% filter (latitude >= 36.510140 &
                                      latitude <= 36.670574, 
-                                   biomass == 0)
+                                   area == 0)
 
 #transform landsat data to Teale Albers
 t_dat <- st_transform(plot_dat, crs=3310) %>% 
-  mutate(biomass = ifelse(biomass==0,NA,biomass))
+  mutate(area = ifelse(area==0,NA,area))
 
-kelp_historic <- st_transform(na_dat, crs=3310) # %>% mutate(biomass = ifelse(biomass==0,1,NA))
+kelp_historic <- st_transform(na_dat, crs=3310) # %>% mutate(area = ifelse(area==0,1,NA))
 
 #create grid
 r <- rast(t_dat, res=30)  # Builds a blank raster of given dimensions and resolution  
-vr <- rasterize(t_dat, r,"biomass", resolution = 30) 
+vr <- rasterize(t_dat, r,"area", resolution = 30) 
 
-kelp_na <- rasterize(kelp_historic, r,"biomass", resolution = 30) 
-
-
+kelp_na <- rasterize(kelp_historic, r,"area", resolution = 30) 
 
 
 ################################################################################
@@ -113,8 +111,38 @@ p1 <- ggplot() +
     plot.tag.position = c(0.05, 1), axis.title=element_blank())
 p1
 
+#write shapefiles for ArcGIS
+library(raster)
+
+# Write landsat_rast_2023 raster to a shapefile
+#convert to vector format 
+rast_my_spat <- raster(landsat_rast_2023)
+poly_rast <- rasterToPolygons(rast_my_spat)
+landsat_shape <- shapefile(poly_rast, file.path(basedir,"/kelp_landsat/processed/monterey_peninsula/ArcGIS_files/landsat_rast_2023.shp"))
+
+# write as KML
+landsat_shape <- st_read(file.path(basedir, "/kelp_landsat/processed/monterey_peninsula/ArcGIS_files/landsat_rast_2023.shp"))
+st_write(landsat_shape, file.path(basedir, "/kelp_landsat/processed/monterey_peninsula/ArcGIS_files/landsat_rast_2023.kml"), driver = "KML")
+
+dissolved_rast<- st_union(landsat_shape)
+st_write(dissolved_rast, file.path(basedir, "/kelp_landsat/processed/monterey_peninsula/ArcGIS_files/kelp_rast_2023_polys.kml"), driver = "KML")
+
+
+
+
+rast_my_spat <- raster(kelp_na)
+poly_rast <- rasterToPolygons(rast_my_spat)
+landsat_shape <- shapefile(poly_rast, file.path(basedir,"/kelp_landsat/processed/monterey_peninsula/ArcGIS_files/kelp_max_extent.shp"))
+
+#write as KML
+kelp_na <- st_read(file.path(basedir, "/kelp_landsat/processed/monterey_peninsula/ArcGIS_files/kelp_max_extent.shp"))
+# Dissolve based on shared borders
+dissolved_kelp <- st_union(kelp_na)
+
+st_write(kelp_na, file.path(basedir, "/kelp_landsat/processed/monterey_peninsula/ArcGIS_files/kelp_max_extent.kml"), driver = "KML")
+st_write(dissolved_kelp, file.path(basedir, "/kelp_landsat/processed/monterey_peninsula/ArcGIS_files/kelp_max_polys.kml"), driver = "KML")
 
 
 #save
-ggsave(p1, filename = file.path(figdir, "Biomass_2023_Q3.png"), 
-       width = 5, height = 6, units = "in", dpi = 600)
+#ggsave(p1, filename = file.path(figdir, "area_2023_Q3.png"), 
+ #      width = 5, height = 6, units = "in", dpi = 600)

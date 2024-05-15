@@ -291,6 +291,61 @@ landsat_build4 <- landsat_build3 %>%
   ) %>%
   filter(year == 2023)
 
+################################################################################
+#prep for export to KML
+
+# transform landsat data to Teale Albers
+
+landsat_build5 <- landsat_build4 %>% st_as_sf(crs = 4326)
+
+
+#Build barren layer
+rast_build1 <- st_transform(landsat_build5, crs = 3310) %>% filter (incipient == "Barren") 
+r <- rast(rast_build1, res=30)
+landsat_rast_barren <- rasterize(rast_build1, r)
+
+#Build forest layer
+rast_build1 <- st_transform(landsat_build5, crs = 3310) %>% filter (incipient == "Forest") 
+r <- rast(rast_build1, res=30)
+landsat_rast_forest <- rasterize(rast_build1, r)
+
+#Build Incipient
+rast_build1 <- st_transform(landsat_build5, crs = 3310) %>% filter (incipient == "Incipient") 
+r <- rast(rast_build1, res=30)
+landsat_rast_incipient <- rasterize(rast_build1, r)
+
+
+#prep KML files
+rast_my_spat <- raster(landsat_rast_barren)
+poly_rast <- rasterToPolygons(rast_my_spat)
+barren_shape <- shapefile(poly_rast, file.path(basedir,"kelp_landsat/processed/monterey_peninsula/ArcGIS_files/persistent_barrens.shp"), overwrite=TRUE)
+barren_shp <- st_read(file.path(basedir,"kelp_landsat/processed/monterey_peninsula/ArcGIS_files/persistent_barrens.shp"))
+dissolved_barren<- st_union(barren_shp)
+st_write(dissolved_barren, file.path(basedir, "/kelp_landsat/processed/monterey_peninsula/ArcGIS_files/persistent_barrens.kml"), driver = "KML", append=TRUE)
+
+
+#prep KML files
+rast_my_spat <- raster(landsat_rast_forest)
+poly_rast <- rasterToPolygons(rast_my_spat)
+forest_shape <- shapefile(poly_rast, file.path(basedir,"kelp_landsat/processed/monterey_peninsula/ArcGIS_files/persistent_forests.shp"), overwrite=TRUE)
+forest_shp <- st_read(file.path(basedir,"kelp_landsat/processed/monterey_peninsula/ArcGIS_files/persistent_forests.shp"))
+dissolved_forest<- st_union(forest_shp)
+st_write(dissolved_forest, file.path(basedir, "/kelp_landsat/processed/monterey_peninsula/ArcGIS_files/persistent_forests.kml"), driver = "KML", append=TRUE)
+
+
+#prep KML files
+rast_my_spat <- raster(landsat_rast_incipient)
+poly_rast <- rasterToPolygons(rast_my_spat)
+incipient_shape <- shapefile(poly_rast, file.path(basedir,"kelp_landsat/processed/monterey_peninsula/ArcGIS_files/incipient_forests.shp"), overwrite=TRUE)
+incipient_shp <- st_read(file.path(basedir,"kelp_landsat/processed/monterey_peninsula/ArcGIS_files/incipient_forests.shp"))
+dissolved_incipient<- st_union(incipient_shp)
+st_write(dissolved_incipient, file.path(basedir, "/kelp_landsat/processed/monterey_peninsula/ArcGIS_files/incipient_forests.kml"), driver = "KML", append=TRUE)
+
+
+
+################################################################################
+
+
 #save coords
 
 site_coord <- landsat_build4 %>%
@@ -302,7 +357,7 @@ site_coord <- landsat_build4 %>%
   dplyr::summarize(lat = mean(latitude),
                    long = mean(longitude))
 
-write_csv(site_coord, file.path(figdir, "Site_coords.csv"))
+#write_csv(site_coord, file.path(figdir, "Site_coords.csv"))
 
 
 # Plot
@@ -414,8 +469,8 @@ p1 <- ggplot() +
 p1
 
 
-ggsave(p1,  filename=file.path(figdir, "Cluster_site_type_map.png"), width = 7.5, height = 9.5, units = "in",
-       bg = "white", dpi = 600)
+#ggsave(p1,  filename=file.path(figdir, "Cluster_site_type_map.png"), width = 7.5, height = 9.5, units = "in",
+ #      bg = "white", dpi = 600)
 
 
 # Theme
@@ -444,6 +499,7 @@ base_theme <-  theme(axis.text.x=element_text(size=10, color = "black"),
 # Define the sequence of years to label every 3 years
 years_to_label <- seq(2014, max(landsat_build4$year), by = 3)
 
+#Make sure to turn off year filter for landsay_build4
 p2 <- ggplot(landsat_build4 %>% filter(year > 2013), aes(x = year, y = perc_of_max_3,
                                                          color = incipient)) +
   geom_point() + 
@@ -459,8 +515,8 @@ p2 <- ggplot(landsat_build4 %>% filter(year > 2013), aes(x = year, y = perc_of_m
 p2
 
 
-ggsave(p2,  filename=file.path(figdir, "Cluster_timeseries.png"), width = 16, height = 10, units = "in",
-       bg = "white", dpi = 600)
+#ggsave(p2,  filename=file.path(figdir, "Cluster_timeseries.png"), width = 16, height = 10, units = "in",
+ #      bg = "white", dpi = 600)
 
 
 
