@@ -70,7 +70,8 @@ summarized_data <- landsat_build1 %>%
 max_cluster_area <- summarized_data %>%
                       filter(year.x > 2004 & year.x < 2014)%>%
                       group_by(cluster)%>%
-                      summarize(area_max_3 = max(roll_area_3),
+                      summarize(area_baseline_mean = mean(total_area),
+                                area_max_3 = max(roll_area_3),
                                 area_max_5 = max(roll_area_5))
 
 
@@ -81,9 +82,10 @@ area_data <- st_join(summarized_data, max_cluster_area) %>%
               rename(year = year.x,
                      cluster = cluster.x,
                      )%>%
-              mutate(perc_of_max_3 = (roll_area_3 / area_max_3)*100,
+              mutate(perc_of_baseline = (roll_area_3 / area_baseline_mean),
+                     perc_of_max_3 = (roll_area_3 / area_max_3)*100,
                      perc_of_max_5 = (roll_area_5 / area_max_5)*100)%>%
-              select(year, cluster, total_area, perc_of_max_3,
+              select(year, cluster, total_area,perc_of_baseline, perc_of_max_3,
                      perc_of_max_5, geometry)
               
 plot(area_data %>% filter(year == 2023))
@@ -92,8 +94,8 @@ plot(area_data %>% filter(year == 2023))
 
 
 
-st_write(area_data, file.path(output, "area_data3.geojson")) #last write 16 Feb 2024
-
+#st_write(area_data, file.path(output, "area_data3.geojson")) #last write 16 Feb 2024
+st_write(area_data, file.path(output, "area_data4.geojson")) #last write 07 July 2024
 
 
 

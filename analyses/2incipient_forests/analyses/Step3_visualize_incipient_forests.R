@@ -15,7 +15,7 @@ figdir <- here::here("data","kelp_landsat","incipient_forest_processing","Figure
 output <- here::here("analyses","2incipient_forests","output")
 
 #read landsat 
-final_data <- st_read(file.path(output, "area_data3.geojson")) %>%
+final_data <- st_read(file.path(output, "area_data4.geojson")) %>%
   mutate(site_numeric = as.numeric(cluster)) %>%
   st_cast("POINT")
 
