@@ -4,8 +4,20 @@
 
 rm(list=ls())
 
-######
-######
+################################################################################
+
+# This code calculates the annual canopy area for Q3 of each of 123 identified 
+# clusters using a rolling average (year t, year t-1, year t+1). The processing
+# steps are:
+
+#1: filter the data to quarter 3 for each year
+#2: Calculate the total canopy area (sum) for each cluster and each year
+#3: Perform the rolling average 
+#4: Find the max canopy area for each cluster and each year
+#5: Determine the annual perc of max for each year. 
+
+################################################################################
+
 #required packages
 librarian::shelf(tidyverse, sf, raster, shiny, tmap, terra, tidyterra, RColorBrewer)
 
